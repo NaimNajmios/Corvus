@@ -11,9 +11,20 @@ data class Source(
     val publishedDate: String? = null,
     val isLocalSource: Boolean = false,
     val sourceType: SourceType = SourceType.WEB_SEARCH,
-    val credibilityTier: CredibilityTier = CredibilityTier.GENERAL
+    val credibilityTier: CredibilityTier = CredibilityTier.GENERAL,
+    val outletRating: OutletRating? = null
 )
 
+@Serializable
+data class OutletRating(
+    val credibility: Int,           // 0–100
+    val bias: Int,                  // -2 to +2
+    val isGovAffiliated: Boolean,
+    val isSatire: Boolean = false,
+    val mbfcCategory: String? = null
+)
+
+@Serializable
 enum class SourceType {
     FACT_CHECK_DB,      // Google Fact Check, Sebenarnya
     OFFICIAL_TRANSCRIPT,// Hansard, PMO, ministry sites
@@ -24,6 +35,7 @@ enum class SourceType {
     WEB_SEARCH          // Tavily, Google CS general results
 }
 
+@Serializable
 enum class CredibilityTier {
     PRIMARY,    // Official transcripts, government databases
     VERIFIED,   // Established fact-check publishers, Bernama

@@ -67,6 +67,8 @@ class HistoryRepository @Inject constructor(
             when (resultType) {
                 "GENERAL" -> json.decodeFromString<CorvusCheckResult.GeneralResult>(dataJson)
                 "QUOTE" -> json.decodeFromString<CorvusCheckResult.QuoteResult>(dataJson)
+                "COMPOSITE" -> json.decodeFromString<CorvusCheckResult.CompositeResult>(dataJson)
+                "VIRAL" -> json.decodeFromString<CorvusCheckResult.ViralHoaxResult>(dataJson)
                 else -> null
             }
         } catch (e: Exception) {
@@ -79,18 +81,22 @@ class HistoryRepository @Inject constructor(
         val dataJson = when (this) {
             is CorvusCheckResult.GeneralResult -> json.encodeToString(this)
             is CorvusCheckResult.QuoteResult -> json.encodeToString(this)
+            is CorvusCheckResult.CompositeResult -> json.encodeToString(this)
+            is CorvusCheckResult.ViralHoaxResult -> json.encodeToString(this)
         }
         
         val resultType = when (this) {
             is CorvusCheckResult.QuoteResult -> "QUOTE"
             is CorvusCheckResult.GeneralResult -> "GENERAL"
-            else -> "GENERAL"
+            is CorvusCheckResult.CompositeResult -> "COMPOSITE"
+            is CorvusCheckResult.ViralHoaxResult -> "VIRAL"
         }
         
         val verdictStr = when (this) {
             is CorvusCheckResult.GeneralResult -> verdict.name
             is CorvusCheckResult.QuoteResult -> quoteVerdict.name
-            else -> "UNKNOWN"
+            is CorvusCheckResult.CompositeResult -> compositeVerdict.name
+            is CorvusCheckResult.ViralHoaxResult -> "FALSE"
         }
 
         return CorvusHistoryEntity(

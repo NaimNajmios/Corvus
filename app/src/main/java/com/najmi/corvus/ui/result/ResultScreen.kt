@@ -116,6 +116,21 @@ fun ResultScreen(
                         appendLine("Context:")
                         appendLine(r.contextExplanation)
                     }
+                    is CorvusCheckResult.CompositeResult -> {
+                        appendLine("Overall Verdict: ${r.compositeVerdict.name.replace("_", " ")}")
+                        appendLine("Avg. Confidence: ${(r.confidence * 100).toInt()}%")
+                        appendLine()
+                        appendLine("Sub-claims:")
+                        appendLine(r.compositeSummary)
+                    }
+                    is CorvusCheckResult.ViralHoaxResult -> {
+                        appendLine("🚨 KNOWN HOAX DETECTED")
+                        appendLine("Match: ${r.matchedClaim}")
+                        appendLine("Summary: ${r.summary}")
+                        if (r.debunkUrls.isNotEmpty()) {
+                            appendLine("Sources: ${r.debunkUrls.joinToString(", ")}")
+                        }
+                    }
                 }
 
                 if (r.sources.isNotEmpty()) {
@@ -178,7 +193,11 @@ fun ResultScreen(
 
                 item {
                     Text(
-                        text = if (corvusResult is CorvusCheckResult.QuoteResult) "CONTEXT" else "EXPLANATION",
+                        text = when (corvusResult) {
+                            is CorvusCheckResult.QuoteResult -> "CONTEXT"
+                            is CorvusCheckResult.CompositeResult -> "SUMMARY"
+                            else -> "EXPLANATION"
+                        },
                         style = MaterialTheme.typography.labelLarge.copy(
                             letterSpacing = 1.sp
                         ),
@@ -186,13 +205,17 @@ fun ResultScreen(
                     )
                 }
 
-                item {
-                    ExpandableExplanation(
-                        explanation = when (corvusResult) {
-                            is CorvusCheckResult.GeneralResult -> corvusResult.explanation
-                            is CorvusCheckResult.QuoteResult -> corvusResult.contextExplanation
-                        }
-                    )
+                if (corvusResult !is CorvusCheckResult.ViralHoaxResult) {
+                    item {
+                        ExpandableExplanation(
+                            explanation = when (corvusResult) {
+                                is CorvusCheckResult.GeneralResult -> corvusResult.explanation
+                                is CorvusCheckResult.QuoteResult -> corvusResult.contextExplanation
+                                is CorvusCheckResult.CompositeResult -> corvusResult.compositeSummary
+                                else -> ""
+                            }
+                        )
+                    }
                 }
 
                 if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.keyFacts.isNotEmpty()) {
@@ -254,6 +277,19 @@ fun ResultScreen(
                         ) {
                             SourceCard(source = source)
                         }
+                    }
+                }
+
+                val timeline = when (corvusResult) {
+                    is CorvusCheckResult.GeneralResult -> corvusResult.confidenceTimeline
+                    is CorvusCheckResult.QuoteResult -> corvusResult.confidenceTimeline
+                    is CorvusCheckResult.CompositeResult -> corvusResult.confidenceTimeline
+                    else -> emptyList()
+                }
+
+                if (timeline.size >= 2) {
+                    item {
+                        ConfidenceTimelineCard(points = timeline)
                     }
                 }
 

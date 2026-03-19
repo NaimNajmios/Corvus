@@ -6,6 +6,7 @@ import com.najmi.corvus.data.remote.QuoteMatchResult
 import com.najmi.corvus.data.remote.WikiquoteClient
 import com.najmi.corvus.data.repository.GoogleFactCheckRepository
 import com.najmi.corvus.data.repository.TavilyRepository
+import com.najmi.corvus.data.repository.OutletRatingRepository
 import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.ClassifiedClaim
 import com.najmi.corvus.domain.model.CorvusCheckResult
@@ -19,7 +20,8 @@ class QuoteVerificationPipeline @Inject constructor(
     private val hansardClient: HansardClient,
     private val googleFactCheckRepository: GoogleFactCheckRepository,
     private val tavilyRepository: TavilyRepository,
-    private val llmRouter: LlmRouter
+    private val llmRouter: LlmRouter,
+    private val ratingRepo: OutletRatingRepository
 ) {
     companion object {
         private const val TAG = "QuotePipeline"
@@ -81,17 +83,17 @@ class QuoteVerificationPipeline @Inject constructor(
         foundInWikiquote: Boolean,
         wikiquoteText: String?
     ): CorvusCheckResult.QuoteResult {
-        // Use LLM to analyze all sources and give a final verdict
-        // For now, mapping LLM analysis to QuoteResult
-        // Note: LlmRouter currently returns GeneralResult, we need a specialized prompt for quotes
+        // Enrich with Bias/Credibility Ratings
+        val enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url)) }
+
+        // Source Quality Gate
+        val filteredSources = enrichedSources.filter { 
+            (it.outletRating?.credibility ?: 50) >= 40 
+        }.sortedByDescending { it.outletRating?.credibility ?: 50 }
+
+        val prompt = buildQuotePrompt(classified, filteredSources, foundInWikiquote, wikiquoteText)
         
-        val prompt = buildQuotePrompt(classified, sources, foundInWikiquote, wikiquoteText)
-        
-        // This is a bit of a hack since LlmRouter is built for GeneralResult
-        // We might need a QuoteLlmRouter or update LlmRouter to handle both
-        // For expediency, I'll use llmRouter.analyze and map it
-        
-        val (generalResult, provider) = llmRouter.analyze(classified.raw, sources, ClaimType.QUOTE)
+        val (generalResult, provider) = llmRouter.analyze(classified.raw, filteredSources, ClaimType.QUOTE)
         
         return CorvusCheckResult.QuoteResult(
             claim = classified.raw,
@@ -100,10 +102,10 @@ class QuoteVerificationPipeline @Inject constructor(
             speaker = classified.speaker ?: "Unknown",
             originalQuote = wikiquoteText ?: generalResult.keyFacts.firstOrNull(),
             submittedQuote = classified.quotedText ?: classified.raw,
-            originalSource = sources.firstOrNull(),
+            originalSource = enrichedSources.firstOrNull(),
             originalDate = classified.claimedDate,
             contextExplanation = generalResult.explanation,
-            sources = sources,
+            sources = enrichedSources,
             isVerbatim = foundInWikiquote,
             contextAccurate = generalResult.verdict == com.najmi.corvus.domain.model.Verdict.TRUE,
             providerUsed = provider.name

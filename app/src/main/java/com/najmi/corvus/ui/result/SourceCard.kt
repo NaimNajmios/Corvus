@@ -9,13 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -76,8 +71,12 @@ fun SourceCard(
                 indication = null
             ) {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(source.url))
-                context.startActivity(intent)
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(source.url))
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    // Fallback
+                }
             }
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -96,8 +95,16 @@ fun SourceCard(
                 Text(
                     text = publisher.uppercase(),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+            }
+
+            source.outletRating?.let { rating ->
+                BiasTag(rating.bias)
+                CredibilityIndicator(rating.credibility)
             }
         }
 
@@ -128,6 +135,56 @@ fun SourceCard(
             )
         }
     }
+}
+
+@Composable
+private fun CredibilityIndicator(score: Int) {
+    val color = when {
+        score >= 80 -> Color(0xFF4CAF50)
+        score >= 60 -> Color(0xFFFFC107)
+        else -> Color(0xFFF44336)
+    }
+    
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .background(color.copy(alpha = 0.1f), CircleShape)
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .background(color, CircleShape)
+        )
+        Text(
+            text = "$score%",
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+            color = color,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun BiasTag(bias: Int) {
+    val (label, color) = when (bias) {
+        -2 -> "LEFT" to Color(0xFF2196F3)
+        -1 -> "L-CENTER" to Color(0xFF03A9F4)
+        0 -> "CENTER" to Color(0xFF9E9E9E)
+        1 -> "R-CENTER" to Color(0xFFFF9800)
+        2 -> "RIGHT" to Color(0xFFF44336)
+        else -> "UNKNOWN" to Color(0xFF9E9E9E)
+    }
+
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+        color = color,
+        modifier = Modifier
+            .border(1.dp, color.copy(alpha = 0.5f), CorvusShapes.small)
+            .padding(horizontal = 4.dp, vertical = 1.dp)
+    )
 }
 
 @Composable

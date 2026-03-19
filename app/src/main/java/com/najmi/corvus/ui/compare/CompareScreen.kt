@@ -225,6 +225,8 @@ private fun ClaimPane(
                     when (claim) {
                         is CorvusCheckResult.GeneralResult -> VerdictBadge(verdict = claim.verdict)
                         is CorvusCheckResult.QuoteResult -> QuoteVerdictBadge(verdict = claim.quoteVerdict)
+                        is CorvusCheckResult.CompositeResult -> VerdictBadge(verdict = claim.compositeVerdict)
+                        is CorvusCheckResult.ViralHoaxResult -> VerdictBadge(verdict = Verdict.FALSE)
                     }
                     
                     IconButton(
@@ -260,7 +262,12 @@ private fun ClaimPane(
             
             item {
                 Text(
-                    text = if (claim is CorvusCheckResult.QuoteResult) "CONTEXT" else "EXPLANATION",
+                    text = when (claim) {
+                        is CorvusCheckResult.GeneralResult -> "EXPLANATION"
+                        is CorvusCheckResult.QuoteResult -> "CONTEXT"
+                        is CorvusCheckResult.CompositeResult -> "SUMMARY"
+                        is CorvusCheckResult.ViralHoaxResult -> "SUMMARY"
+                    },
                     style = MaterialTheme.typography.labelSmall.copy(
                         letterSpacing = 1.sp
                     ),
@@ -273,6 +280,8 @@ private fun ClaimPane(
                     text = when (claim) {
                         is CorvusCheckResult.GeneralResult -> claim.explanation
                         is CorvusCheckResult.QuoteResult -> claim.contextExplanation
+                        is CorvusCheckResult.CompositeResult -> claim.compositeSummary
+                        is CorvusCheckResult.ViralHoaxResult -> claim.summary
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
@@ -284,6 +293,8 @@ private fun ClaimPane(
             val hasExtra = when (claim) {
                 is CorvusCheckResult.GeneralResult -> claim.explanation.length > 200 || claim.keyFacts.isNotEmpty()
                 is CorvusCheckResult.QuoteResult -> claim.contextExplanation.length > 200
+                is CorvusCheckResult.CompositeResult -> claim.compositeSummary.length > 200 || claim.subClaims.isNotEmpty()
+                is CorvusCheckResult.ViralHoaxResult -> claim.summary.length > 200 || claim.debunkUrls.isNotEmpty()
             }
 
             if (hasExtra) {
@@ -370,9 +381,8 @@ private fun ClaimPane(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        source.title?.let { title ->
                         Text(
-                            text = title,
+                            text = source.title,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontSize = 10.sp
                             ),
@@ -380,7 +390,6 @@ private fun ClaimPane(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        }
                     }
                 }
             }

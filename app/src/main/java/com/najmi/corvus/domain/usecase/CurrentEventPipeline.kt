@@ -2,7 +2,9 @@ package com.najmi.corvus.domain.usecase
 
 import android.util.Log
 import com.najmi.corvus.data.remote.GdeltClient
+import com.najmi.corvus.data.repository.OutletRatingRepository
 import com.najmi.corvus.data.repository.TavilyRepository
+import com.najmi.corvus.domain.model.ClaimLanguage
 import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.ClassifiedClaim
 import com.najmi.corvus.domain.model.CorvusCheckResult
@@ -14,7 +16,8 @@ import javax.inject.Inject
 class CurrentEventPipeline @Inject constructor(
     private val gdeltClient: GdeltClient,
     private val tavilyRepository: TavilyRepository,
-    private val llmRouter: LlmRouter
+    private val llmRouter: LlmRouter,
+    private val ratingRepo: OutletRatingRepository
 ) {
     companion object {
         private const val TAG = "EventPipeline"
@@ -49,8 +52,20 @@ class CurrentEventPipeline @Inject constructor(
             Log.e(TAG, "Tavily failed: ${e.message}")
         }
 
+        // Enrich with Bias/Credibility Ratings
+        val enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url)) }
+
+        // Source Quality Gate
+        val filteredSources = enrichedSources.filter { 
+            (it.outletRating?.credibility ?: 50) >= 40 
+        }.sortedByDescending { it.outletRating?.credibility ?: 50 }
+
         // LLM Synthesis
-        val (result, provider) = llmRouter.analyze(classified.raw, sources, ClaimType.CURRENT_EVENT)
-        return result.copy(claim = classified.raw, providerUsed = provider.name)
+        val (result, provider) = llmRouter.analyze(classified.raw, filteredSources, ClaimType.CURRENT_EVENT)
+        return result.copy(
+            claim = classified.raw, 
+            providerUsed = provider.name,
+            sources = enrichedSources // UI shows all
+        )
     }
 }

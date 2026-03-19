@@ -14,39 +14,85 @@ sealed class CorvusCheckResult {
 
     @Serializable
     data class GeneralResult(
-        override val id: String = UUID.randomUUID().toString(),
+        override val id: String = "",
         override val claim: String = "",
-        val verdict: Verdict,
-        override val confidence: Float,
-        val explanation: String,
-        val keyFacts: List<String>,
-        override val sources: List<Source>,
+        val verdict: Verdict = Verdict.UNVERIFIABLE,
+        override val confidence: Float = 0f,
+        val explanation: String = "",
+        val keyFacts: List<String> = emptyList(),
+        override val sources: List<Source> = emptyList(),
         override val providerUsed: String = "unknown",
         val language: ClaimLanguage = ClaimLanguage.UNKNOWN,
-        override val checkedAt: Long = System.currentTimeMillis(),
+        override val checkedAt: Long = 0,
         val isFromKnownFactCheck: Boolean = false,
-        val claimType: ClaimType = ClaimType.GENERAL
+        val claimType: ClaimType = ClaimType.GENERAL,
+        val confidenceTimeline: List<ConfidencePoint> = emptyList()
     ) : CorvusCheckResult()
 
     @Serializable
     data class QuoteResult(
-        override val id: String = UUID.randomUUID().toString(),
+        override val id: String = "",
         override val claim: String = "",
-        val quoteVerdict: QuoteVerdict,
-        override val confidence: Float,
-        val speaker: String,
-        val originalQuote: String?,
-        val submittedQuote: String,
-        val originalSource: Source?,
-        val originalDate: String?,
-        val contextExplanation: String,
-        override val sources: List<Source>,
-        val isVerbatim: Boolean,
-        val contextAccurate: Boolean,
+        val quoteVerdict: QuoteVerdict = QuoteVerdict.UNVERIFIABLE,
+        override val confidence: Float = 0f,
+        val speaker: String = "Unknown",
+        val originalQuote: String? = null,
+        val submittedQuote: String = "",
+        val originalSource: Source? = null,
+        val originalDate: String? = null,
+        val contextExplanation: String = "",
+        override val sources: List<Source> = emptyList(),
+        val isVerbatim: Boolean = false,
+        val contextAccurate: Boolean = false,
         override val providerUsed: String = "unknown",
-        override val checkedAt: Long = System.currentTimeMillis()
+        override val checkedAt: Long = 0,
+        val confidenceTimeline: List<ConfidencePoint> = emptyList()
+    ) : CorvusCheckResult()
+
+    @Serializable
+    data class CompositeResult(
+        override val id: String = "",
+        override val claim: String = "",
+        val subClaims: List<SubClaim> = emptyList(),
+        val compositeVerdict: Verdict = Verdict.UNVERIFIABLE,
+        override val confidence: Float = 0f,
+        val compositeSummary: String = "",
+        override val sources: List<Source> = emptyList(),
+        override val providerUsed: String = "Corvus Aggregator",
+        override val checkedAt: Long = 0,
+        val confidenceTimeline: List<ConfidencePoint> = emptyList()
+    ) : CorvusCheckResult()
+
+    @Serializable
+    data class ViralHoaxResult(
+        override val id: String = "",
+        override val claim: String = "",
+        val matchedClaim: String = "",
+        val summary: String = "",
+        val debunkUrls: List<String> = emptyList(),
+        override val confidence: Float = 0f,
+        val firstSeen: String? = null,
+        override val sources: List<Source> = emptyList(),
+        override val providerUsed: String = "Viral Detector",
+        override val checkedAt: Long = 0,
+        val confidenceTimeline: List<ConfidencePoint> = emptyList()
     ) : CorvusCheckResult()
 }
+
+@Serializable
+data class SubClaim(
+    val id: String = "",
+    val text: String,
+    val index: Int,
+    val result: CorvusCheckResult? = null
+)
+
+@Serializable
+data class ConfidencePoint(
+    val timestamp: Long,
+    val confidence: Float,
+    val sourceTitle: String? = null
+)
 
 @Serializable
 enum class ClaimLanguage {

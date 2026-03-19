@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.najmi.corvus.data.local.CorvusDatabase
 import com.najmi.corvus.data.local.HistoryDao
-import com.najmi.corvus.data.local.UserPreferencesRepository
+import com.najmi.corvus.data.local.ViralHoaxDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -34,7 +34,7 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideUserPreferencesRepository(@ApplicationContext context: Context): UserPreferencesRepository {
-        return UserPreferencesRepository(context)
+    fun provideViralHoaxDao(database: CorvusDatabase): ViralHoaxDao {
+        return database.viralHoaxDao()
     }
 }

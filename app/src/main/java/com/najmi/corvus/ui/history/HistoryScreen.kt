@@ -376,6 +376,8 @@ fun HistoryItem(
             when (result) {
                 is CorvusCheckResult.GeneralResult -> VerdictBadge(verdict = result.verdict, modifier = Modifier)
                 is CorvusCheckResult.QuoteResult -> QuoteVerdictBadge(verdict = result.quoteVerdict, modifier = Modifier)
+                is CorvusCheckResult.CompositeResult -> VerdictBadge(verdict = result.compositeVerdict, modifier = Modifier)
+                is CorvusCheckResult.ViralHoaxResult -> VerdictBadge(verdict = Verdict.FALSE, modifier = Modifier)
             }
             
             Spacer(modifier = Modifier.width(12.dp))

@@ -31,7 +31,10 @@ fun PipelineStepIndicator(
     modifier: Modifier = Modifier
 ) {
     val steps = listOf(
+        "Checking viral database" to PipelineStep.CHECKING_VIRAL_DATABASE,
         "Checking known facts" to PipelineStep.CHECKING_KNOWN_FACTS,
+        "Dissecting claim" to PipelineStep.DISSECTING,
+        "Checking sub-claims" to PipelineStep.CHECKING_SUB_CLAIMS,
         "Retrieving sources" to PipelineStep.RETRIEVING_SOURCES,
         "Analyzing" to PipelineStep.ANALYZING
     )
@@ -42,7 +45,7 @@ fun PipelineStepIndicator(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        steps.forEachIndexed { index, (label, step) ->
+        steps.forEach { (label, step) ->
             PipelineStepItem(
                 label = label,
                 status = getStepStatus(step, currentStep),
@@ -105,29 +108,9 @@ private enum class StepStatus {
 }
 
 private fun getStepStatus(step: PipelineStep, current: PipelineStep): StepStatus {
-    return when (step) {
-        PipelineStep.IDLE -> StepStatus.PENDING
-        PipelineStep.CHECKING_KNOWN_FACTS -> {
-            when (current) {
-                PipelineStep.IDLE -> StepStatus.PENDING
-                PipelineStep.CHECKING_KNOWN_FACTS -> StepStatus.ACTIVE
-                else -> StepStatus.COMPLETED
-            }
-        }
-        PipelineStep.RETRIEVING_SOURCES -> {
-            when (current) {
-                PipelineStep.CHECKING_KNOWN_FACTS -> StepStatus.PENDING
-                PipelineStep.RETRIEVING_SOURCES -> StepStatus.ACTIVE
-                else -> StepStatus.COMPLETED
-            }
-        }
-        PipelineStep.ANALYZING -> {
-            when (current) {
-                PipelineStep.RETRIEVING_SOURCES -> StepStatus.PENDING
-                PipelineStep.ANALYZING -> StepStatus.ACTIVE
-                else -> StepStatus.COMPLETED
-            }
-        }
-        PipelineStep.DONE -> StepStatus.COMPLETED
+    return when {
+        current.ordinal > step.ordinal -> StepStatus.COMPLETED
+        current.ordinal == step.ordinal -> StepStatus.ACTIVE
+        else -> StepStatus.PENDING
     }
 }

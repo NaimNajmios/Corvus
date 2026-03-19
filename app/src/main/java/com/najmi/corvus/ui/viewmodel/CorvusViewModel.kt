@@ -6,7 +6,7 @@ import com.najmi.corvus.data.repository.HistoryRepository
 import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.CorvusUiState
 import com.najmi.corvus.domain.model.PipelineStep
-import com.najmi.corvus.domain.usecase.CorvusFactCheckUseCase
+import com.najmi.corvus.domain.usecase.CompositeFactCheckPipeline
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CorvusViewModel @Inject constructor(
-    private val factCheckUseCase: CorvusFactCheckUseCase,
+    private val compositePipeline: CompositeFactCheckPipeline,
     private val historyRepository: HistoryRepository
 ) : ViewModel() {
 
@@ -45,26 +45,22 @@ class CorvusViewModel @Inject constructor(
         }
 
         analysisJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null, result = null) }
+            _uiState.update { it.copy(isLoading = true, error = null, result = null, currentStep = PipelineStep.IDLE) }
 
             try {
-                val result = factCheckUseCase.check(claim) { step ->
+                val result = compositePipeline.check(claim) { step ->
                     _uiState.update { it.copy(currentStep = step) }
                 }
-                _uiState.update { it.copy(result = result, isLoading = false) }
+                _uiState.update { it.copy(result = result, isLoading = false, currentStep = PipelineStep.DONE) }
                 
                 historyRepository.saveResult(result)
             } catch (e: Exception) {
-                if (e is CancellationException) {
-                    _uiState.update { CorvusUiState() }
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            error = "Analysis failed: ${e.message}",
-                            isLoading = false,
-                            currentStep = PipelineStep.IDLE
-                        )
-                    }
+                _uiState.update {
+                    it.copy(
+                        error = "Analysis failed: ${e.message}",
+                        isLoading = false,
+                        currentStep = PipelineStep.IDLE
+                    )
                 }
             }
         }
@@ -80,5 +76,3 @@ class CorvusViewModel @Inject constructor(
         _uiState.update { CorvusUiState() }
     }
 }
-
-private class CancellationException(message: String = "Analysis cancelled") : Exception(message)
