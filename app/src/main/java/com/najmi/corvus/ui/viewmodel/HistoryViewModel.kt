@@ -96,6 +96,15 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
+    fun refresh() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(searchQuery = "", selectedVerdictFilter = null) }
+            historyRepository.getAllHistory().collect { items ->
+                _uiState.update { it.copy(history = items, isLoading = false) }
+            }
+        }
+    }
+
     fun clearAll() {
         viewModelScope.launch {
             historyRepository.clearAll()

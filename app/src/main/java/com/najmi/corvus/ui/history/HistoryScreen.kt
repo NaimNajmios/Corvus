@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,7 +24,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
@@ -45,8 +45,6 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +61,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.domain.model.CorvusResult
 import com.najmi.corvus.domain.model.Verdict
@@ -369,35 +368,68 @@ private fun formatDate(timestamp: Long): String {
 @Composable
 private fun EmptyHistoryState() {
     Column(
+        modifier = Modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .background(CorvusVoid, CorvusShapes.medium),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "?",
-                style = MaterialTheme.typography.displayLarge,
-                color = CorvusTextTertiary
-            )
-        }
-        
+        CrowSearchIllustration()
+
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "No history yet",
+                text = "No fact-checks yet",
                 style = MaterialTheme.typography.titleMedium,
                 color = CorvusTextSecondary
             )
             Text(
-                text = "Your fact-checks will appear here",
+                text = "Paste a claim in the home tab to get started",
                 style = MaterialTheme.typography.bodyMedium,
                 color = CorvusTextTertiary
+            )
+        }
+    }
+}
+
+@Composable
+private fun CrowSearchIllustration() {
+    Box(
+        modifier = Modifier
+            .size(100.dp)
+            .background(CorvusVoid, CorvusShapes.medium)
+            .border(1.dp, CorvusBorder, CorvusShapes.medium),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "C",
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontSize = 40.sp,
+                    letterSpacing = 2.sp
+                ),
+                color = CorvusAccent.copy(alpha = 0.6f)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .size(60.dp, 3.dp)
+                    .background(
+                        CorvusAccent.copy(alpha = 0.3f),
+                        CorvusShapes.extraSmall
+                    )
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Box(
+                modifier = Modifier
+                    .size(40.dp, 3.dp)
+                    .background(
+                        CorvusTextTertiary,
+                        CorvusShapes.extraSmall
+                    )
             )
         }
     }
