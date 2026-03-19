@@ -1,13 +1,12 @@
 package com.najmi.corvus.data.remote
 
+import android.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import javax.inject.Named
@@ -18,7 +17,7 @@ data class GroqRequest(
     val model: String = "llama-3.3-70b-versatile",
     val messages: List<GroqMessage>,
     val temperature: Float = 0.3f,
-    @SerialName("max_tokens") val maxTokens: Int = 1024
+    val max_tokens: Int = 1024
 )
 
 @Serializable
@@ -47,9 +46,15 @@ class GroqClient @Inject constructor(
     private val httpClient: HttpClient,
     @Named("groq") private val apiKey: String
 ) {
+    companion object {
+        private const val TAG = "GroqClient"
+    }
+
     suspend fun chat(prompt: String): String {
+        Log.d(TAG, "API Key (first 10 chars): ${apiKey.take(10)}...")
+        
         val response: GroqResponse = httpClient.post("https://api.groq.com/openai/v1/chat/completions") {
-            header("Authorization", "Bearer $apiKey")
+            headers.append("Authorization", "Bearer $apiKey")
             contentType(ContentType.Application.Json)
             setBody(GroqRequest(
                 messages = listOf(GroqMessage(role = "user", content = prompt))

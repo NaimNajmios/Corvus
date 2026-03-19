@@ -1,5 +1,6 @@
 package com.najmi.corvus.data.remote
 
+import android.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -15,8 +16,9 @@ import javax.inject.Singleton
 @Serializable
 data class TavilySearchRequest(
     val query: String,
-    val searchDepth: String = "advanced",
-    val maxResults: Int = 5,
+    @SerialName("api_key") val apiKey: String,
+    @SerialName("search_depth") val searchDepth: String = "basic",
+    @SerialName("max_results") val maxResults: Int = 5,
     @SerialName("include_raw_content") val includeRawContent: Boolean = false
 )
 
@@ -38,11 +40,18 @@ class TavilyClient @Inject constructor(
     private val httpClient: HttpClient,
     @Named("tavily") private val apiKey: String
 ) {
+    companion object {
+        private const val TAG = "TavilyClient"
+    }
+
     suspend fun search(query: String, maxResults: Int = 5): TavilySearchResponse {
+        Log.d(TAG, "Searching with API key: ${apiKey.take(10)}...")
+        
         return httpClient.post("https://api.tavily.com/search") {
             contentType(ContentType.Application.Json)
             setBody(TavilySearchRequest(
                 query = query,
+                apiKey = apiKey,
                 maxResults = maxResults
             ))
         }.body()
