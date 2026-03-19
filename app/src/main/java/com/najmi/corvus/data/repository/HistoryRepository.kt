@@ -4,7 +4,8 @@ import android.util.Log
 import com.najmi.corvus.data.local.CorvusHistoryEntity
 import com.najmi.corvus.data.local.HistoryDao
 import com.najmi.corvus.domain.model.ClaimLanguage
-import com.najmi.corvus.domain.model.CorvusResult
+import com.najmi.corvus.domain.model.ClaimType
+import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.Source
 import com.najmi.corvus.domain.model.Verdict
 import kotlinx.coroutines.flow.Flow
@@ -23,25 +24,25 @@ class HistoryRepository @Inject constructor(
         private const val TAG = "HistoryRepository"
     }
 
-    fun getAllHistory(): Flow<List<CorvusResult>> {
+    fun getAllHistory(): Flow<List<CorvusCheckResult>> {
         return historyDao.getAllHistory().map { entities ->
-            entities.map { it.toCorvusResult() }
+            entities.mapNotNull { it.toCorvusResult() }
         }
     }
 
-    fun searchHistory(query: String): Flow<List<CorvusResult>> {
+    fun searchHistory(query: String): Flow<List<CorvusCheckResult>> {
         return historyDao.searchHistory(query).map { entities ->
-            entities.map { it.toCorvusResult() }
+            entities.mapNotNull { it.toCorvusResult() }
         }
     }
 
-    fun filterByVerdict(verdict: String): Flow<List<CorvusResult>> {
+    fun filterByVerdict(verdict: String): Flow<List<CorvusCheckResult>> {
         return historyDao.filterByVerdict(verdict).map { entities ->
-            entities.map { it.toCorvusResult() }
+            entities.mapNotNull { it.toCorvusResult() }
         }
     }
 
-    suspend fun saveResult(result: CorvusResult) {
+    suspend fun saveResult(result: CorvusCheckResult) {
         val entity = result.toEntity()
         historyDao.insert(entity)
         Log.d(TAG, "Saved result with id: ${result.id}")
@@ -61,42 +62,45 @@ class HistoryRepository @Inject constructor(
         return historyDao.getCount()
     }
 
-    private fun CorvusHistoryEntity.toCorvusResult(): CorvusResult {
-        val sources = try {
-            json.decodeFromString<List<Source>>(sourcesJson)
+    private fun CorvusHistoryEntity.toCorvusResult(): CorvusCheckResult? {
+        return try {
+            when (resultType) {
+                "GENERAL" -> json.decodeFromString<CorvusCheckResult.GeneralResult>(dataJson)
+                "QUOTE" -> json.decodeFromString<CorvusCheckResult.QuoteResult>(dataJson)
+                else -> null
+            }
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse sources: ${e.message}")
-            emptyList()
+            Log.e(TAG, "Failed to parse result $id: ${e.message}")
+            null
         }
-
-        return CorvusResult(
-            id = id,
-            claim = claim,
-            verdict = Verdict.valueOf(verdict),
-            confidence = confidence,
-            explanation = explanation,
-            keyFacts = emptyList(),
-            sources = sources,
-            providerUsed = providerUsed,
-            language = ClaimLanguage.valueOf(language),
-            checkedAt = checkedAt,
-            isFromKnownFactCheck = isFromKnownFactCheck
-        )
     }
 
-    private fun CorvusResult.toEntity(): CorvusHistoryEntity {
-        val sourcesJson = json.encodeToString(sources)
+    private fun CorvusCheckResult.toEntity(): CorvusHistoryEntity {
+        val dataJson = when (this) {
+            is CorvusCheckResult.GeneralResult -> json.encodeToString(this)
+            is CorvusCheckResult.QuoteResult -> json.encodeToString(this)
+        }
+        
+        val resultType = when (this) {
+            is CorvusCheckResult.QuoteResult -> "QUOTE"
+            is CorvusCheckResult.GeneralResult -> "GENERAL"
+            else -> "GENERAL"
+        }
+        
+        val verdictStr = when (this) {
+            is CorvusCheckResult.GeneralResult -> verdict.name
+            is CorvusCheckResult.QuoteResult -> quoteVerdict.name
+            else -> "UNKNOWN"
+        }
+
         return CorvusHistoryEntity(
             id = id,
             claim = claim,
-            verdict = verdict.name,
+            resultType = resultType,
+            verdict = verdictStr,
             confidence = confidence,
-            explanation = explanation,
-            sourcesJson = sourcesJson,
-            providerUsed = providerUsed,
-            language = language.name,
-            checkedAt = checkedAt,
-            isFromKnownFactCheck = isFromKnownFactCheck
+            dataJson = dataJson,
+            checkedAt = checkedAt
         )
     }
 }

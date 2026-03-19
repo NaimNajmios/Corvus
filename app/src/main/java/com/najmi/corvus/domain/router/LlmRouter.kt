@@ -3,7 +3,8 @@ package com.najmi.corvus.domain.router
 import android.util.Log
 import com.najmi.corvus.data.repository.LlmProvider
 import com.najmi.corvus.data.repository.LlmRepository
-import com.najmi.corvus.domain.model.CorvusResult
+import com.najmi.corvus.domain.model.ClaimType
+import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.Source
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,8 +30,9 @@ class LlmRouter @Inject constructor(
     suspend fun analyze(
         claim: String,
         sources: List<Source>,
+        claimType: ClaimType = ClaimType.GENERAL,
         preferredProvider: LlmProvider? = null
-    ): Pair<CorvusResult, LlmProvider> {
+    ): Pair<CorvusCheckResult.GeneralResult, LlmProvider> {
         val providers = buildProviderOrder(preferredProvider)
         
         Log.d(TAG, "Starting LLM analysis with provider order: ${providers.map { it.name }}")
@@ -40,7 +42,7 @@ class LlmRouter @Inject constructor(
         for (provider in providers) {
             try {
                 Log.d(TAG, "Attempting analysis with ${provider.name}")
-                val result = llmRepository.analyze(claim, sources, provider)
+                val result = llmRepository.analyze(claim, sources, provider, claimType)
                 Log.d(TAG, "Success with ${provider.name}, verdict: ${result.verdict}")
                 return result to provider
             } catch (e: Exception) {

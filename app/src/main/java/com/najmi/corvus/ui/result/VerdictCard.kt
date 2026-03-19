@@ -26,7 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.najmi.corvus.domain.model.CorvusResult
+import com.najmi.corvus.domain.model.CorvusCheckResult
+import com.najmi.corvus.domain.model.QuoteVerdict
 import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.ui.components.ConfidenceBar
 import com.najmi.corvus.ui.theme.CorvusShapes
@@ -38,7 +39,18 @@ import com.najmi.corvus.ui.theme.VerdictUnverifiable
 
 @Composable
 fun VerdictCard(
-    result: CorvusResult,
+    result: CorvusCheckResult,
+    modifier: Modifier = Modifier
+) {
+    when (result) {
+        is CorvusCheckResult.GeneralResult -> GeneralVerdictCard(result, modifier)
+        is CorvusCheckResult.QuoteResult -> QuoteVerdictCard(result, modifier)
+    }
+}
+
+@Composable
+fun GeneralVerdictCard(
+    result: CorvusCheckResult.GeneralResult,
     modifier: Modifier = Modifier
 ) {
     var isRevealed by remember { mutableStateOf(false) }
@@ -75,15 +87,25 @@ fun VerdictCard(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = result.verdict.name.replace("_", " "),
-            style = MaterialTheme.typography.displayLarge.copy(
-                fontSize = 36.sp,
-                letterSpacing = 2.sp
-            ),
-            color = verdictColor,
-            fontWeight = FontWeight.Normal
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = result.verdict.name.replace("_", " "),
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontSize = 32.sp,
+                    letterSpacing = 2.sp
+                ),
+                color = verdictColor,
+                fontWeight = FontWeight.Normal
+            )
+            
+            if (result.claimType != com.najmi.corvus.domain.model.ClaimType.GENERAL) {
+                TypeBadge(result.claimType)
+            }
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -103,6 +125,120 @@ fun VerdictCard(
         }
 
         ConfidenceBar(confidence = result.confidence)
+    }
+}
+
+@Composable
+fun QuoteVerdictCard(
+    result: CorvusCheckResult.QuoteResult,
+    modifier: Modifier = Modifier
+) {
+    var isRevealed by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        isRevealed = true
+    }
+
+    val scale by animateFloatAsState(
+        targetValue = if (isRevealed) 1f else 0.92f,
+        animationSpec = tween(380),
+        label = "verdictScale"
+    )
+    
+    val alpha by animateFloatAsState(
+        targetValue = if (isRevealed) 1f else 0f,
+        animationSpec = tween(380),
+        label = "verdictAlpha"
+    )
+
+    val verdictColor = getQuoteVerdictColor(result.quoteVerdict)
+    
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .alpha(alpha)
+            .background(MaterialTheme.colorScheme.surface, CorvusShapes.medium)
+            .border(
+                width = 3.dp,
+                color = verdictColor,
+                shape = CorvusShapes.medium
+            )
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = result.quoteVerdict.name.replace("_", " "),
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontSize = 28.sp,
+                    letterSpacing = 1.sp
+                ),
+                color = verdictColor,
+                fontWeight = FontWeight.Normal
+            )
+            
+            TypeBadge(com.najmi.corvus.domain.model.ClaimType.QUOTE)
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = "Speaker: ${result.speaker}",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold
+            )
+            
+            if (result.originalDate != null) {
+                Text(
+                    text = "Claimed Date: ${result.originalDate}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Confidence:",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "${(result.confidence * 100).toInt()}%",
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        ConfidenceBar(confidence = result.confidence)
+    }
+}
+
+@Composable
+fun TypeBadge(
+    type: com.najmi.corvus.domain.model.ClaimType,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CorvusShapes.extraSmall)
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Text(
+            text = type.name,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -138,5 +274,18 @@ fun getVerdictColor(verdict: Verdict): Color {
         Verdict.UNVERIFIABLE -> VerdictUnverifiable
         Verdict.CHECKING -> MaterialTheme.colorScheme.primary
         Verdict.NOT_A_CLAIM -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    }
+}
+
+@Composable
+fun getQuoteVerdictColor(verdict: QuoteVerdict): Color {
+    return when (verdict) {
+        QuoteVerdict.VERIFIED -> VerdictTrue
+        QuoteVerdict.FABRICATED -> VerdictFalse
+        QuoteVerdict.MISATTRIBUTED -> VerdictFalse
+        QuoteVerdict.OUT_OF_CONTEXT -> VerdictMisleading
+        QuoteVerdict.PARAPHRASED -> VerdictPartiallyTrue
+        QuoteVerdict.SATIRE_ORIGIN -> VerdictMisleading
+        QuoteVerdict.UNVERIFIABLE -> VerdictUnverifiable
     }
 }

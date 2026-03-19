@@ -46,16 +46,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.najmi.corvus.domain.model.CorvusCheckResult
+import com.najmi.corvus.domain.model.QuoteVerdict
+import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
 import kotlinx.coroutines.delay
@@ -88,16 +94,30 @@ fun ResultScreen(
                 appendLine()
                 appendLine("Claim: ${r.claim}")
                 appendLine()
-                appendLine("Verdict: ${r.verdict.name.replace("_", " ")}")
-                appendLine("Confidence: ${(r.confidence * 100).toInt()}%")
-                appendLine()
-                appendLine("Explanation:")
-                appendLine(r.explanation)
-                if (r.keyFacts.isNotEmpty()) {
-                    appendLine()
-                    appendLine("Key Facts:")
-                    r.keyFacts.forEach { appendLine("• $it") }
+                
+                when (r) {
+                    is CorvusCheckResult.GeneralResult -> {
+                        appendLine("Verdict: ${r.verdict.name.replace("_", " ")}")
+                        appendLine("Confidence: ${(r.confidence * 100).toInt()}%")
+                        appendLine()
+                        appendLine("Explanation:")
+                        appendLine(r.explanation)
+                        if (r.keyFacts.isNotEmpty()) {
+                            appendLine()
+                            appendLine("Key Facts:")
+                            r.keyFacts.forEach { appendLine("• $it") }
+                        }
+                    }
+                    is CorvusCheckResult.QuoteResult -> {
+                        appendLine("Verdict: ${r.quoteVerdict.name.replace("_", " ")}")
+                        appendLine("Speaker: ${r.speaker}")
+                        appendLine("Confidence: ${(r.confidence * 100).toInt()}%")
+                        appendLine()
+                        appendLine("Context:")
+                        appendLine(r.contextExplanation)
+                    }
                 }
+
                 if (r.sources.isNotEmpty()) {
                     appendLine()
                     appendLine("Sources:")
@@ -158,7 +178,7 @@ fun ResultScreen(
 
                 item {
                     Text(
-                        text = "EXPLANATION",
+                        text = if (corvusResult is CorvusCheckResult.QuoteResult) "CONTEXT" else "EXPLANATION",
                         style = MaterialTheme.typography.labelLarge.copy(
                             letterSpacing = 1.sp
                         ),
@@ -168,11 +188,14 @@ fun ResultScreen(
 
                 item {
                     ExpandableExplanation(
-                        explanation = corvusResult.explanation
+                        explanation = when (corvusResult) {
+                            is CorvusCheckResult.GeneralResult -> corvusResult.explanation
+                            is CorvusCheckResult.QuoteResult -> corvusResult.contextExplanation
+                        }
                     )
                 }
 
-                if (corvusResult.keyFacts.isNotEmpty()) {
+                if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.keyFacts.isNotEmpty()) {
                     item {
                         Text(
                             text = "KEY FACTS",

@@ -8,12 +8,9 @@ data class CorvusHistoryEntity(
     @PrimaryKey
     val id: String,
     val claim: String,
+    val resultType: String, // "GENERAL" or "QUOTE"
     val verdict: String,
     val confidence: Float,
-    val explanation: String,
-    val sourcesJson: String,
-    val providerUsed: String,
-    val language: String,
-    val checkedAt: Long,
-    val isFromKnownFactCheck: Boolean
+    val dataJson: String,   // Full serialized CorvusCheckResult
+    val checkedAt: Long
 )

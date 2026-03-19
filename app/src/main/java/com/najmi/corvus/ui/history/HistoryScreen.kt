@@ -70,11 +70,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.R
-import com.najmi.corvus.domain.model.CorvusResult
+import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.CompareViewModel
 import com.najmi.corvus.ui.viewmodel.HistoryViewModel
+import com.najmi.corvus.domain.model.QuoteVerdict
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -84,7 +85,7 @@ import java.util.Locale
 fun HistoryScreen(
     historyViewModel: HistoryViewModel = hiltViewModel(),
     compareViewModel: CompareViewModel = hiltViewModel(),
-    onItemClick: (CorvusResult) -> Unit,
+    onItemClick: (CorvusCheckResult) -> Unit,
     onCompare: () -> Unit = {}
 ) {
     val uiState by historyViewModel.uiState.collectAsState()
@@ -93,7 +94,7 @@ fun HistoryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    var pendingDeleteItem by remember { mutableStateOf<CorvusResult?>(null) }
+    var pendingDeleteItem by remember { mutableStateOf<CorvusCheckResult?>(null) }
 
     LaunchedEffect(pendingDeleteItem) {
         pendingDeleteItem?.let { item ->
@@ -308,9 +309,10 @@ fun HistoryScreen(
     }
 }
 
+
 @Composable
 fun HistoryItem(
-    result: CorvusResult,
+    result: CorvusCheckResult,
     isSelected: Boolean = false,
     onClick: () -> Unit,
     onDelete: () -> Unit,
@@ -371,7 +373,10 @@ fun HistoryItem(
                 Spacer(modifier = Modifier.width(8.dp))
             }
             
-            VerdictBadge(verdict = result.verdict, modifier = Modifier)
+            when (result) {
+                is CorvusCheckResult.GeneralResult -> VerdictBadge(verdict = result.verdict, modifier = Modifier)
+                is CorvusCheckResult.QuoteResult -> QuoteVerdictBadge(verdict = result.quoteVerdict, modifier = Modifier)
+            }
             
             Spacer(modifier = Modifier.width(12.dp))
             
@@ -415,6 +420,31 @@ fun VerdictBadge(verdict: Verdict, modifier: Modifier = Modifier) {
         Verdict.UNVERIFIABLE -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) to "UNVERIFIABLE"
         Verdict.CHECKING -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) to "CHECKING"
         Verdict.NOT_A_CLAIM -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) to "NOT CLAIM"
+    }
+    
+    Box(
+        modifier = modifier
+            .background(color.copy(alpha = 0.2f), CorvusShapes.extraSmall)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = color
+        )
+    }
+}
+
+@Composable
+fun QuoteVerdictBadge(verdict: QuoteVerdict, modifier: Modifier = Modifier) {
+    val (color, text) = when (verdict) {
+        QuoteVerdict.VERIFIED -> MaterialTheme.colorScheme.primary to "VERIFIED"
+        QuoteVerdict.FABRICATED -> MaterialTheme.colorScheme.error to "FABRICATED"
+        QuoteVerdict.OUT_OF_CONTEXT -> MaterialTheme.colorScheme.tertiary to "OUT OF CONTEXT"
+        QuoteVerdict.PARAPHRASED -> MaterialTheme.colorScheme.secondary to "PARAPHRASED"
+        QuoteVerdict.MISATTRIBUTED -> MaterialTheme.colorScheme.error.copy(alpha = 0.8f) to "MISATTRIBUTED"
+        QuoteVerdict.SATIRE_ORIGIN -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f) to "SATIRE"
+        QuoteVerdict.UNVERIFIABLE -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) to "UNVERIFIED"
     }
     
     Box(

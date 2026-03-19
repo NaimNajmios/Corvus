@@ -2,7 +2,7 @@ package com.najmi.corvus.data.repository
 
 import com.najmi.corvus.data.remote.ClaimReview
 import com.najmi.corvus.data.remote.GoogleFactCheckClient
-import com.najmi.corvus.domain.model.CorvusResult
+import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.Source
 import com.najmi.corvus.domain.model.Verdict
 import javax.inject.Inject
@@ -12,7 +12,7 @@ import javax.inject.Singleton
 class GoogleFactCheckRepository @Inject constructor(
     private val client: GoogleFactCheckClient
 ) {
-    suspend fun search(claim: String): CorvusResult? {
+    suspend fun search(claim: String): CorvusCheckResult.GeneralResult? {
         return try {
             val response = client.search(claim)
             val firstReview = response.claims
@@ -21,7 +21,7 @@ class GoogleFactCheckRepository @Inject constructor(
                 ?: return null
 
             parseVerdict(firstReview)?.let { verdict ->
-                CorvusResult(
+                CorvusCheckResult.GeneralResult(
                     verdict = verdict,
                     confidence = 0.85f,
                     explanation = buildExplanation(firstReview),

@@ -1,6 +1,6 @@
 package com.najmi.corvus.data.repository
 
-import com.najmi.corvus.domain.model.CorvusResult
+import com.najmi.corvus.domain.model.CorvusCheckResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,8 +11,8 @@ import javax.inject.Singleton
 @Singleton
 class CompareRepository @Inject constructor() {
     
-    private val _selectedClaims = MutableStateFlow<List<CorvusResult>>(emptyList())
-    val selectedClaims: StateFlow<List<CorvusResult>> = _selectedClaims.asStateFlow()
+    private val _selectedClaims = MutableStateFlow<List<CorvusCheckResult>>(emptyList())
+    val selectedClaims: StateFlow<List<CorvusCheckResult>> = _selectedClaims.asStateFlow()
     
     companion object {
         const val MAX_COMPARE_ITEMS = 4
@@ -22,7 +22,7 @@ class CompareRepository @Inject constructor() {
         return _selectedClaims.value.any { it.id == claimId }
     }
     
-    fun toggleSelection(claim: CorvusResult) {
+    fun toggleSelection(claim: CorvusCheckResult) {
         _selectedClaims.update { current ->
             if (current.any { it.id == claim.id }) {
                 current.filter { it.id != claim.id }
@@ -34,7 +34,7 @@ class CompareRepository @Inject constructor() {
         }
     }
     
-    fun addClaim(claim: CorvusResult) {
+    fun addClaim(claim: CorvusCheckResult) {
         if (_selectedClaims.value.size < MAX_COMPARE_ITEMS) {
             _selectedClaims.update { current ->
                 if (current.none { it.id == claim.id }) {
@@ -52,7 +52,7 @@ class CompareRepository @Inject constructor() {
         }
     }
     
-    fun replaceClaim(oldClaimId: String, newClaim: CorvusResult) {
+    fun replaceClaim(oldClaimId: String, newClaim: CorvusCheckResult) {
         _selectedClaims.update { current ->
             current.map { if (it.id == oldClaimId) newClaim else it }
         }

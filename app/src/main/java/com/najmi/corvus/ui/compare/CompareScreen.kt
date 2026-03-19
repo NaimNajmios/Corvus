@@ -44,7 +44,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.najmi.corvus.domain.model.CorvusResult
+import com.najmi.corvus.domain.model.CorvusCheckResult
+import com.najmi.corvus.domain.model.QuoteVerdict
+import com.najmi.corvus.domain.model.Verdict
+import com.najmi.corvus.ui.history.QuoteVerdictBadge
 import com.najmi.corvus.ui.history.VerdictBadge
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.CompareViewModel
@@ -151,7 +154,7 @@ private fun EmptyCompareState(onBack: () -> Unit) {
 }
 
 @Composable
-private fun SingleClaimView(claim: CorvusResult) {
+private fun SingleClaimView(claim: CorvusCheckResult) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -168,7 +171,7 @@ private fun SingleClaimView(claim: CorvusResult) {
 
 @Composable
 private fun SplitPaneView(
-    claims: List<CorvusResult>,
+    claims: List<CorvusCheckResult>,
     onRemove: (String) -> Unit
 ) {
     val paneWeight = 1f / claims.size.coerceAtLeast(2)
@@ -192,7 +195,7 @@ private fun SplitPaneView(
 
 @Composable
 private fun ClaimPane(
-    claim: CorvusResult,
+    claim: CorvusCheckResult,
     weight: Float,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier
@@ -219,7 +222,10 @@ private fun ClaimPane(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    VerdictBadge(verdict = claim.verdict)
+                    when (claim) {
+                        is CorvusCheckResult.GeneralResult -> VerdictBadge(verdict = claim.verdict)
+                        is CorvusCheckResult.QuoteResult -> QuoteVerdictBadge(verdict = claim.quoteVerdict)
+                    }
                     
                     IconButton(
                         onClick = onRemove,
@@ -254,7 +260,7 @@ private fun ClaimPane(
             
             item {
                 Text(
-                    text = "EXPLANATION",
+                    text = if (claim is CorvusCheckResult.QuoteResult) "CONTEXT" else "EXPLANATION",
                     style = MaterialTheme.typography.labelSmall.copy(
                         letterSpacing = 1.sp
                     ),
@@ -264,7 +270,10 @@ private fun ClaimPane(
             
             item {
                 Text(
-                    text = claim.explanation,
+                    text = when (claim) {
+                        is CorvusCheckResult.GeneralResult -> claim.explanation
+                        is CorvusCheckResult.QuoteResult -> claim.contextExplanation
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
                     maxLines = if (isExpanded) Int.MAX_VALUE else 4,
@@ -272,7 +281,12 @@ private fun ClaimPane(
                 )
             }
             
-            if (claim.explanation.length > 200 || claim.keyFacts.isNotEmpty()) {
+            val hasExtra = when (claim) {
+                is CorvusCheckResult.GeneralResult -> claim.explanation.length > 200 || claim.keyFacts.isNotEmpty()
+                is CorvusCheckResult.QuoteResult -> claim.contextExplanation.length > 200
+            }
+
+            if (hasExtra) {
                 item {
                     Row(
                         modifier = Modifier
@@ -299,7 +313,7 @@ private fun ClaimPane(
                 }
             }
             
-            if (claim.keyFacts.isNotEmpty()) {
+            if (claim is CorvusCheckResult.GeneralResult && claim.keyFacts.isNotEmpty()) {
                 item {
                 Text(
                     text = "KEY FACTS",

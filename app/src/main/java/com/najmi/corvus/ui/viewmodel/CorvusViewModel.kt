@@ -3,7 +3,7 @@ package com.najmi.corvus.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.data.repository.HistoryRepository
-import com.najmi.corvus.domain.model.CorvusResult
+import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.CorvusUiState
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.domain.usecase.CorvusFactCheckUseCase

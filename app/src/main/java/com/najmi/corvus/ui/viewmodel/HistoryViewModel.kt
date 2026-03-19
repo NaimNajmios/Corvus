@@ -3,7 +3,7 @@ package com.najmi.corvus.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.data.repository.HistoryRepository
-import com.najmi.corvus.domain.model.CorvusResult
+import com.najmi.corvus.domain.model.CorvusCheckResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class HistoryUiState(
-    val history: List<CorvusResult> = emptyList(),
+    val history: List<CorvusCheckResult> = emptyList(),
     val isLoading: Boolean = false,
     val searchQuery: String = "",
     val selectedVerdictFilter: String? = null,
@@ -28,7 +28,7 @@ class HistoryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HistoryUiState())
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 
-    private var pendingDeleteItem: CorvusResult? = null
+    private var pendingDeleteItem: CorvusCheckResult? = null
 
     init {
         loadHistory()
@@ -36,44 +36,44 @@ class HistoryViewModel @Inject constructor(
 
     private fun loadHistory() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { state -> state.copy(isLoading = true) }
             try {
-                historyRepository.getAllHistory().collect { items ->
-                    _uiState.update { it.copy(history = items, isLoading = false) }
+                historyRepository.getAllHistory().collect { items: List<CorvusCheckResult> ->
+                    _uiState.update { state -> state.copy(history = items, isLoading = false) }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message, isLoading = false) }
+                _uiState.update { state -> state.copy(error = e.message, isLoading = false) }
             }
         }
     }
 
     fun search(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
+        _uiState.update { state -> state.copy(searchQuery = query) }
         viewModelScope.launch {
             if (query.isBlank()) {
                 loadHistory()
             } else {
-                historyRepository.searchHistory(query).collect { items ->
-                    _uiState.update { it.copy(history = items) }
+                historyRepository.searchHistory(query).collect { items: List<CorvusCheckResult> ->
+                    _uiState.update { state -> state.copy(history = items) }
                 }
             }
         }
     }
 
     fun filterByVerdict(verdict: String?) {
-        _uiState.update { it.copy(selectedVerdictFilter = verdict) }
+        _uiState.update { state -> state.copy(selectedVerdictFilter = verdict) }
         viewModelScope.launch {
             if (verdict == null) {
                 loadHistory()
             } else {
-                historyRepository.filterByVerdict(verdict).collect { items ->
-                    _uiState.update { it.copy(history = items) }
+                historyRepository.filterByVerdict(verdict).collect { items: List<CorvusCheckResult> ->
+                    _uiState.update { state -> state.copy(history = items) }
                 }
             }
         }
     }
 
-    fun prepareDelete(item: CorvusResult) {
+    fun prepareDelete(item: CorvusCheckResult) {
         pendingDeleteItem = item
     }
 
@@ -98,9 +98,9 @@ class HistoryViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            _uiState.update { it.copy(searchQuery = "", selectedVerdictFilter = null) }
-            historyRepository.getAllHistory().collect { items ->
-                _uiState.update { it.copy(history = items, isLoading = false) }
+            _uiState.update { state -> state.copy(searchQuery = "", selectedVerdictFilter = null) }
+            historyRepository.getAllHistory().collect { items: List<CorvusCheckResult> ->
+                _uiState.update { state -> state.copy(history = items, isLoading = false) }
             }
         }
     }

@@ -3,7 +3,7 @@ package com.najmi.corvus.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.data.repository.CompareRepository
-import com.najmi.corvus.domain.model.CorvusResult
+import com.najmi.corvus.domain.model.CorvusCheckResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class CompareUiState(
-    val selectedClaims: List<CorvusResult> = emptyList(),
+    val selectedClaims: List<CorvusCheckResult> = emptyList(),
     val isCompareMode: Boolean = false,
     val canAddMore: Boolean = true
 )
@@ -44,7 +44,7 @@ class CompareViewModel @Inject constructor(
         return compareRepository.isSelected(claimId)
     }
     
-    fun toggleSelection(claim: CorvusResult) {
+    fun toggleSelection(claim: CorvusCheckResult) {
         compareRepository.toggleSelection(claim)
     }
     

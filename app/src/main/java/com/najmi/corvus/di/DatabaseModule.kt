@@ -23,7 +23,7 @@ object DatabaseModule {
             context,
             CorvusDatabase::class.java,
             CorvusDatabase.DATABASE_NAME
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
 
     @Provides
