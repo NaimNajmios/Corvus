@@ -1,81 +1,40 @@
 package com.najmi.corvus.ui.history
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Compare
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberSwipeToDismissBoxState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.R
 import com.najmi.corvus.domain.model.CorvusCheckResult
+import com.najmi.corvus.domain.model.QuoteVerdict
 import com.najmi.corvus.domain.model.Verdict
+import com.najmi.corvus.ui.history.components.HistoryAnalytics
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.CompareViewModel
 import com.najmi.corvus.ui.viewmodel.HistoryViewModel
-import com.najmi.corvus.domain.model.QuoteVerdict
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -117,12 +76,40 @@ fun HistoryScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Text(
-            text = "History",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "History",
+                style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold, letterSpacing = (-1).sp),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            
+            IconButton(
+                onClick = { 
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    historyViewModel.toggleAnalytics() 
+                },
+                modifier = Modifier.background(
+                    if (uiState.isAnalyticsVisible) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                    CircleShape
+                )
+            ) {
+                Icon(
+                    Icons.Default.BarChart,
+                    contentDescription = "Show Analytics",
+                    tint = if (uiState.isAnalyticsVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                )
+            }
+        }
+
+        AnimatedVisibility(visible = uiState.isAnalyticsVisible) {
+            HistoryAnalytics(distribution = uiState.verdictDistribution)
+        }
 
         OutlinedTextField(
             value = uiState.searchQuery,
@@ -140,14 +127,14 @@ fun HistoryScreen(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                 cursorColor = MaterialTheme.colorScheme.primary,
-                focusedContainerColor = MaterialTheme.colorScheme.background,
-                unfocusedContainerColor = MaterialTheme.colorScheme.background
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface
             ),
-            shape = CorvusShapes.small,
+            shape = CorvusShapes.medium,
             singleLine = true
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         LazyRow(
             modifier = Modifier
@@ -174,14 +161,15 @@ fun HistoryScreen(
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                        containerColor = MaterialTheme.colorScheme.background,
+                        containerColor = MaterialTheme.colorScheme.surface,
                         labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    ),
+                    shape = CorvusShapes.medium
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         if (uiState.history.isEmpty()) {
             Box(
@@ -193,7 +181,8 @@ fun HistoryScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 80.dp)
             ) {
                 items(
                     items = uiState.history,
@@ -237,7 +226,7 @@ fun HistoryScreen(
                                         .padding(horizontal = 16.dp)
                                         .background(
                                             MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
-                                            CorvusShapes.small
+                                            CorvusShapes.medium
                                         )
                                         .padding(horizontal = 20.dp),
                                     contentAlignment = Alignment.CenterEnd
@@ -256,20 +245,23 @@ fun HistoryScreen(
                             HistoryItem(
                                 result = item,
                                 isSelected = compareViewModel.isSelected(item.id),
+                                isCompareMode = compareUiState.isCompareMode,
                                 onClick = {
+                                    if (compareUiState.isCompareMode) {
+                                        compareViewModel.toggleSelection(item)
+                                    } else {
+                                        onItemClick(item)
+                                    }
+                                },
+                                onLongClick = {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onItemClick(item)
+                                    compareViewModel.toggleSelection(item)
                                 },
                                 onDelete = {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                     historyViewModel.prepareDelete(item)
                                     pendingDeleteItem = item
-                                },
-                                onToggleCompare = {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    compareViewModel.toggleSelection(item)
-                                },
-                                canToggleCompare = compareUiState.canAddMore || compareViewModel.isSelected(item.id)
+                                }
                             )
                         }
                     }
@@ -277,187 +269,252 @@ fun HistoryScreen(
             }
         }
 
-        AnimatedVisibility(
-            visible = compareUiState.isCompareMode,
-            enter = slideInVertically { it },
-            exit = slideOutVertically { it }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CompareSelectionBar(
-                selectedCount = compareUiState.selectedClaims.size,
-                onClear = {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                    compareViewModel.clearSelection()
-                },
-                onCompare = {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onCompare()
-                }
-            )
+            AnimatedVisibility(
+                visible = compareUiState.isCompareMode,
+                enter = slideInVertically { it } + fadeIn(),
+                exit = slideOutVertically { it } + fadeOut()
+            ) {
+                CompareSelectionBar(
+                    selectedCount = compareUiState.selectedClaims.size,
+                    onClear = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        compareViewModel.clearSelection()
+                    },
+                    onCompare = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onCompare()
+                    }
+                )
+            }
         }
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(bottom = 80.dp, start = 16.dp, end = 16.dp)
         ) { data ->
             Snackbar(
                 snackbarData = data,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onBackground,
-                actionColor = MaterialTheme.colorScheme.primary
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                actionColor = MaterialTheme.colorScheme.primary,
+                shape = CorvusShapes.medium
             )
         }
     }
 }
 
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun HistoryItem(
     result: CorvusCheckResult,
     isSelected: Boolean = false,
+    isCompareMode: Boolean = false,
     onClick: () -> Unit,
-    onDelete: () -> Unit,
-    onToggleCompare: (() -> Unit)? = null,
-    canToggleCompare: Boolean = true
+    onLongClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .clickable { onClick() }
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
             .then(
                 if (isSelected) {
-                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CorvusShapes.small)
+                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CorvusShapes.medium)
                 } else {
                     Modifier
                 }
             ),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = CorvusShapes.small
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) 
+                             else MaterialTheme.colorScheme.surface
+        ),
+        shape = CorvusShapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.Top
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            if (onToggleCompare != null) {
-                IconButton(
-                    onClick = onToggleCompare,
-                    enabled = canToggleCompare,
-                    modifier = Modifier.size(32.dp)
+            AnimatedVisibility(visible = isCompareMode) {
+                Box(
+                    modifier = Modifier
+                        .padding(end = 12.dp)
+                        .size(24.dp)
+                        .background(
+                            if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            CircleShape
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .background(
-                                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                CircleShape
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                shape = CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (isSelected) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "Selected",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Selected",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
             }
             
             when (result) {
-                is CorvusCheckResult.GeneralResult -> VerdictBadge(verdict = result.verdict, modifier = Modifier)
-                is CorvusCheckResult.QuoteResult -> QuoteVerdictBadge(verdict = result.quoteVerdict, modifier = Modifier)
-                is CorvusCheckResult.CompositeResult -> VerdictBadge(verdict = result.compositeVerdict, modifier = Modifier)
-                is CorvusCheckResult.ViralHoaxResult -> VerdictBadge(verdict = Verdict.FALSE, modifier = Modifier)
+                is CorvusCheckResult.GeneralResult -> VerdictBadgeLarge(verdict = result.verdict)
+                is CorvusCheckResult.QuoteResult -> QuoteVerdictBadgeLarge(verdict = result.quoteVerdict)
+                is CorvusCheckResult.CompositeResult -> VerdictBadgeLarge(verdict = result.compositeVerdict)
+                is CorvusCheckResult.ViralHoaxResult -> VerdictBadgeLarge(verdict = Verdict.FALSE)
             }
             
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = result.claim,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                Text(
-                    text = formatDate(result.checkedAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = formatDate(result.checkedAt),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
             }
             
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.size(20.dp)
-                )
+            if (!isCompareMode) {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun VerdictBadge(verdict: Verdict, modifier: Modifier = Modifier) {
+fun VerdictBadgeLarge(verdict: Verdict) {
+    val (color, icon) = when (verdict) {
+        Verdict.TRUE -> MaterialTheme.colorScheme.primary to Icons.Default.Check
+        Verdict.FALSE -> MaterialTheme.colorScheme.error to Icons.Default.Close
+        Verdict.MISLEADING -> MaterialTheme.colorScheme.tertiary to Icons.Default.Info
+        Verdict.PARTIALLY_TRUE -> MaterialTheme.colorScheme.secondary to Icons.Default.Info
+        else -> MaterialTheme.colorScheme.onSurfaceVariant to Icons.Default.Search
+    }
+    
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .background(color.copy(alpha = 0.1f), CircleShape)
+            .border(1.dp, color.copy(alpha = 0.2f), CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+fun VerdictBadge(verdict: Verdict) {
     val (color, text) = when (verdict) {
         Verdict.TRUE -> MaterialTheme.colorScheme.primary to "TRUE"
         Verdict.FALSE -> MaterialTheme.colorScheme.error to "FALSE"
         Verdict.MISLEADING -> MaterialTheme.colorScheme.tertiary to "MISLEADING"
         Verdict.PARTIALLY_TRUE -> MaterialTheme.colorScheme.secondary to "PARTIAL"
-        Verdict.UNVERIFIABLE -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) to "UNVERIFIABLE"
-        Verdict.CHECKING -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) to "CHECKING"
-        Verdict.NOT_A_CLAIM -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) to "NOT CLAIM"
+        else -> MaterialTheme.colorScheme.onSurfaceVariant to "UNVERIFIED"
     }
     
     Box(
-        modifier = modifier
-            .background(color.copy(alpha = 0.2f), CorvusShapes.extraSmall)
+        modifier = Modifier
+            .background(color.copy(alpha = 0.1f), CorvusShapes.small)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
             color = color
         )
     }
 }
 
 @Composable
-fun QuoteVerdictBadge(verdict: QuoteVerdict, modifier: Modifier = Modifier) {
+fun QuoteVerdictBadge(verdict: QuoteVerdict) {
     val (color, text) = when (verdict) {
         QuoteVerdict.VERIFIED -> MaterialTheme.colorScheme.primary to "VERIFIED"
         QuoteVerdict.FABRICATED -> MaterialTheme.colorScheme.error to "FABRICATED"
-        QuoteVerdict.OUT_OF_CONTEXT -> MaterialTheme.colorScheme.tertiary to "OUT OF CONTEXT"
-        QuoteVerdict.PARAPHRASED -> MaterialTheme.colorScheme.secondary to "PARAPHRASED"
-        QuoteVerdict.MISATTRIBUTED -> MaterialTheme.colorScheme.error.copy(alpha = 0.8f) to "MISATTRIBUTED"
-        QuoteVerdict.SATIRE_ORIGIN -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f) to "SATIRE"
-        QuoteVerdict.UNVERIFIABLE -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) to "UNVERIFIED"
+        else -> MaterialTheme.colorScheme.tertiary to "OTHER"
     }
     
     Box(
-        modifier = modifier
-            .background(color.copy(alpha = 0.2f), CorvusShapes.extraSmall)
+        modifier = Modifier
+            .background(color.copy(alpha = 0.1f), CorvusShapes.small)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
             color = color
+        )
+    }
+}
+
+@Composable
+fun QuoteVerdictBadgeLarge(verdict: QuoteVerdict) {
+    val (color, icon) = when (verdict) {
+        QuoteVerdict.VERIFIED -> MaterialTheme.colorScheme.primary to Icons.Default.Check
+        QuoteVerdict.FABRICATED -> MaterialTheme.colorScheme.error to Icons.Default.Close
+        else -> MaterialTheme.colorScheme.tertiary to Icons.Default.Info
+    }
+    
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .background(color.copy(alpha = 0.1f), CircleShape)
+            .border(1.dp, color.copy(alpha = 0.2f), CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(20.dp)
         )
     }
 }
@@ -468,41 +525,33 @@ private fun CompareSelectionBar(
     onClear: () -> Unit,
     onCompare: () -> Unit
 ) {
-    Row(
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = CircleShape,
+        tonalElevation = 8.dp,
         modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 24.dp)
+            .height(56.dp)
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Compare,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
             Text(
-                text = "$selectedCount selected",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground
+                text = "$selectedCount Selected",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.weight(1f)
             )
-        }
-        
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            TextButton(onClick = onClear) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Clear selection",
-                    modifier = Modifier.size(18.dp)
+            
+            TextButton(
+                onClick = onClear,
+                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+            ) {
                 Text("Clear")
             }
             
@@ -513,14 +562,15 @@ private fun CompareSelectionBar(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                shape = CorvusShapes.small
+                shape = CircleShape,
+                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Compare,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text("Compare")
             }
         }
@@ -528,7 +578,7 @@ private fun CompareSelectionBar(
 }
 
 private fun formatDate(timestamp: Long): String {
-    val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+    val sdf = SimpleDateFormat("MMM dd, yyyy · HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
 

@@ -8,6 +8,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -17,6 +19,8 @@ data class HistoryUiState(
     val isLoading: Boolean = false,
     val searchQuery: String = "",
     val selectedVerdictFilter: String? = null,
+    val isAnalyticsVisible: Boolean = false,
+    val verdictDistribution: Map<String, Float> = emptyMap(),
     val error: String? = null
 )
 
@@ -25,52 +29,71 @@ class HistoryViewModel @Inject constructor(
     private val historyRepository: HistoryRepository
 ) : ViewModel() {
 
+    private val _searchQuery = MutableStateFlow("")
+    private val _selectedVerdictFilter = MutableStateFlow<String?>(null)
+    private val _isAnalyticsVisible = MutableStateFlow(false)
+
     private val _uiState = MutableStateFlow(HistoryUiState())
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 
     private var pendingDeleteItem: CorvusCheckResult? = null
 
     init {
-        loadHistory()
+        observeHistory()
     }
 
-    private fun loadHistory() {
+    private fun observeHistory() {
         viewModelScope.launch {
-            _uiState.update { state -> state.copy(isLoading = true) }
-            try {
-                historyRepository.getAllHistory().collect { items: List<CorvusCheckResult> ->
-                    _uiState.update { state -> state.copy(history = items, isLoading = false) }
+            combine(
+                _searchQuery,
+                _selectedVerdictFilter,
+                _isAnalyticsVisible
+            ) { query, filter, analyticsVisible ->
+                Triple(query, filter, analyticsVisible)
+            }.collect { (query, filter, analyticsVisible) ->
+                _uiState.update { it.copy(isLoading = true, searchQuery = query, selectedVerdictFilter = filter) }
+                
+                val flow = when {
+                    query.isNotBlank() -> historyRepository.searchHistory(query)
+                    filter != null -> historyRepository.filterByVerdict(filter)
+                    else -> historyRepository.getAllHistory()
                 }
-            } catch (e: Exception) {
-                _uiState.update { state -> state.copy(error = e.message, isLoading = false) }
+
+                flow.collect { items ->
+                    val stats = calculateStats(items)
+                    _uiState.update { it.copy(
+                        history = items, 
+                        isLoading = false,
+                        verdictDistribution = stats
+                    ) }
+                }
             }
         }
+    }
+
+    private fun calculateStats(items: List<CorvusCheckResult>): Map<String, Float> {
+        if (items.isEmpty()) return emptyMap()
+        val total = items.size.toFloat()
+        return items.groupBy { 
+            when (it) {
+                is CorvusCheckResult.GeneralResult -> it.verdict.name
+                is CorvusCheckResult.QuoteResult -> it.quoteVerdict.name
+                is CorvusCheckResult.CompositeResult -> it.compositeVerdict.name
+                is CorvusCheckResult.ViralHoaxResult -> "FALSE"
+            }
+        }.mapValues { it.value.size / total }
     }
 
     fun search(query: String) {
-        _uiState.update { state -> state.copy(searchQuery = query) }
-        viewModelScope.launch {
-            if (query.isBlank()) {
-                loadHistory()
-            } else {
-                historyRepository.searchHistory(query).collect { items: List<CorvusCheckResult> ->
-                    _uiState.update { state -> state.copy(history = items) }
-                }
-            }
-        }
+        _searchQuery.value = query
     }
 
     fun filterByVerdict(verdict: String?) {
-        _uiState.update { state -> state.copy(selectedVerdictFilter = verdict) }
-        viewModelScope.launch {
-            if (verdict == null) {
-                loadHistory()
-            } else {
-                historyRepository.filterByVerdict(verdict).collect { items: List<CorvusCheckResult> ->
-                    _uiState.update { state -> state.copy(history = items) }
-                }
-            }
-        }
+        _selectedVerdictFilter.value = verdict
+    }
+
+    fun toggleAnalytics() {
+        _isAnalyticsVisible.value = !_isAnalyticsVisible.value
     }
 
     fun prepareDelete(item: CorvusCheckResult) {
@@ -97,12 +120,8 @@ class HistoryViewModel @Inject constructor(
     }
 
     fun refresh() {
-        viewModelScope.launch {
-            _uiState.update { state -> state.copy(searchQuery = "", selectedVerdictFilter = null) }
-            historyRepository.getAllHistory().collect { items: List<CorvusCheckResult> ->
-                _uiState.update { state -> state.copy(history = items, isLoading = false) }
-            }
-        }
+        _searchQuery.value = ""
+        _selectedVerdictFilter.value = null
     }
 
     fun clearAll() {
@@ -111,3 +130,4 @@ class HistoryViewModel @Inject constructor(
         }
     }
 }
+
