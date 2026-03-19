@@ -30,9 +30,6 @@ import com.najmi.corvus.domain.model.CorvusResult
 import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.ui.components.ConfidenceBar
 import com.najmi.corvus.ui.theme.CorvusAccent
-import com.najmi.corvus.ui.theme.CorvusSurface
-import com.najmi.corvus.ui.theme.CorvusTextSecondary
-import com.najmi.corvus.ui.theme.CorvusTextTertiary
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.theme.VerdictFalse
 import com.najmi.corvus.ui.theme.VerdictMisleading
@@ -70,7 +67,7 @@ fun VerdictCard(
             .fillMaxWidth()
             .scale(scale)
             .alpha(alpha)
-            .background(CorvusSurface, CorvusShapes.medium)
+            .background(MaterialTheme.colorScheme.surface, CorvusShapes.medium)
             .border(
                 width = 3.dp,
                 color = verdictColor,
@@ -97,7 +94,7 @@ fun VerdictCard(
             Text(
                 text = "Confidence:",
                 style = MaterialTheme.typography.labelLarge,
-                color = CorvusTextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = "${(result.confidence * 100).toInt()}%",
@@ -141,6 +138,6 @@ fun getVerdictColor(verdict: Verdict): Color {
         Verdict.PARTIALLY_TRUE -> VerdictPartiallyTrue
         Verdict.UNVERIFIABLE -> VerdictUnverifiable
         Verdict.CHECKING -> CorvusAccent
-        Verdict.NOT_A_CLAIM -> CorvusTextTertiary
+        Verdict.NOT_A_CLAIM -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
     }
 }

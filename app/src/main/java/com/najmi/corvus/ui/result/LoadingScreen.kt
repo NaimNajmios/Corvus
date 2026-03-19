@@ -36,11 +36,6 @@ import androidx.compose.ui.unit.dp
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.ui.components.PipelineStepIndicator
 import com.najmi.corvus.ui.theme.CorvusAccent
-import com.najmi.corvus.ui.theme.CorvusBorder
-import com.najmi.corvus.ui.theme.CorvusSurface
-import com.najmi.corvus.ui.theme.CorvusTextPrimary
-import com.najmi.corvus.ui.theme.CorvusTextSecondary
-import com.najmi.corvus.ui.theme.CorvusVoid
 import kotlinx.coroutines.delay
 
 @Composable
@@ -64,7 +59,7 @@ fun LoadingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CorvusVoid),
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         if (error != null) {
@@ -123,7 +118,7 @@ private fun LoadingContent(
         Text(
             text = "Analysing...",
             style = MaterialTheme.typography.labelLarge,
-            color = CorvusTextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Spacer(modifier = Modifier.height(4.dp))
@@ -131,7 +126,7 @@ private fun LoadingContent(
         Text(
             text = timeText,
             style = MaterialTheme.typography.labelMedium,
-            color = CorvusTextSecondary.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
         
         Spacer(modifier = Modifier.height(32.dp))
@@ -143,10 +138,10 @@ private fun LoadingContent(
         OutlinedButton(
             onClick = onCancel,
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = CorvusTextSecondary
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
             ),
             border = ButtonDefaults.outlinedButtonBorder.copy(
-                brush = androidx.compose.ui.graphics.SolidColor(CorvusBorder)
+                brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.outline)
             ),
             shape = MaterialTheme.shapes.small
         ) {
@@ -177,13 +172,13 @@ private fun ErrorContent(
         
         Box(
             modifier = Modifier
-                .background(CorvusSurface, MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium)
                 .padding(16.dp)
         ) {
             Text(
                 text = error,
                 style = MaterialTheme.typography.bodyLarge,
-                color = CorvusTextPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
             )
         }
@@ -194,7 +189,7 @@ private fun ErrorContent(
             onClick = onRetry,
             colors = ButtonDefaults.buttonColors(
                 containerColor = CorvusAccent,
-                contentColor = CorvusVoid
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ),
             shape = MaterialTheme.shapes.small
         ) {
@@ -220,7 +215,7 @@ private fun PulsingLogo() {
         modifier = Modifier
             .size(80.dp)
             .alpha(alpha)
-            .background(CorvusVoid, MaterialTheme.shapes.extraSmall),
+            .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.extraSmall),
         contentAlignment = Alignment.Center
     ) {
         Text(

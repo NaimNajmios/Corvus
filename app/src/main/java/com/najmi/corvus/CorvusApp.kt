@@ -29,6 +29,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -44,11 +45,6 @@ import com.najmi.corvus.ui.result.LoadingScreen
 import com.najmi.corvus.ui.result.ResultScreen
 import com.najmi.corvus.ui.settings.SettingsScreen
 import com.najmi.corvus.ui.theme.CorvusAccent
-import com.najmi.corvus.ui.theme.CorvusSurface
-import com.najmi.corvus.ui.theme.CorvusSurfaceRaised
-import com.najmi.corvus.ui.theme.CorvusTextPrimary
-import com.najmi.corvus.ui.theme.CorvusTextSecondary
-import com.najmi.corvus.ui.theme.CorvusVoid
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
 
 object Routes {
@@ -109,66 +105,66 @@ fun CorvusApp(
 
     Scaffold(
         modifier = modifier,
-        containerColor = CorvusVoid,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar(
-                    containerColor = CorvusSurface
+                    containerColor = MaterialTheme.colorScheme.surface
                 ) {
                     bottomNavItems.forEach { item ->
-                            val selected = currentRoute == item.route
-                            val indicatorColor by animateColorAsState(
-                                targetValue = if (selected) CorvusSurfaceRaised else CorvusSurface,
-                                animationSpec = tween(200),
-                                label = "indicatorColor"
-                            )
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    if (currentRoute != item.route) {
-                                        navController.navigate(item.route) {
-                                            popUpTo(Routes.INPUT) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
+                        val selected = currentRoute == item.route
+                        val indicatorColor by animateColorAsState(
+                            targetValue = if (selected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
+                            animationSpec = tween(200),
+                            label = "indicatorColor"
+                        )
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                if (currentRoute != item.route) {
+                                    navController.navigate(item.route) {
+                                        popUpTo(Routes.INPUT) {
+                                            saveState = true
                                         }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                },
-                                icon = {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(56.dp)
-                                            .background(
-                                                color = indicatorColor,
-                                                shape = MaterialTheme.shapes.small
-                                            )
-                                            .then(
-                                                if (selected) Modifier.border(
-                                                    width = 1.5.dp,
-                                                    color = CorvusAccent.copy(alpha = 0.6f),
-                                                    shape = MaterialTheme.shapes.small
-                                                ) else Modifier
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
-                                            contentDescription = item.title,
-                                            modifier = Modifier.size(24.dp)
+                                }
+                            },
+                            icon = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .background(
+                                            color = indicatorColor,
+                                            shape = MaterialTheme.shapes.small
                                         )
-                                    }
-                                },
-                                label = { Text(item.title) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = CorvusAccent,
-                                    selectedTextColor = CorvusAccent,
-                                    unselectedIconColor = CorvusTextSecondary,
-                                    unselectedTextColor = CorvusTextSecondary,
-                                    indicatorColor = androidx.compose.ui.graphics.Color.Transparent
-                                )
+                                        .then(
+                                            if (selected) Modifier.border(
+                                                width = 1.5.dp,
+                                                color = CorvusAccent.copy(alpha = 0.6f),
+                                                shape = MaterialTheme.shapes.small
+                                            ) else Modifier
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                                        contentDescription = item.title,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            },
+                            label = { Text(item.title) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = CorvusAccent,
+                                selectedTextColor = CorvusAccent,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                indicatorColor = Color.Transparent
                             )
+                        )
                     }
                 }
             }

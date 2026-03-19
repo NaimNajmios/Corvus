@@ -57,11 +57,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.data.repository.LlmProvider
 import com.najmi.corvus.ui.theme.CorvusAccent
-import com.najmi.corvus.ui.theme.CorvusBorder
-import com.najmi.corvus.ui.theme.CorvusTextPrimary
-import com.najmi.corvus.ui.theme.CorvusTextSecondary
-import com.najmi.corvus.ui.theme.CorvusTextTertiary
-import com.najmi.corvus.ui.theme.CorvusVoid
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.SettingsViewModel
 
@@ -85,7 +80,7 @@ fun SettingsScreen(
         Text(
             text = "Settings",
             style = MaterialTheme.typography.headlineMedium,
-            color = CorvusTextPrimary,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
         )
 
@@ -175,7 +170,7 @@ fun SettingsScreen(
                                         imageVector = Icons.Default.PhoneAndroid,
                                         contentDescription = null,
                                         modifier = Modifier.size(20.dp),
-                                        tint = CorvusTextSecondary
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Text("System")
                                 }
@@ -200,7 +195,7 @@ fun SettingsScreen(
                                         imageVector = Icons.Default.DarkMode,
                                         contentDescription = null,
                                         modifier = Modifier.size(20.dp),
-                                        tint = CorvusTextSecondary
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Text("On")
                                 }
@@ -225,7 +220,7 @@ fun SettingsScreen(
                                         imageVector = Icons.Default.LightMode,
                                         contentDescription = null,
                                         modifier = Modifier.size(20.dp),
-                                        tint = CorvusTextSecondary
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Text("Off")
                                 }
@@ -268,7 +263,7 @@ fun SettingsScreen(
             Text(
                 text = "Corvus v1.0.0",
                 style = MaterialTheme.typography.bodySmall,
-                color = CorvusTextTertiary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
@@ -311,7 +306,7 @@ fun SettingsSection(
             modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
         )
         Card(
-            colors = CardDefaults.cardColors(containerColor = CorvusVoid),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             shape = CorvusShapes.small
         ) {
             content()
@@ -336,7 +331,7 @@ fun SettingsItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = CorvusTextSecondary
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Column(
@@ -347,19 +342,19 @@ fun SettingsItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = CorvusTextPrimary
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = CorvusTextTertiary
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
         
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
-            tint = CorvusTextTertiary
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
     }
 }
@@ -384,7 +379,7 @@ fun SettingsItemWithDropdown(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = CorvusTextSecondary
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Column(
@@ -395,12 +390,12 @@ fun SettingsItemWithDropdown(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = CorvusTextPrimary
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = CorvusTextTertiary
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
         
@@ -408,7 +403,7 @@ fun SettingsItemWithDropdown(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = CorvusTextTertiary
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
             
             DropdownMenu(
@@ -442,7 +437,7 @@ fun SettingsItemWithDropdownWithPreview(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = CorvusTextSecondary
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Column(
@@ -453,12 +448,12 @@ fun SettingsItemWithDropdownWithPreview(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = CorvusTextPrimary
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = CorvusTextTertiary
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
         
@@ -468,7 +463,7 @@ fun SettingsItemWithDropdownWithPreview(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = CorvusTextTertiary
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
             
             DropdownMenu(
@@ -498,7 +493,7 @@ fun SettingsToggleItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = CorvusTextSecondary
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Column(
@@ -509,12 +504,12 @@ fun SettingsToggleItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = CorvusTextPrimary
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = CorvusTextTertiary
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
         
@@ -522,10 +517,10 @@ fun SettingsToggleItem(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = CorvusVoid,
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                 checkedTrackColor = CorvusAccent,
-                uncheckedThumbColor = CorvusTextTertiary,
-                uncheckedTrackColor = CorvusBorder
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                uncheckedTrackColor = MaterialTheme.colorScheme.outline
             )
         )
     }

@@ -45,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -55,10 +56,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.ui.theme.CorvusAccent
-import com.najmi.corvus.ui.theme.CorvusSurface
-import com.najmi.corvus.ui.theme.CorvusTextPrimary
-import com.najmi.corvus.ui.theme.CorvusTextSecondary
-import com.najmi.corvus.ui.theme.CorvusVoid
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
 import kotlinx.coroutines.delay
@@ -143,7 +140,7 @@ fun ResultScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = CorvusTextPrimary
+                                tint = MaterialTheme.colorScheme.onBackground
                             )
                         }
                         Spacer(modifier = Modifier.weight(1f))
@@ -163,7 +160,7 @@ fun ResultScreen(
                         style = MaterialTheme.typography.labelLarge.copy(
                             letterSpacing = 1.sp
                         ),
-                        color = CorvusTextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -180,7 +177,7 @@ fun ResultScreen(
                             style = MaterialTheme.typography.labelLarge.copy(
                                 letterSpacing = 1.sp
                             ),
-                            color = CorvusTextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -197,7 +194,7 @@ fun ResultScreen(
                             Text(
                                 text = fact,
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = CorvusTextPrimary
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                         }
                     }
@@ -210,7 +207,7 @@ fun ResultScreen(
                             style = MaterialTheme.typography.labelLarge.copy(
                                 letterSpacing = 1.sp
                             ),
-                            color = CorvusTextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -244,7 +241,7 @@ fun ResultScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .background(CorvusVoid)
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(24.dp)
             ) {
                 Row(
@@ -262,7 +259,7 @@ fun ResultScreen(
                             .height(52.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = CorvusAccent,
-                            contentColor = CorvusVoid
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         ),
                         shape = CorvusShapes.small
                     ) {
@@ -287,8 +284,8 @@ fun ResultScreen(
                             .weight(1f)
                             .height(52.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = CorvusSurface,
-                            contentColor = CorvusTextPrimary
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.onBackground
                         ),
                         shape = CorvusShapes.small
                     ) {
@@ -330,11 +327,11 @@ private fun ExpandableExplanation(
             Text(
                 text = explanation,
                 style = MaterialTheme.typography.bodyLarge,
-                color = CorvusTextPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
                 maxLines = if (shouldShowExpand && !isExpanded) maxLines else Int.MAX_VALUE,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
-                    .background(CorvusSurface, CorvusShapes.medium)
+                    .background(MaterialTheme.colorScheme.surface, CorvusShapes.medium)
                     .padding(16.dp)
             )
         }
@@ -356,7 +353,7 @@ private fun ExpandableExplanation(
                     Icon(
                         Icons.Default.ContentCopy,
                         contentDescription = "Copy explanation",
-                        tint = CorvusTextSecondary
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -384,7 +381,7 @@ private fun ExpandableExplanation(
                 Icon(
                     Icons.Default.ContentCopy,
                     contentDescription = "Copy explanation",
-                    tint = CorvusTextSecondary
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

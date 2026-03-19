@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.theme.CorvusAccentDim
-import com.najmi.corvus.ui.theme.CorvusTextTertiary
 import com.najmi.corvus.ui.theme.CorvusShapes
 
 @Composable
@@ -85,7 +84,7 @@ private fun PipelineStepItem(
                     color = when (status) {
                         StepStatus.COMPLETED -> CorvusAccentDim
                         StepStatus.ACTIVE -> CorvusAccent
-                        StepStatus.PENDING -> CorvusTextTertiary
+                        StepStatus.PENDING -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     },
                     shape = CorvusShapes.extraSmall
                 )
@@ -97,7 +96,7 @@ private fun PipelineStepItem(
             color = when (status) {
                 StepStatus.COMPLETED -> CorvusAccentDim
                 StepStatus.ACTIVE -> CorvusAccent
-                StepStatus.PENDING -> CorvusTextTertiary
+                StepStatus.PENDING -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             }
         )
     }

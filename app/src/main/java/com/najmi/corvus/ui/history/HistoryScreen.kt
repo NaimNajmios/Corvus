@@ -66,12 +66,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.domain.model.CorvusResult
 import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.ui.theme.CorvusAccent
-import com.najmi.corvus.ui.theme.CorvusBorder
-import com.najmi.corvus.ui.theme.CorvusSurface
-import com.najmi.corvus.ui.theme.CorvusTextPrimary
-import com.najmi.corvus.ui.theme.CorvusTextSecondary
-import com.najmi.corvus.ui.theme.CorvusTextTertiary
-import com.najmi.corvus.ui.theme.CorvusVoid
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.HistoryViewModel
 import kotlinx.coroutines.launch
@@ -116,7 +110,7 @@ fun HistoryScreen(
         Text(
             text = "History",
             style = MaterialTheme.typography.headlineMedium,
-            color = CorvusTextPrimary,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
         )
 
@@ -126,18 +120,18 @@ fun HistoryScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            placeholder = { Text("Search claims...", color = CorvusTextTertiary) },
+            placeholder = { Text("Search claims...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
             leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = null, tint = CorvusTextTertiary)
+                Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
             },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = CorvusTextPrimary,
-                unfocusedTextColor = CorvusTextPrimary,
+                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
                 focusedBorderColor = CorvusAccent,
-                unfocusedBorderColor = CorvusBorder,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                 cursorColor = CorvusAccent,
-                focusedContainerColor = CorvusVoid,
-                unfocusedContainerColor = CorvusVoid
+                focusedContainerColor = MaterialTheme.colorScheme.background,
+                unfocusedContainerColor = MaterialTheme.colorScheme.background
             ),
             shape = CorvusShapes.small,
             singleLine = true
@@ -169,9 +163,9 @@ fun HistoryScreen(
                     label = { Text(label) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = CorvusAccent,
-                        selectedLabelColor = CorvusVoid,
-                        containerColor = CorvusVoid,
-                        labelColor = CorvusTextSecondary
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                        containerColor = MaterialTheme.colorScheme.background,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             }
@@ -273,8 +267,8 @@ fun HistoryScreen(
         ) { data ->
             Snackbar(
                 snackbarData = data,
-                containerColor = CorvusSurface,
-                contentColor = CorvusTextPrimary,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onBackground,
                 actionColor = CorvusAccent
             )
         }
@@ -292,7 +286,7 @@ fun HistoryItem(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = CorvusVoid),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = CorvusShapes.small
     ) {
         Row(
@@ -309,7 +303,7 @@ fun HistoryItem(
                 Text(
                     text = result.claim,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = CorvusTextPrimary,
+                    color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -319,7 +313,7 @@ fun HistoryItem(
                 Text(
                     text = formatDate(result.checkedAt),
                     style = MaterialTheme.typography.labelSmall,
-                    color = CorvusTextTertiary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
             }
             
@@ -327,7 +321,7 @@ fun HistoryItem(
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Delete",
-                    tint = CorvusTextTertiary,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -342,9 +336,9 @@ fun VerdictBadge(verdict: Verdict, modifier: Modifier = Modifier) {
         Verdict.FALSE -> MaterialTheme.colorScheme.error to "FALSE"
         Verdict.MISLEADING -> MaterialTheme.colorScheme.tertiary to "MISLEADING"
         Verdict.PARTIALLY_TRUE -> MaterialTheme.colorScheme.secondary to "PARTIAL"
-        Verdict.UNVERIFIABLE -> CorvusTextTertiary to "UNVERIFIABLE"
-        Verdict.CHECKING -> CorvusTextTertiary to "CHECKING"
-        Verdict.NOT_A_CLAIM -> CorvusTextTertiary to "NOT CLAIM"
+        Verdict.UNVERIFIABLE -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) to "UNVERIFIABLE"
+        Verdict.CHECKING -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) to "CHECKING"
+        Verdict.NOT_A_CLAIM -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) to "NOT CLAIM"
     }
     
     Box(
@@ -381,12 +375,12 @@ private fun EmptyHistoryState() {
             Text(
                 text = "No fact-checks yet",
                 style = MaterialTheme.typography.titleMedium,
-                color = CorvusTextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = "Paste a claim in the home tab to get started",
                 style = MaterialTheme.typography.bodyMedium,
-                color = CorvusTextTertiary
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
     }
@@ -397,8 +391,8 @@ private fun CrowSearchIllustration() {
     Box(
         modifier = Modifier
             .size(100.dp)
-            .background(CorvusVoid, CorvusShapes.medium)
-            .border(1.dp, CorvusBorder, CorvusShapes.medium),
+            .background(MaterialTheme.colorScheme.surface, CorvusShapes.medium)
+            .border(1.dp, MaterialTheme.colorScheme.outline, CorvusShapes.medium),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -427,7 +421,7 @@ private fun CrowSearchIllustration() {
                 modifier = Modifier
                     .size(40.dp, 3.dp)
                     .background(
-                        CorvusTextTertiary,
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         CorvusShapes.extraSmall
                     )
             )

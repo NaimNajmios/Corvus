@@ -54,11 +54,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.ui.components.PipelineStepIndicator
 import com.najmi.corvus.ui.theme.CorvusAccent
-import com.najmi.corvus.ui.theme.CorvusBorder
-import com.najmi.corvus.ui.theme.CorvusTextPrimary
-import com.najmi.corvus.ui.theme.CorvusTextSecondary
-import com.najmi.corvus.ui.theme.CorvusTextTertiary
-import com.najmi.corvus.ui.theme.CorvusVoid
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.theme.VerdictFalse
 import com.najmi.corvus.ui.theme.VerdictMisleading
@@ -80,7 +75,7 @@ fun InputScreen(
         targetValue = when {
             isAtLimit -> VerdictFalse
             isNearLimit -> VerdictMisleading
-            else -> CorvusTextTertiary
+            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         },
         animationSpec = tween(300),
         label = "counterColor"
@@ -130,7 +125,7 @@ fun InputScreen(
             Text(
                 text = "See through the noise.",
                 style = MaterialTheme.typography.headlineMedium,
-                color = CorvusTextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
 
@@ -153,18 +148,18 @@ fun InputScreen(
                     Text(
                         text = "Paste a claim, tweet, or statement",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = CorvusTextTertiary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 },
                 textStyle = MaterialTheme.typography.bodyLarge,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = CorvusTextPrimary,
-                    unfocusedTextColor = CorvusTextPrimary,
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
                     focusedBorderColor = CorvusAccent,
-                    unfocusedBorderColor = CorvusBorder,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                     cursorColor = CorvusAccent,
-                    focusedContainerColor = CorvusVoid,
-                    unfocusedContainerColor = CorvusVoid
+                    focusedContainerColor = MaterialTheme.colorScheme.background,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.background
                 ),
                 shape = CorvusShapes.small,
                 visualTransformation = VisualTransformation.None
@@ -233,9 +228,9 @@ fun InputScreen(
                     enabled = uiState.inputText.isNotBlank() && !uiState.isLoading,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = CorvusAccent,
-                        contentColor = CorvusVoid,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         disabledContainerColor = CorvusAccent.copy(alpha = 0.3f),
-                        disabledContentColor = CorvusVoid.copy(alpha = 0.5f)
+                        disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
                     ),
                     shape = CorvusShapes.small
                 ) {
@@ -256,7 +251,7 @@ fun CrowLogoMark(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(64.dp)
-            .background(CorvusVoid, CorvusShapes.extraSmall)
+            .background(MaterialTheme.colorScheme.surface, CorvusShapes.extraSmall)
             .padding(12.dp),
         contentAlignment = Alignment.Center
     ) {

@@ -38,12 +38,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.najmi.corvus.domain.model.Source
 import com.najmi.corvus.ui.theme.CorvusAccent
-import com.najmi.corvus.ui.theme.CorvusBorder
-import com.najmi.corvus.ui.theme.CorvusSurface
-import com.najmi.corvus.ui.theme.CorvusTextPrimary
-import com.najmi.corvus.ui.theme.CorvusTextSecondary
-import com.najmi.corvus.ui.theme.CorvusTextTertiary
-import com.najmi.corvus.ui.theme.CorvusVoid
 import com.najmi.corvus.ui.theme.CorvusShapes
 
 @Composable
@@ -72,10 +66,10 @@ fun SourceCard(
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
-            .background(CorvusSurface, CorvusShapes.medium)
+            .background(MaterialTheme.colorScheme.surface, CorvusShapes.medium)
             .border(
                 width = 1.dp,
-                color = CorvusBorder.copy(alpha = borderAlpha),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = borderAlpha),
                 shape = CorvusShapes.medium
             )
             .clickable(
@@ -111,7 +105,7 @@ fun SourceCard(
         Text(
             text = source.title,
             style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp),
-            color = CorvusTextPrimary,
+            color = MaterialTheme.colorScheme.onBackground,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
@@ -119,7 +113,7 @@ fun SourceCard(
         Text(
             text = source.url,
             style = MaterialTheme.typography.labelSmall,
-            color = CorvusTextTertiary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -128,7 +122,7 @@ fun SourceCard(
             Text(
                 text = snippet,
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 13.sp),
-                color = CorvusTextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 4.dp)
@@ -155,7 +149,7 @@ private fun PublisherFavicon(
         modifier = modifier
             .size(20.dp)
             .clip(CircleShape)
-            .background(CorvusVoid),
+            .background(MaterialTheme.colorScheme.surface),
         contentAlignment = Alignment.Center
     ) {
         if (faviconUrl != null) {
