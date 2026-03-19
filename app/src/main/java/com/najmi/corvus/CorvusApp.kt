@@ -6,11 +6,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.najmi.corvus.ui.input.InputScreen
 import com.najmi.corvus.ui.result.LoadingScreen
 import com.najmi.corvus.ui.result.ResultScreen
@@ -47,9 +45,12 @@ fun CorvusApp(
         composable(Routes.LOADING) {
             LoadingScreen(
                 currentStep = uiState.currentStep,
+                error = uiState.error,
+                onRetry = {
+                    navController.popBackStack()
+                },
                 onResultReady = {
                     navController.navigate(Routes.RESULT) {
-                        popUpTo(Routes.LOADING) { inclusive = true }
                         popUpTo(Routes.INPUT) { inclusive = true }
                     }
                 }
@@ -62,20 +63,25 @@ fun CorvusApp(
                 onAnalyzeAnother = {
                     viewModel.reset()
                     navController.navigate(Routes.INPUT) {
-                        popUpTo(Routes.RESULT) { inclusive = true }
+                        popUpTo(Routes.INPUT) { inclusive = true }
                     }
                 }
             )
         }
     }
 
-    LaunchedEffect(uiState.result) {
-        if (uiState.result != null && !uiState.isLoading) {
-            val currentRoute = navController.currentBackStackEntry?.destination?.route
-            if (currentRoute == Routes.LOADING) {
-                navController.navigate(Routes.RESULT) {
-                    popUpTo(Routes.LOADING) { inclusive = true }
-                    popUpTo(Routes.INPUT) { inclusive = true }
+    LaunchedEffect(uiState.result, uiState.error, uiState.isLoading) {
+        val currentRoute = navController.currentBackStackEntry?.destination?.route
+        
+        if (currentRoute == Routes.LOADING) {
+            when {
+                uiState.result != null && !uiState.isLoading -> {
+                    navController.navigate(Routes.RESULT) {
+                        popUpTo(Routes.INPUT) { inclusive = true }
+                    }
+                }
+                uiState.error != null && !uiState.isLoading -> {
+                    navController.popBackStack()
                 }
             }
         }

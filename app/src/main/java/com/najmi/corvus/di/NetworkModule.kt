@@ -27,6 +27,7 @@ object NetworkModule {
         ignoreUnknownKeys = true
         isLenient = true
         coerceInputValues = true
+        encodeDefaults = true
     }
 
     @Provides
@@ -44,8 +45,8 @@ object NetworkModule {
             level = LogLevel.ALL
         }
         engine {
-            connectTimeout = 30_000
-            socketTimeout = 60_000
+            connectTimeout = 60_000
+            socketTimeout = 120_000
         }
     }
 

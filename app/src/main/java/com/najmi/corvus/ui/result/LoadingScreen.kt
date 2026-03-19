@@ -11,8 +11,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,16 +24,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.ui.components.PipelineStepIndicator
 import com.najmi.corvus.ui.theme.CorvusAccent
+import com.najmi.corvus.ui.theme.CorvusSurface
+import com.najmi.corvus.ui.theme.CorvusTextPrimary
 import com.najmi.corvus.ui.theme.CorvusTextSecondary
 import com.najmi.corvus.ui.theme.CorvusVoid
 
 @Composable
 fun LoadingScreen(
     currentStep: PipelineStep,
+    error: String? = null,
+    onRetry: () -> Unit = {},
     onResultReady: () -> Unit
 ) {
     Box(
@@ -38,31 +47,91 @@ fun LoadingScreen(
             .background(CorvusVoid),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        if (error != null) {
+            ErrorContent(error = error, onRetry = onRetry)
+        } else {
+            LoadingContent(currentStep = currentStep)
+        }
+    }
+}
+
+@Composable
+private fun LoadingContent(
+    currentStep: PipelineStep
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.padding(24.dp)
+    ) {
+        PulsingLogo()
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        Text(
+            text = "CORVUS",
+            style = MaterialTheme.typography.headlineMedium,
+            color = CorvusAccent
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Analysing...",
+            style = MaterialTheme.typography.labelLarge,
+            color = CorvusTextSecondary
+        )
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        PipelineStepIndicator(currentStep = currentStep)
+    }
+}
+
+@Composable
+private fun ErrorContent(
+    error: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .padding(24.dp)
+            .fillMaxWidth()
+    ) {
+        Text(
+            text = "ANALYSIS FAILED",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.error
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Box(
+            modifier = Modifier
+                .background(CorvusSurface, MaterialTheme.shapes.medium)
+                .padding(16.dp)
         ) {
-            PulsingLogo()
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
             Text(
-                text = "CORVUS",
-                style = MaterialTheme.typography.headlineMedium,
-                color = CorvusAccent
+                text = error,
+                style = MaterialTheme.typography.bodyLarge,
+                color = CorvusTextPrimary,
+                textAlign = TextAlign.Center
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "Analysing...",
-                style = MaterialTheme.typography.labelLarge,
-                color = CorvusTextSecondary
-            )
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            PipelineStepIndicator(currentStep = currentStep)
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = CorvusAccent,
+                contentColor = CorvusVoid
+            ),
+            shape = MaterialTheme.shapes.small
+        ) {
+            Text("TRY AGAIN")
         }
     }
 }
