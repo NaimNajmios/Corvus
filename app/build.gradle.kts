@@ -101,4 +101,5 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.google.mlkit.language.id)
     implementation(libs.google.mlkit.text.recognition)
+    implementation(libs.coil.compose)
 }

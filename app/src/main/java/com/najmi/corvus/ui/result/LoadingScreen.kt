@@ -18,29 +18,49 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.ui.components.PipelineStepIndicator
 import com.najmi.corvus.ui.theme.CorvusAccent
+import com.najmi.corvus.ui.theme.CorvusBorder
 import com.najmi.corvus.ui.theme.CorvusSurface
 import com.najmi.corvus.ui.theme.CorvusTextPrimary
 import com.najmi.corvus.ui.theme.CorvusTextSecondary
 import com.najmi.corvus.ui.theme.CorvusVoid
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoadingScreen(
     currentStep: PipelineStep,
     error: String? = null,
     onRetry: () -> Unit = {},
+    onCancel: () -> Unit = {},
     onResultReady: () -> Unit
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
+    var elapsedSeconds by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000)
+            elapsedSeconds++
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -48,17 +68,41 @@ fun LoadingScreen(
         contentAlignment = Alignment.Center
     ) {
         if (error != null) {
-            ErrorContent(error = error, onRetry = onRetry)
+            ErrorContent(
+                error = error,
+                onRetry = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    elapsedSeconds = 0
+                    onRetry()
+                }
+            )
         } else {
-            LoadingContent(currentStep = currentStep)
+            LoadingContent(
+                currentStep = currentStep,
+                elapsedSeconds = elapsedSeconds,
+                onCancel = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onCancel()
+                }
+            )
         }
     }
 }
 
 @Composable
 private fun LoadingContent(
-    currentStep: PipelineStep
+    currentStep: PipelineStep,
+    elapsedSeconds: Int,
+    onCancel: () -> Unit
 ) {
+    val minutes = elapsedSeconds / 60
+    val seconds = elapsedSeconds % 60
+    val timeText = if (minutes > 0) {
+        "${minutes}m ${seconds}s"
+    } else {
+        "${seconds}s"
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -82,9 +126,32 @@ private fun LoadingContent(
             color = CorvusTextSecondary
         )
         
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        Text(
+            text = timeText,
+            style = MaterialTheme.typography.labelMedium,
+            color = CorvusTextSecondary.copy(alpha = 0.7f)
+        )
+        
         Spacer(modifier = Modifier.height(32.dp))
         
         PipelineStepIndicator(currentStep = currentStep)
+        
+        Spacer(modifier = Modifier.height(48.dp))
+        
+        OutlinedButton(
+            onClick = onCancel,
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = CorvusTextSecondary
+            ),
+            border = ButtonDefaults.outlinedButtonBorder.copy(
+                brush = androidx.compose.ui.graphics.SolidColor(CorvusBorder)
+            ),
+            shape = MaterialTheme.shapes.small
+        ) {
+            Text("Cancel")
+        }
     }
 }
 

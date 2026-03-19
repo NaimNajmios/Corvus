@@ -17,14 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -34,6 +28,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,16 +42,26 @@ import com.najmi.corvus.ui.theme.CorvusTextSecondary
 import com.najmi.corvus.ui.theme.CorvusTextTertiary
 import com.najmi.corvus.ui.theme.CorvusVoid
 import com.najmi.corvus.ui.theme.CorvusShapes
+import com.najmi.corvus.ui.theme.VerdictFalse
+import com.najmi.corvus.ui.theme.VerdictMisleading
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
 
 @Composable
 fun InputScreen(
     viewModel: CorvusViewModel = hiltViewModel(),
-    onAnalyze: () -> Unit,
-    onNavigateToHistory: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onAnalyze: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val hapticFeedback = LocalHapticFeedback.current
+    val characterCount = uiState.inputText.length
+    val isNearLimit = characterCount >= 400
+    val isAtLimit = characterCount >= 500
+
+    val characterCountColor = when {
+        isAtLimit -> VerdictFalse
+        isNearLimit -> VerdictMisleading
+        else -> CorvusTextTertiary
+    }
 
     Box(
         modifier = Modifier
@@ -68,42 +74,14 @@ fun InputScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Spacer(modifier = Modifier.height(32.dp))
+
+            CrowLogoMark()
+
             Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onNavigateToHistory) {
-                    Icon(
-                        Icons.Default.History,
-                        contentDescription = "History",
-                        tint = CorvusTextSecondary
-                    )
-                }
-                
-                CrowLogoMark()
-                
-                IconButton(onClick = onNavigateToSettings) {
-                    Icon(
-                        Icons.Default.Settings,
-                        contentDescription = "Settings",
-                        tint = CorvusTextSecondary
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "See through the noise.",
-                style = MaterialTheme.typography.headlineMedium,
-                color = CorvusTextSecondary,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
 
             Text(
                 text = "See through the noise.",
@@ -116,7 +94,14 @@ fun InputScreen(
 
             OutlinedTextField(
                 value = uiState.inputText,
-                onValueChange = viewModel::updateInputText,
+                onValueChange = {
+                    if (it.length <= 500) {
+                        viewModel.updateInputText(it)
+                        if (it.length == 450) {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(160.dp),
@@ -142,9 +127,9 @@ fun InputScreen(
             )
 
             Text(
-                text = "${uiState.inputText.length}/500",
+                text = "$characterCount/500",
                 style = MaterialTheme.typography.labelSmall,
-                color = CorvusTextTertiary,
+                color = characterCountColor,
                 modifier = Modifier.align(Alignment.End)
             )
 
@@ -175,6 +160,7 @@ fun InputScreen(
             ) {
                 Button(
                     onClick = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                         viewModel.analyze()
                         onAnalyze()
                     },

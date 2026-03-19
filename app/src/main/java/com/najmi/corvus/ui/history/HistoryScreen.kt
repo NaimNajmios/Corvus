@@ -1,5 +1,11 @@
 package com.najmi.corvus.ui.history
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,14 +36,31 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -45,12 +68,14 @@ import com.najmi.corvus.domain.model.CorvusResult
 import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.theme.CorvusBorder
+import com.najmi.corvus.ui.theme.CorvusSurface
 import com.najmi.corvus.ui.theme.CorvusTextPrimary
 import com.najmi.corvus.ui.theme.CorvusTextSecondary
 import com.najmi.corvus.ui.theme.CorvusTextTertiary
 import com.najmi.corvus.ui.theme.CorvusVoid
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.HistoryViewModel
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -59,41 +84,41 @@ import java.util.Locale
 @Composable
 fun HistoryScreen(
     viewModel: HistoryViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit,
     onItemClick: (CorvusResult) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val hapticFeedback = LocalHapticFeedback.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    var pendingDeleteItem by remember { mutableStateOf<CorvusResult?>(null) }
+
+    LaunchedEffect(pendingDeleteItem) {
+        pendingDeleteItem?.let { item ->
+            val result = snackbarHostState.showSnackbar(
+                message = "Item deleted",
+                actionLabel = "Undo",
+                duration = SnackbarDuration.Short
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.undoDelete()
+            } else {
+                viewModel.confirmDelete()
+            }
+            pendingDeleteItem = null
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        TopAppBar(
-            title = { Text("History", color = CorvusTextPrimary) },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = CorvusTextPrimary
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
-            ),
-            actions = {
-                if (uiState.history.isNotEmpty()) {
-                    IconButton(onClick = { viewModel.clearAll() }) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Clear all",
-                            tint = CorvusTextPrimary
-                        )
-                    }
-                }
-            }
+        Text(
+            text = "History",
+            style = MaterialTheme.typography.headlineMedium,
+            color = CorvusTextPrimary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
         )
 
         OutlinedTextField(
@@ -127,12 +152,22 @@ fun HistoryScreen(
                 .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val verdictFilters = listOf(null, "TRUE", "FALSE", "MISLEADING", "PARTIALLY_TRUE", "UNVERIFIABLE")
-            items(verdictFilters) { verdict ->
+            val verdictFilters = listOf(
+                null to "All",
+                "TRUE" to "True",
+                "FALSE" to "False",
+                "MISLEADING" to "Misleading",
+                "PARTIALLY_TRUE" to "Partially True",
+                "UNVERIFIABLE" to "Unverifiable"
+            )
+            items(verdictFilters) { (value, label) ->
                 FilterChip(
-                    selected = uiState.selectedVerdictFilter == verdict,
-                    onClick = { viewModel.filterByVerdict(verdict) },
-                    label = { Text(verdict?.replace("_", " ") ?: "All") },
+                    selected = uiState.selectedVerdictFilter == value,
+                    onClick = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.filterByVerdict(value)
+                    },
+                    label = { Text(label) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = CorvusAccent,
                         selectedLabelColor = CorvusVoid,
@@ -150,25 +185,99 @@ fun HistoryScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "No history yet",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = CorvusTextTertiary
-                )
+                EmptyHistoryState()
             }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(uiState.history) { item ->
-                    HistoryItem(
-                        result = item,
-                        onClick = { onItemClick(item) },
-                        onDelete = { viewModel.deleteItem(item.id) }
+                items(
+                    items = uiState.history,
+                    key = { it.id }
+                ) { item ->
+                    var isRemoved by remember { mutableStateOf(false) }
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { dismissValue ->
+                            if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                isRemoved = true
+                                viewModel.prepareDelete(item)
+                                true
+                            } else {
+                                false
+                            }
+                        }
                     )
+
+                    LaunchedEffect(dismissState.currentValue) {
+                        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                            pendingDeleteItem = item
+                        }
+                    }
+
+                    AnimatedVisibility(
+                        visible = !isRemoved,
+                        enter = fadeIn() + slideInVertically(),
+                        exit = fadeOut() + slideOutHorizontally(targetOffsetX = { -it })
+                    ) {
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            backgroundContent = {
+                                val scale by animateFloatAsState(
+                                    targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) 1f else 0.8f,
+                                    label = "deleteScale"
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 16.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
+                                            CorvusShapes.small
+                                        )
+                                        .padding(horizontal = 20.dp),
+                                    contentAlignment = Alignment.CenterEnd
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.scale(scale)
+                                    )
+                                }
+                            },
+                            enableDismissFromStartToEnd = false,
+                            enableDismissFromEndToStart = true
+                        ) {
+                            HistoryItem(
+                                result = item,
+                                onClick = {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onItemClick(item)
+                                },
+                                onDelete = {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.prepareDelete(item)
+                                    pendingDeleteItem = item
+                                }
+                            )
+                        }
+                    }
                 }
             }
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.padding(16.dp)
+        ) { data ->
+            Snackbar(
+                snackbarData = data,
+                containerColor = CorvusSurface,
+                contentColor = CorvusTextPrimary,
+                actionColor = CorvusAccent
+            )
         }
     }
 }
@@ -255,4 +364,41 @@ fun VerdictBadge(verdict: Verdict, modifier: Modifier = Modifier) {
 private fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
+}
+
+@Composable
+private fun EmptyHistoryState() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .background(CorvusVoid, CorvusShapes.medium),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "?",
+                style = MaterialTheme.typography.displayLarge,
+                color = CorvusTextTertiary
+            )
+        }
+        
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "No history yet",
+                style = MaterialTheme.typography.titleMedium,
+                color = CorvusTextSecondary
+            )
+            Text(
+                text = "Your fact-checks will appear here",
+                style = MaterialTheme.typography.bodyMedium,
+                color = CorvusTextTertiary
+            )
+        }
+    }
 }

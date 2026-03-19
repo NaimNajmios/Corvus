@@ -8,6 +8,7 @@ import com.najmi.corvus.domain.model.CorvusUiState
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.domain.usecase.CorvusFactCheckUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +24,8 @@ class CorvusViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(CorvusUiState())
     val uiState: StateFlow<CorvusUiState> = _uiState.asStateFlow()
+
+    private var analysisJob: Job? = null
 
     fun updateInputText(text: String) {
         if (text.length <= 500) {
@@ -41,7 +44,7 @@ class CorvusViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.launch {
+        analysisJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, result = null) }
 
             try {
@@ -52,18 +55,30 @@ class CorvusViewModel @Inject constructor(
                 
                 historyRepository.saveResult(result)
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        error = "Analysis failed: ${e.message}",
-                        isLoading = false,
-                        currentStep = PipelineStep.IDLE
-                    )
+                if (e is CancellationException) {
+                    _uiState.update { CorvusUiState() }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            error = "Analysis failed: ${e.message}",
+                            isLoading = false,
+                            currentStep = PipelineStep.IDLE
+                        )
+                    }
                 }
             }
         }
     }
 
+    fun cancelAnalysis() {
+        analysisJob?.cancel()
+        _uiState.update { CorvusUiState() }
+    }
+
     fun reset() {
+        analysisJob?.cancel()
         _uiState.update { CorvusUiState() }
     }
 }
+
+private class CancellationException(message: String = "Analysis cancelled") : Exception(message)

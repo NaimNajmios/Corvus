@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.data.repository.HistoryRepository
 import com.najmi.corvus.domain.model.CorvusResult
-import com.najmi.corvus.domain.model.Verdict
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +27,8 @@ class HistoryViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(HistoryUiState())
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
+
+    private var pendingDeleteItem: CorvusResult? = null
 
     init {
         loadHistory()
@@ -70,6 +71,23 @@ class HistoryViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun prepareDelete(item: CorvusResult) {
+        pendingDeleteItem = item
+    }
+
+    fun undoDelete() {
+        pendingDeleteItem = null
+    }
+
+    fun confirmDelete() {
+        pendingDeleteItem?.let { item ->
+            viewModelScope.launch {
+                historyRepository.deleteResult(item.id)
+            }
+        }
+        pendingDeleteItem = null
     }
 
     fun deleteItem(id: String) {
