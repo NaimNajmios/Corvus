@@ -2,73 +2,81 @@
 
 *See through the noise.*
 
-A fact-checking Android application that cuts through misinformation with precision and authority.
+A high-fidelity fact-checking Android application that orchestrates multi-stage verification pipelines to combat misinformation.
 
 ## Overview
 
-Corvus analyzes claims, tweets, and statements using multiple verification pipelines:
-- **Google Fact Check API** - Direct fact-check database lookup
-- **Tavily Search** - Web search aggregation for corroborating sources
-- **LLM Analysis** (Gemini/Groq) - Deep reasoning on claim verification
+Corvus moves beyond simple lookups by decomposing complex claims into verifiable components and routing them through specialized pipelines:
+
+- **General Pipeline** - Hybrid search and LLM reasoning for broad claims.
+- **Scientific Pipeline** - Powered by PubMed and World Bank data for health and technical claims.
+- **Statistical Pipeline** - Direct integration with DOSM and World Bank Open Data.
+- **Current Event Pipeline** - Real-time monitoring via GDELT and Junkipedia.
+- **Quote Verification** - Cross-referencing Hansard (Parliamentary) and Wikiquote records.
+
+## Core Features
+
+- **Claim Decomposition** - Breaks down compound statements into atomic units for individual testing.
+- **Vision Extraction** - Intelligent OCR and image context analysis via PaliGemma and Gemini Nano.
+- **Confidence Timeline** - Visual representation of verification certainty over time.
+- **Multi-Provider LLM** - Seamless switching between Cerebras, Groq, Gemini, and OpenRouter.
+- **On-Device Intelligence** - LiteRT Engine (formerly TFLite) for privacy-preserving local inference.
 
 ## Tech Stack
 
-- **Kotlin** with **Jetpack Compose** for modern declarative UI
-- **Hilt** for dependency injection
-- **Ktor** for network requests
-- **Kotlin Serialization** for JSON parsing
-- **MVVM** architecture with clean separation of concerns
+- **Kotlin** & **Jetpack Compose** - Reactive, modern UI with custom monochromatic design system.
+- **LiteRT (TFLite)** - On-device model execution for vision and language tasks.
+- **Ktor** - Asynchronous networking for high-concurrency pipeline execution.
+- **Hilt** - Scalable dependency injection.
+- **Room** - Local persistence for fact-check history and analytics.
 
 ## Project Structure
 
 ```
 app/src/main/java/com/najmi/corvus/
 ├── data/
-│   ├── remote/        # API clients (Google, Tavily, Gemini, Groq)
-│   └── repository/   # Data repositories
-├── di/                # Hilt dependency injection modules
+│   ├── remote/        # 16+ API Clients (Cerebras, DOSM, GDELT, PubMed, etc.)
+│   └── repository/    # Unified data access for LLMs and verification sources
 ├── domain/
-│   ├── model/         # Domain models (Verdict, Source, etc.)
-│   └── usecase/       # Business logic use cases
+│   ├── model/         # Domain-driven models for claims and verdicts
+│   └── usecase/       # Orchestration logic for verification pipelines
 └── ui/
-    ├── components/    # Reusable Compose components
-    ├── input/         # Input screen
-    ├── navigation/    # Navigation graph
-    ├── result/        # Result/verdict screens
-    ├── theme/         # Material3 theming
-    └── viewmodel/     # ViewModels
+    ├── compare/       # Multi-source comparison view
+    ├── history/       # Persistent audit log of past checks
+    └── settings/      # Provider API management (HuggingFace, Groq, etc.)
 ```
 
 ## Setup
 
 ### API Keys
 
-Create `local.properties` in the project root with your API keys:
+Create `local.properties` in the project root. Most providers are optional, but at least one LLM provider is recommended:
 
 ```properties
-GOOGLE_FACT_CHECK_API_KEY=your_key
-TAVILY_API_KEY=your_key
+# Primary LLM Providers
 GEMINI_API_KEY=your_key
 GROQ_API_KEY=your_key
-```
+CEREBRAS_API_KEY=your_key
+OPENROUTER_API_KEY=your_key
 
-Or copy `local.properties.example` and fill in the values.
+# Search & Specialty Sources
+TAVILY_API_KEY=your_key
+GOOGLE_FACT_CHECK_API_KEY=your_key
+HF_TOKEN=your_huggingface_token_for_gated_models
+```
 
 ### Build
 
 ```bash
-./gradlew assembleDebug   # Debug APK
-./gradlew assembleRelease # Release APK
+./gradlew assembleDebug   # Requires API keys for full functionality
 ```
 
 ## Design
 
-Corvus follows a distinct visual identity:
-- Dark theme by default with electric chartreuse accent (#C8FF00)
-- Typography: DM Serif Display (headlines) + IBM Plex Mono (UI)
-- Minimal rounding, high contrast, sharp precision
-
-See `md/corvus-brand-brief.md` for full design specifications.
+Corvus features a custom **Monochromatic Precise** design system:
+- **Primary Color:** High-contrast Black/White/Gray palette.
+- **Typography:** DM Serif Display (Authority) + IBM Plex Mono (Information).
+- **Aesthetic:** Brutalist edges, glassmorphism, and micro-animations for pipeline state.
 
 ## License
 
