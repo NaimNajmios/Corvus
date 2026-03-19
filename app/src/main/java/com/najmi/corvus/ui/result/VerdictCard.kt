@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.sp
 import com.najmi.corvus.domain.model.CorvusResult
 import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.ui.components.ConfidenceBar
-import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.theme.VerdictFalse
 import com.najmi.corvus.ui.theme.VerdictMisleading
@@ -99,7 +98,7 @@ fun VerdictCard(
             Text(
                 text = "${(result.confidence * 100).toInt()}%",
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                color = CorvusAccent
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
@@ -137,7 +136,7 @@ fun getVerdictColor(verdict: Verdict): Color {
         Verdict.MISLEADING -> VerdictMisleading
         Verdict.PARTIALLY_TRUE -> VerdictPartiallyTrue
         Verdict.UNVERIFIABLE -> VerdictUnverifiable
-        Verdict.CHECKING -> CorvusAccent
+        Verdict.CHECKING -> MaterialTheme.colorScheme.primary
         Verdict.NOT_A_CLAIM -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
     }
 }

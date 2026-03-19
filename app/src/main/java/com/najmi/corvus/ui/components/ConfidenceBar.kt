@@ -15,7 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.najmi.corvus.ui.theme.CorvusAccent
+import androidx.compose.material3.MaterialTheme
 import com.najmi.corvus.ui.theme.CorvusShapes
 
 @Composable
@@ -40,13 +40,13 @@ fun ConfidenceBar(
             .fillMaxWidth()
             .height(4.dp)
             .clip(CorvusShapes.extraSmall)
-            .background(CorvusAccent.copy(alpha = 0.2f))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(animatedConfidence.coerceIn(0f, 1f))
                 .height(4.dp)
-                .background(CorvusAccent)
+                .background(MaterialTheme.colorScheme.primary)
         )
     }
 }

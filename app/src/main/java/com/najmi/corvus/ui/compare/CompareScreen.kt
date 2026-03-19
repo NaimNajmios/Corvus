@@ -46,7 +46,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.domain.model.CorvusResult
 import com.najmi.corvus.ui.history.VerdictBadge
-import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.CompareViewModel
 
@@ -287,14 +286,14 @@ private fun ClaimPane(
                         Icon(
                             imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                             contentDescription = if (isExpanded) "Show less" else "Show more",
-                            tint = CorvusAccent,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = if (isExpanded) "Show less" else "Show more",
                             style = MaterialTheme.typography.labelSmall,
-                            color = CorvusAccent
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -319,7 +318,7 @@ private fun ClaimPane(
                         Text(
                             text = "-",
                             style = MaterialTheme.typography.bodySmall,
-                            color = CorvusAccent
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Text(
                             text = fact,
@@ -353,7 +352,7 @@ private fun ClaimPane(
                         Text(
                             text = "${index + 1}. ${source.url}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = CorvusAccent,
+                            color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -379,7 +378,7 @@ private fun ClaimPane(
 private fun ConfidenceIndicator(confidence: Float) {
     val percentage = (confidence * 100).toInt()
     val color = when {
-        confidence >= 0.8f -> CorvusAccent
+        confidence >= 0.8f -> MaterialTheme.colorScheme.primary
         confidence >= 0.5f -> MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.error
     }

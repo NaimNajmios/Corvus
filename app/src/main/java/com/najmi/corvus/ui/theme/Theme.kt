@@ -6,15 +6,15 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val DarkColorScheme = darkColorScheme(
-    primary = CorvusAccent,
+    primary = MonochromeWhite,
     onPrimary = CorvusVoid,
-    primaryContainer = CorvusAccentDim,
+    primaryContainer = MonochromeGray,
     onPrimaryContainer = CorvusTextPrimary,
     secondary = CorvusTextSecondary,
     onSecondary = CorvusVoid,
     secondaryContainer = CorvusSurfaceRaised,
     onSecondaryContainer = CorvusTextPrimary,
-    tertiary = CorvusAccentDim,
+    tertiary = MonochromeGray,
     onTertiary = CorvusVoid,
     background = CorvusVoid,
     onBackground = CorvusTextPrimary,
@@ -29,15 +29,15 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = CorvusAccent,
-    onPrimary = CorvusVoid,
-    primaryContainer = CorvusAccentDim,
+    primary = MonochromeBlack,
+    onPrimary = CorvusVoidLight,
+    primaryContainer = MonochromeGray,
     onPrimaryContainer = CorvusTextPrimaryLight,
     secondary = CorvusTextSecondaryLight,
     onSecondary = CorvusVoidLight,
     secondaryContainer = CorvusSurfaceRaisedLight,
     onSecondaryContainer = CorvusTextPrimaryLight,
-    tertiary = CorvusAccentDim,
+    tertiary = MonochromeGray,
     onTertiary = CorvusVoidLight,
     background = CorvusVoidLight,
     onBackground = CorvusTextPrimaryLight,

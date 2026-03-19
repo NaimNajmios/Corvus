@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,7 +30,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Compare
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,17 +64,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.najmi.corvus.R
 import com.najmi.corvus.domain.model.CorvusResult
 import com.najmi.corvus.domain.model.Verdict
-import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.CompareViewModel
 import com.najmi.corvus.ui.viewmodel.HistoryViewModel
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -136,9 +136,9 @@ fun HistoryScreen(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = MaterialTheme.colorScheme.onBackground,
                 unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                focusedBorderColor = CorvusAccent,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                cursorColor = CorvusAccent,
+                cursorColor = MaterialTheme.colorScheme.primary,
                 focusedContainerColor = MaterialTheme.colorScheme.background,
                 unfocusedContainerColor = MaterialTheme.colorScheme.background
             ),
@@ -171,7 +171,7 @@ fun HistoryScreen(
                     },
                     label = { Text(label) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = CorvusAccent,
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
                         containerColor = MaterialTheme.colorScheme.background,
                         labelColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -302,7 +302,7 @@ fun HistoryScreen(
                 snackbarData = data,
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.onBackground,
-                actionColor = CorvusAccent
+                actionColor = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -324,7 +324,7 @@ fun HistoryItem(
             .clickable { onClick() }
             .then(
                 if (isSelected) {
-                    Modifier.border(2.dp, CorvusAccent, CorvusShapes.small)
+                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CorvusShapes.small)
                 } else {
                     Modifier
                 }
@@ -348,12 +348,12 @@ fun HistoryItem(
                         modifier = Modifier
                             .size(24.dp)
                             .background(
-                                if (isSelected) CorvusAccent else MaterialTheme.colorScheme.surfaceVariant,
+                                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                                 CircleShape
                             )
                             .border(
                                 width = 1.dp,
-                                color = if (isSelected) CorvusAccent else MaterialTheme.colorScheme.outline,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                                 shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -408,7 +408,7 @@ fun HistoryItem(
 @Composable
 fun VerdictBadge(verdict: Verdict, modifier: Modifier = Modifier) {
     val (color, text) = when (verdict) {
-        Verdict.TRUE -> CorvusAccent to "TRUE"
+        Verdict.TRUE -> MaterialTheme.colorScheme.primary to "TRUE"
         Verdict.FALSE -> MaterialTheme.colorScheme.error to "FALSE"
         Verdict.MISLEADING -> MaterialTheme.colorScheme.tertiary to "MISLEADING"
         Verdict.PARTIALLY_TRUE -> MaterialTheme.colorScheme.secondary to "PARTIAL"
@@ -451,7 +451,7 @@ private fun CompareSelectionBar(
             Icon(
                 imageVector = Icons.Default.Compare,
                 contentDescription = null,
-                tint = CorvusAccent,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
             Text(
@@ -478,7 +478,7 @@ private fun CompareSelectionBar(
                 onClick = onCompare,
                 enabled = selectedCount >= 2,
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = CorvusAccent,
+                    containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 shape = CorvusShapes.small
@@ -540,20 +540,17 @@ private fun CrowSearchIllustration() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = "C",
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 40.sp,
-                    letterSpacing = 2.sp
-                ),
-                color = CorvusAccent.copy(alpha = 0.6f)
+            Image(
+                painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                contentDescription = "Corvus Logo",
+                modifier = Modifier.size(60.dp)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Box(
                 modifier = Modifier
                     .size(60.dp, 3.dp)
                     .background(
-                        CorvusAccent.copy(alpha = 0.3f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                         CorvusShapes.extraSmall
                     )
             )

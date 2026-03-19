@@ -9,8 +9,6 @@ val CorvusBorder = Color(0xFF2A2A35)
 val CorvusTextPrimary = Color(0xFFF0EFE8)
 val CorvusTextSecondary = Color(0xFF8A8A99)
 val CorvusTextTertiary = Color(0xFF4A4A5A)
-val CorvusAccent = Color(0xFF00D4AA)
-val CorvusAccentDim = Color(0xFF00A88A)
 
 val CorvusVoidLight = Color(0xFFFFFFFF)
 val CorvusSurfaceLight = Color(0xFFF5F5F5)
@@ -20,8 +18,14 @@ val CorvusTextPrimaryLight = Color(0xFF1A1A1A)
 val CorvusTextSecondaryLight = Color(0xFF6A6A6A)
 val CorvusTextTertiaryLight = Color(0xFF9A9A9A)
 
-val VerdictTrue = Color(0xFF4CAF6E)
-val VerdictFalse = Color(0xFFE8524A)
-val VerdictMisleading = Color(0xFFE8A830)
-val VerdictPartiallyTrue = Color(0xFF5A9FD4)
-val VerdictUnverifiable = Color(0xFF7A7A8A)
+// Monochromatic Accents
+val MonochromeWhite = Color(0xFFFFFFFF)
+val MonochromeBlack = Color(0xFF000000)
+val MonochromeGray = Color(0xFF8A8A99)
+
+// Muted Verdict Colors for Monochromatic Theme
+val VerdictTrue = Color(0xFF4A8A5A)
+val VerdictFalse = Color(0xFF8A4A4A)
+val VerdictMisleading = Color(0xFF8A7A4A)
+val VerdictPartiallyTrue = Color(0xFF4A6A8A)
+val VerdictUnverifiable = Color(0xFF5A5A6A)

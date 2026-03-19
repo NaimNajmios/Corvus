@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,11 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.najmi.corvus.R
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.ui.components.PipelineStepIndicator
-import com.najmi.corvus.ui.theme.CorvusAccent
 import kotlinx.coroutines.delay
 
 @Composable
@@ -115,7 +117,7 @@ private fun LoadingContent(
         Text(
             text = "CORVUS",
             style = MaterialTheme.typography.headlineMedium,
-            color = CorvusAccent
+            color = MaterialTheme.colorScheme.primary
         )
         
         Spacer(modifier = Modifier.height(8.dp))
@@ -193,7 +195,7 @@ private fun ErrorContent(
         Button(
             onClick = onRetry,
             colors = ButtonDefaults.buttonColors(
-                containerColor = CorvusAccent,
+                containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ),
             shape = MaterialTheme.shapes.small
@@ -223,10 +225,10 @@ private fun PulsingLogo() {
             .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.extraSmall),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "C",
-            style = MaterialTheme.typography.displayLarge,
-            color = CorvusAccent
+        Image(
+            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+            contentDescription = "Corvus Logo",
+            modifier = Modifier.size(60.dp)
         )
     }
 }

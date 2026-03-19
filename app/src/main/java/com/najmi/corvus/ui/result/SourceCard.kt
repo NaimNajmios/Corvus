@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.najmi.corvus.domain.model.Source
-import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.theme.CorvusShapes
 
 @Composable
@@ -97,7 +96,7 @@ fun SourceCard(
                 Text(
                     text = publisher.uppercase(),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                    color = CorvusAccent
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -166,7 +165,7 @@ private fun PublisherFavicon(
             Text(
                 text = publisher?.firstOrNull()?.uppercase() ?: "?",
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                color = CorvusAccent
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }

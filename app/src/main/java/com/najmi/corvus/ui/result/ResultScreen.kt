@@ -56,7 +56,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
 import kotlinx.coroutines.delay
@@ -192,7 +191,7 @@ fun ResultScreen(
                             Text(
                                 text = "-",
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = CorvusAccent
+                                color = MaterialTheme.colorScheme.primary
                             )
                             Text(
                                 text = fact,
@@ -261,7 +260,7 @@ fun ResultScreen(
                             .weight(1f)
                             .height(52.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = CorvusAccent,
+                            containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         ),
                         shape = CorvusShapes.small
@@ -369,7 +368,7 @@ private fun ExpandableExplanation(
                     Icon(
                         if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = if (isExpanded) "Show less" else "Show more",
-                        tint = CorvusAccent
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }

@@ -14,6 +14,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,12 +49,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.najmi.corvus.R
 import com.najmi.corvus.ui.components.PipelineStepIndicator
-import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.theme.VerdictFalse
 import com.najmi.corvus.ui.theme.VerdictMisleading
@@ -155,9 +157,9 @@ fun InputScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = MaterialTheme.colorScheme.onBackground,
                     unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    focusedBorderColor = CorvusAccent,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    cursorColor = CorvusAccent,
+                    cursorColor = MaterialTheme.colorScheme.primary,
                     focusedContainerColor = MaterialTheme.colorScheme.background,
                     unfocusedContainerColor = MaterialTheme.colorScheme.background
                 ),
@@ -227,9 +229,9 @@ fun InputScreen(
                         .height(52.dp),
                     enabled = uiState.inputText.isNotBlank() && !uiState.isLoading,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = CorvusAccent,
+                        containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
-                        disabledContainerColor = CorvusAccent.copy(alpha = 0.3f),
+                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                         disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
                     ),
                     shape = CorvusShapes.small
@@ -255,18 +257,10 @@ fun CrowLogoMark(modifier: Modifier = Modifier) {
             .padding(12.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "C",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontSize = 32.sp,
-                    letterSpacing = 2.sp
-                ),
-                color = CorvusAccent
-            )
-        }
+        Image(
+            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+            contentDescription = "Corvus Logo",
+            modifier = Modifier.size(48.dp)
+        )
     }
 }

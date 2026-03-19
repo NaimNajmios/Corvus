@@ -44,7 +44,6 @@ import com.najmi.corvus.ui.input.InputScreen
 import com.najmi.corvus.ui.result.LoadingScreen
 import com.najmi.corvus.ui.result.ResultScreen
 import com.najmi.corvus.ui.settings.SettingsScreen
-import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
 import kotlinx.coroutines.launch
 
@@ -161,8 +160,8 @@ fun CorvusApp(
                             },
                             label = { Text(item.title) },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = CorvusAccent,
-                                selectedTextColor = CorvusAccent,
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
                                 unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 indicatorColor = MaterialTheme.colorScheme.surfaceVariant

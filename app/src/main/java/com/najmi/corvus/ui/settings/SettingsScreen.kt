@@ -56,7 +56,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.data.repository.LlmProvider
-import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.theme.CorvusBorder
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.theme.CorvusVoid
@@ -110,7 +109,7 @@ fun SettingsScreen(
                                 },
                                 trailingIcon = {
                                     if (provider == uiState.preferences.preferredProvider) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = CorvusAccent)
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     }
                                 }
                             )
@@ -141,7 +140,7 @@ fun SettingsScreen(
                                 },
                                 trailingIcon = {
                                     if (code == uiState.preferences.responseLanguage) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = CorvusAccent)
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     }
                                 }
                             )
@@ -185,7 +184,7 @@ fun SettingsScreen(
                             },
                             trailingIcon = {
                                 if (uiState.preferences.darkMode == null) {
-                                    Icon(Icons.Default.Check, contentDescription = null, tint = CorvusAccent)
+                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         )
@@ -211,7 +210,7 @@ fun SettingsScreen(
                             },
                             trailingIcon = {
                                 if (uiState.preferences.darkMode == true) {
-                                    Icon(Icons.Default.Check, contentDescription = null, tint = CorvusAccent)
+                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         )
@@ -237,7 +236,7 @@ fun SettingsScreen(
                             },
                             trailingIcon = {
                                 if (uiState.preferences.darkMode == false) {
-                                    Icon(Icons.Default.Check, contentDescription = null, tint = CorvusAccent)
+                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         )
@@ -313,7 +312,7 @@ fun SettingsSection(
         Text(
             text = title,
             style = MaterialTheme.typography.labelMedium,
-            color = CorvusAccent,
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
         )
         Card(
@@ -448,7 +447,7 @@ fun ThemePreviewSwatch(isDark: Boolean) {
             modifier = Modifier
                 .size(24.dp)
                 .clip(CorvusShapes.extraSmall)
-                .background(CorvusAccent)
+                .background(MaterialTheme.colorScheme.primary)
         )
     }
 }
@@ -564,7 +563,7 @@ fun SettingsToggleItem(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                checkedTrackColor = CorvusAccent,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
                 uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 uncheckedTrackColor = MaterialTheme.colorScheme.outline
             )
