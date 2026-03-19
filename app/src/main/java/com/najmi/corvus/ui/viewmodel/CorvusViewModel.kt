@@ -2,11 +2,15 @@ package com.najmi.corvus.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.najmi.corvus.data.repository.HistoryRepository
 import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.CorvusUiState
 import com.najmi.corvus.domain.model.PipelineStep
-import com.najmi.corvus.domain.usecase.CompositeFactCheckPipeline
+import com.najmi.corvus.worker.FactCheckWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,8 +22,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CorvusViewModel @Inject constructor(
-    private val compositePipeline: CompositeFactCheckPipeline,
-    private val historyRepository: HistoryRepository
+    private val historyRepository: HistoryRepository,
+    private val workManager: WorkManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CorvusUiState())
@@ -44,27 +48,49 @@ class CorvusViewModel @Inject constructor(
             return
         }
 
-        analysisJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null, result = null, currentStep = PipelineStep.IDLE) }
+        val workRequest = OneTimeWorkRequestBuilder<FactCheckWorker>()
+            .setInputData(workDataOf("inputText" to claim))
+            .build()
 
-            try {
-                val result = compositePipeline.check(claim) { step ->
-                    _uiState.update { it.copy(currentStep = step) }
-                }
-                _uiState.update { it.copy(result = result, isLoading = false, currentStep = PipelineStep.DONE) }
-                
-                historyRepository.saveResult(result)
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        error = "Analysis failed: ${e.message}",
-                        isLoading = false,
-                        currentStep = PipelineStep.IDLE
-                    )
+        workManager.enqueue(workRequest)
+
+        analysisJob = viewModelScope.launch {
+            workManager.getWorkInfoByIdFlow(workRequest.id).collect { workInfo ->
+                if (workInfo != null) {
+                    when (workInfo.state) {
+                        WorkInfo.State.RUNNING -> {
+                            val stepName = workInfo.progress.getString("step")
+                            val step = stepName?.let { PipelineStep.valueOf(it) } ?: PipelineStep.IDLE
+                            _uiState.update { it.copy(isLoading = true, currentStep = step, error = null) }
+                        }
+                        WorkInfo.State.SUCCEEDED -> {
+                            _uiState.update { it.copy(isLoading = false, currentStep = PipelineStep.DONE) }
+                            // We might want to fetch the result from repository here if needed for UI
+                            // but usually the result screen fetch it from state.
+                            // For now, we rely on the background save.
+                            loadLastResult()
+                        }
+                        WorkInfo.State.FAILED -> {
+                            val error = workInfo.outputData.getString("error") ?: "Analysis failed"
+                            _uiState.update { it.copy(isLoading = false, error = error) }
+                        }
+                        else -> {}
+                    }
                 }
             }
         }
     }
+
+    private fun loadLastResult() {
+        viewModelScope.launch {
+            historyRepository.getAllHistory().collect { history ->
+                if (history.isNotEmpty()) {
+                    _uiState.update { it.copy(result = history.first()) }
+                }
+            }
+        }
+    }
+
 
     fun cancelAnalysis() {
         analysisJob?.cancel()

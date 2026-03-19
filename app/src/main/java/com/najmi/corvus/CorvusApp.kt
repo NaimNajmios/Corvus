@@ -67,6 +67,8 @@ data class BottomNavItem(
 fun CorvusApp(
     modifier: Modifier = Modifier,
     sharedText: String? = null,
+    instantAnalyze: Boolean = false,
+    initialResultId: String? = null,
     onSharedTextProcessed: () -> Unit = {},
     viewModel: CorvusViewModel = hiltViewModel()
 ) {
@@ -102,7 +104,7 @@ fun CorvusApp(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(sharedText) {
+    LaunchedEffect(sharedText, instantAnalyze) {
         if (sharedText != null) {
             val textToShow = if (sharedText.length > 500) {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -116,11 +118,25 @@ fun CorvusApp(
             }
             viewModel.updateInputText(textToShow)
             
-            snackbarHostState.showSnackbar(
-                message = "Text received from another app",
-                duration = SnackbarDuration.Short
-            )
+            if (instantAnalyze) {
+                viewModel.analyze()
+                navController.navigate(Routes.LOADING)
+            } else {
+                snackbarHostState.showSnackbar(
+                    message = "Text received from another app",
+                    duration = SnackbarDuration.Short
+                )
+            }
             
+            onSharedTextProcessed()
+        }
+    }
+
+    LaunchedEffect(initialResultId) {
+        if (initialResultId != null) {
+            // Ideally we'd load the specific result into ViewModel
+            // For now, load last results and navigate
+            navController.navigate(Routes.RESULT)
             onSharedTextProcessed()
         }
     }

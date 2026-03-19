@@ -31,6 +31,8 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     
     var sharedText by mutableStateOf<String?>(null)
+    var instantAnalyze by mutableStateOf(false)
+    var initialResultId by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,10 +41,20 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
         
         setContent {
-            CorvusAppWithTheme(
-                sharedText = sharedText,
-                onSharedTextProcessed = { sharedText = null }
-            )
+            CorvusTheme(darkTheme = isSystemInDarkTheme(this)) {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    CorvusApp(
+                        sharedText = sharedText,
+                        instantAnalyze = instantAnalyze,
+                        initialResultId = initialResultId,
+                        onSharedTextProcessed = { 
+                            sharedText = null
+                            instantAnalyze = false
+                            initialResultId = null
+                        }
+                    )
+                }
+            }
         }
     }
 
@@ -56,51 +68,22 @@ class MainActivity : ComponentActivity() {
             Intent.ACTION_SEND -> {
                 if (intent.type == "text/plain") {
                     sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+                    // Detect if started via FactCheckShareActivity alias
+                    instantAnalyze = intent.component?.className?.endsWith("FactCheckShareActivity") == true
                 }
             }
+        }
+        
+        // Handle resultId from notification
+        val resultId = intent?.getStringExtra("resultId")
+        if (resultId != null) {
+            initialResultId = resultId
         }
     }
 
     fun getClipboardText(): String? {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         return clipboard.primaryClip?.getItemAt(0)?.text?.toString()
-    }
-}
-
-@Composable
-fun CorvusAppWithTheme(
-    sharedText: String?,
-    onSharedTextProcessed: () -> Unit = {}
-) {
-    val context = LocalContext.current
-    val preferencesRepository = remember { UserPreferencesRepository(context) }
-    val preferences by preferencesRepository.preferences.collectAsState(initial = null)
-    
-    val systemDark = isSystemInDarkTheme(context)
-    
-    var isThemeLoaded by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(preferences) {
-        isThemeLoaded = true
-    }
-    
-    val isDarkTheme = preferences?.darkMode ?: systemDark
-    
-    if (!isThemeLoaded || preferences == null) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-        )
-    } else {
-        CorvusTheme(darkTheme = isDarkTheme) {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                CorvusApp(
-                    sharedText = sharedText,
-                    onSharedTextProcessed = onSharedTextProcessed
-                )
-            }
-        }
     }
 }
 
