@@ -64,12 +64,24 @@ class HistoryRepository @Inject constructor(
 
     private fun CorvusHistoryEntity.toCorvusResult(): CorvusCheckResult? {
         return try {
-            when (resultType) {
+            val result = when (resultType) {
                 "GENERAL" -> json.decodeFromString<CorvusCheckResult.GeneralResult>(dataJson)
                 "QUOTE" -> json.decodeFromString<CorvusCheckResult.QuoteResult>(dataJson)
                 "COMPOSITE" -> json.decodeFromString<CorvusCheckResult.CompositeResult>(dataJson)
                 "VIRAL" -> json.decodeFromString<CorvusCheckResult.ViralHoaxResult>(dataJson)
                 else -> null
+            }
+            
+            // Fix: ensure the timestamp from the entity is used if the JSON has it as 0
+            result?.let {
+                if (it.checkedAt == 0L) {
+                    when (it) {
+                        is CorvusCheckResult.GeneralResult -> it.copy(checkedAt = checkedAt)
+                        is CorvusCheckResult.QuoteResult -> it.copy(checkedAt = checkedAt)
+                        is CorvusCheckResult.CompositeResult -> it.copy(checkedAt = checkedAt)
+                        is CorvusCheckResult.ViralHoaxResult -> it.copy(checkedAt = checkedAt)
+                    }
+                } else it
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse result $id: ${e.message}")

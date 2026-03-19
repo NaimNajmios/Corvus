@@ -23,7 +23,7 @@ sealed class CorvusCheckResult {
         override val sources: List<Source> = emptyList(),
         override val providerUsed: String = "unknown",
         val language: ClaimLanguage = ClaimLanguage.UNKNOWN,
-        override val checkedAt: Long = 0,
+        override val checkedAt: Long = System.currentTimeMillis(),
         val isFromKnownFactCheck: Boolean = false,
         val claimType: ClaimType = ClaimType.GENERAL,
         val confidenceTimeline: List<ConfidencePoint> = emptyList()
@@ -45,7 +45,7 @@ sealed class CorvusCheckResult {
         val isVerbatim: Boolean = false,
         val contextAccurate: Boolean = false,
         override val providerUsed: String = "unknown",
-        override val checkedAt: Long = 0,
+        override val checkedAt: Long = System.currentTimeMillis(),
         val confidenceTimeline: List<ConfidencePoint> = emptyList()
     ) : CorvusCheckResult()
 
@@ -59,7 +59,7 @@ sealed class CorvusCheckResult {
         val compositeSummary: String = "",
         override val sources: List<Source> = emptyList(),
         override val providerUsed: String = "Corvus Aggregator",
-        override val checkedAt: Long = 0,
+        override val checkedAt: Long = System.currentTimeMillis(),
         val confidenceTimeline: List<ConfidencePoint> = emptyList()
     ) : CorvusCheckResult()
 
