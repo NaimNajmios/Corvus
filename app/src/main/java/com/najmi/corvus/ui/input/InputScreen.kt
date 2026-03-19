@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -252,15 +254,16 @@ fun InputScreen(
 fun CrowLogoMark(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .size(64.dp)
-            .background(MaterialTheme.colorScheme.surface, CorvusShapes.extraSmall)
-            .padding(12.dp),
+            .size(96.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
         Image(
             painter = painterResource(id = R.mipmap.ic_launcher_foreground),
             contentDescription = "Corvus Logo",
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(64.dp)
         )
     }
 }
