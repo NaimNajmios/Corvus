@@ -8,14 +8,19 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.najmi.corvus.data.local.UserPreferencesRepository
 import com.najmi.corvus.ui.theme.CorvusTheme
@@ -34,7 +39,10 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
         
         setContent {
-            CorvusAppWithTheme(sharedText = sharedText)
+            CorvusAppWithTheme(
+                sharedText = sharedText,
+                onSharedTextProcessed = { sharedText = null }
+            )
         }
     }
 
@@ -60,18 +68,38 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun CorvusAppWithTheme(sharedText: String?) {
+fun CorvusAppWithTheme(
+    sharedText: String?,
+    onSharedTextProcessed: () -> Unit = {}
+) {
     val context = LocalContext.current
-    val preferencesRepository = UserPreferencesRepository(context)
+    val preferencesRepository = remember { UserPreferencesRepository(context) }
     val preferences by preferencesRepository.preferences.collectAsState(initial = null)
     
     val systemDark = isSystemInDarkTheme(context)
     
+    var isThemeLoaded by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(preferences) {
+        isThemeLoaded = true
+    }
+    
     val isDarkTheme = preferences?.darkMode ?: systemDark
     
-    CorvusTheme(darkTheme = isDarkTheme) {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            CorvusApp(sharedText = sharedText)
+    if (!isThemeLoaded || preferences == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        )
+    } else {
+        CorvusTheme(darkTheme = isDarkTheme) {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                CorvusApp(
+                    sharedText = sharedText,
+                    onSharedTextProcessed = onSharedTextProcessed
+                )
+            }
         }
     }
 }

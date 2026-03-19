@@ -5,7 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,8 +23,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Compare
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -67,6 +72,7 @@ import com.najmi.corvus.domain.model.CorvusResult
 import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.theme.CorvusShapes
+import com.najmi.corvus.ui.viewmodel.CompareViewModel
 import com.najmi.corvus.ui.viewmodel.HistoryViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -76,10 +82,13 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
-    viewModel: HistoryViewModel = hiltViewModel(),
-    onItemClick: (CorvusResult) -> Unit
+    historyViewModel: HistoryViewModel = hiltViewModel(),
+    compareViewModel: CompareViewModel = hiltViewModel(),
+    onItemClick: (CorvusResult) -> Unit,
+    onCompare: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by historyViewModel.uiState.collectAsState()
+    val compareUiState by compareViewModel.uiState.collectAsState()
     val hapticFeedback = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -94,9 +103,9 @@ fun HistoryScreen(
                 duration = SnackbarDuration.Short
             )
             if (result == SnackbarResult.ActionPerformed) {
-                viewModel.undoDelete()
+                historyViewModel.undoDelete()
             } else {
-                viewModel.confirmDelete()
+                historyViewModel.confirmDelete()
             }
             pendingDeleteItem = null
         }
@@ -116,7 +125,7 @@ fun HistoryScreen(
 
         OutlinedTextField(
             value = uiState.searchQuery,
-            onValueChange = { viewModel.search(it) },
+            onValueChange = { historyViewModel.search(it) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
@@ -158,7 +167,7 @@ fun HistoryScreen(
                     selected = uiState.selectedVerdictFilter == value,
                     onClick = {
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        viewModel.filterByVerdict(value)
+                        historyViewModel.filterByVerdict(value)
                     },
                     label = { Text(label) },
                     colors = FilterChipDefaults.filterChipColors(
@@ -195,7 +204,7 @@ fun HistoryScreen(
                             if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                 isRemoved = true
-                                viewModel.prepareDelete(item)
+                                historyViewModel.prepareDelete(item)
                                 true
                             } else {
                                 false
@@ -212,7 +221,7 @@ fun HistoryScreen(
                     AnimatedVisibility(
                         visible = !isRemoved,
                         enter = fadeIn() + slideInVertically(),
-                        exit = fadeOut() + slideOutHorizontally(targetOffsetX = { -it })
+                        exit = fadeOut() + slideOutVertically { it }
                     ) {
                         SwipeToDismissBox(
                             state = dismissState,
@@ -245,20 +254,44 @@ fun HistoryScreen(
                         ) {
                             HistoryItem(
                                 result = item,
+                                isSelected = compareViewModel.isSelected(item.id),
                                 onClick = {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                     onItemClick(item)
                                 },
                                 onDelete = {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    viewModel.prepareDelete(item)
+                                    historyViewModel.prepareDelete(item)
                                     pendingDeleteItem = item
-                                }
+                                },
+                                onToggleCompare = {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    compareViewModel.toggleSelection(item)
+                                },
+                                canToggleCompare = compareUiState.canAddMore || compareViewModel.isSelected(item.id)
                             )
                         }
                     }
                 }
             }
+        }
+
+        AnimatedVisibility(
+            visible = compareUiState.isCompareMode,
+            enter = slideInVertically { it },
+            exit = slideOutVertically { it }
+        ) {
+            CompareSelectionBar(
+                selectedCount = compareUiState.selectedClaims.size,
+                onClear = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    compareViewModel.clearSelection()
+                },
+                onCompare = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onCompare()
+                }
+            )
         }
 
         SnackbarHost(
@@ -278,14 +311,24 @@ fun HistoryScreen(
 @Composable
 fun HistoryItem(
     result: CorvusResult,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onToggleCompare: (() -> Unit)? = null,
+    canToggleCompare: Boolean = true
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .clickable { onClick() },
+            .clickable { onClick() }
+            .then(
+                if (isSelected) {
+                    Modifier.border(2.dp, CorvusAccent, CorvusShapes.small)
+                } else {
+                    Modifier
+                }
+            ),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = CorvusShapes.small
     ) {
@@ -295,6 +338,39 @@ fun HistoryItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.Top
         ) {
+            if (onToggleCompare != null) {
+                IconButton(
+                    onClick = onToggleCompare,
+                    enabled = canToggleCompare,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(
+                                if (isSelected) CorvusAccent else MaterialTheme.colorScheme.surfaceVariant,
+                                CircleShape
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = if (isSelected) CorvusAccent else MaterialTheme.colorScheme.outline,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Selected",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            
             VerdictBadge(verdict = result.verdict, modifier = Modifier)
             
             Spacer(modifier = Modifier.width(12.dp))
@@ -351,6 +427,71 @@ fun VerdictBadge(verdict: Verdict, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.labelSmall,
             color = color
         )
+    }
+}
+
+@Composable
+private fun CompareSelectionBar(
+    selectedCount: Int,
+    onClear: () -> Unit,
+    onCompare: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Compare,
+                contentDescription = null,
+                tint = CorvusAccent,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = "$selectedCount selected",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+        
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TextButton(onClick = onClear) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Clear selection",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Clear")
+            }
+            
+            androidx.compose.material3.Button(
+                onClick = onCompare,
+                enabled = selectedCount >= 2,
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = CorvusAccent,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = CorvusShapes.small
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Compare,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Compare")
+            }
+        }
     }
 }
 

@@ -57,7 +57,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.data.repository.LlmProvider
 import com.najmi.corvus.ui.theme.CorvusAccent
+import com.najmi.corvus.ui.theme.CorvusBorder
 import com.najmi.corvus.ui.theme.CorvusShapes
+import com.najmi.corvus.ui.theme.CorvusVoid
+import com.najmi.corvus.ui.theme.CorvusVoidLight
 import com.najmi.corvus.ui.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -176,6 +179,7 @@ fun SettingsScreen(
                                 }
                             },
                             onClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                 viewModel.setDarkMode(null)
                                 showDarkModeMenu = false
                             },
@@ -201,6 +205,7 @@ fun SettingsScreen(
                                 }
                             },
                             onClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                 viewModel.setDarkMode(true)
                                 showDarkModeMenu = false
                             },
@@ -226,6 +231,7 @@ fun SettingsScreen(
                                 }
                             },
                             onClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                 viewModel.setDarkMode(false)
                                 showDarkModeMenu = false
                             },
@@ -237,7 +243,12 @@ fun SettingsScreen(
                         )
                     },
                     expanded = showDarkModeMenu,
-                    onDismiss = { showDarkModeMenu = false }
+                    onDismiss = { showDarkModeMenu = false },
+                    trailingPreview = {
+                        ThemePreviewSwatch(
+                            isDark = uiState.preferences.darkMode ?: isSystemInDarkTheme()
+                        )
+                    }
                 )
 
                 SettingsToggleItem(
@@ -367,7 +378,8 @@ fun SettingsItemWithDropdown(
     onClick: () -> Unit,
     dropdownContent: @Composable () -> Unit,
     expanded: Boolean,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    trailingPreview: @Composable (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
@@ -399,6 +411,8 @@ fun SettingsItemWithDropdown(
             )
         }
         
+        trailingPreview?.invoke()
+        
         Box {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
@@ -414,6 +428,38 @@ fun SettingsItemWithDropdown(
             }
         }
     }
+}
+
+@Composable
+fun ThemePreviewSwatch(isDark: Boolean) {
+    Row(
+        modifier = Modifier.padding(end = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CorvusShapes.extraSmall)
+                .background(if (isDark) CorvusVoid else CorvusVoidLight)
+                .border(1.dp, CorvusBorder, CorvusShapes.extraSmall)
+        )
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CorvusShapes.extraSmall)
+                .background(CorvusAccent)
+        )
+    }
+}
+
+@Composable
+fun isSystemInDarkTheme(): Boolean {
+    val bgColor = MaterialTheme.colorScheme.background
+    val r = bgColor.red
+    val g = bgColor.green
+    val b = bgColor.blue
+    return 0.299f * r + 0.587f * g + 0.114f * b > 0.5f
 }
 
 @Composable
