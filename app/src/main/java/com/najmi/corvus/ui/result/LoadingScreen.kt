@@ -1,5 +1,6 @@
 package com.najmi.corvus.ui.result
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -55,6 +56,10 @@ fun LoadingScreen(
             elapsedSeconds++
         }
     }
+
+    BackHandler(onBack = {
+        if (error != null) onRetry() else onCancel()
+    })
 
     Box(
         modifier = Modifier

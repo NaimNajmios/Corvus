@@ -1,6 +1,7 @@
 package com.najmi.corvus.ui.result
 
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -77,6 +78,8 @@ fun ResultScreen(
         delay(100)
         showContent = true
     }
+
+    BackHandler(onBack = onBack)
 
     fun shareResult() {
         result?.let { r ->

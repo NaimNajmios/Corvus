@@ -204,7 +204,7 @@ fun CorvusApp(
                         },
                         onResultReady = {
                             navController.navigate(Routes.RESULT) {
-                                popUpTo(Routes.INPUT) { inclusive = true }
+                                popUpTo(Routes.INPUT) { inclusive = false }
                             }
                         }
                     )
@@ -221,9 +221,7 @@ fun CorvusApp(
                         },
                         onBack = {
                             viewModel.reset()
-                            navController.navigate(Routes.INPUT) {
-                                popUpTo(Routes.INPUT) { inclusive = true }
-                            }
+                            navController.popBackStack()
                         }
                     )
                 }
@@ -262,7 +260,7 @@ fun CorvusApp(
             when {
                 uiState.result != null && !uiState.isLoading -> {
                     navController.navigate(Routes.RESULT) {
-                        popUpTo(Routes.INPUT) { inclusive = true }
+                        popUpTo(Routes.INPUT) { inclusive = false }
                     }
                 }
                 uiState.error != null && !uiState.isLoading -> {
