@@ -1,5 +1,6 @@
 package com.najmi.corvus.data.repository
 
+import android.util.Log
 import com.najmi.corvus.data.remote.GeminiClient
 import com.najmi.corvus.data.remote.GroqClient
 import com.najmi.corvus.domain.model.CorvusResult
@@ -31,6 +32,10 @@ class LlmRepository @Inject constructor(
     private val groqClient: GroqClient,
     private val json: Json
 ) {
+    companion object {
+        private const val TAG = "LlmRepository"
+    }
+
     suspend fun analyze(
         claim: String,
         sources: List<Source>,
@@ -38,15 +43,25 @@ class LlmRepository @Inject constructor(
     ): CorvusResult {
         val prompt = buildPrompt(claim, sources)
         
+        Log.d(TAG, "Analyzing with ${provider.name}, sources count: ${sources.size}")
+        
         val responseText = try {
             when (provider) {
-                LlmProvider.GEMINI -> geminiClient.generateContent(prompt)
-                LlmProvider.GROQ -> groqClient.chat(prompt)
+                LlmProvider.GEMINI -> {
+                    Log.d(TAG, "Calling Gemini...")
+                    geminiClient.generateContent(prompt)
+                }
+                LlmProvider.GROQ -> {
+                    Log.d(TAG, "Calling Groq...")
+                    groqClient.chat(prompt)
+                }
             }
         } catch (e: Exception) {
+            Log.e(TAG, "${provider.name} failed: ${e.message}", e)
             throw e
         }
 
+        Log.d(TAG, "Got response, parsing...")
         return parseResponse(responseText, sources)
     }
 
@@ -82,6 +97,8 @@ Respond ONLY with valid JSON, no markdown, no preamble:
     }
 
     private fun parseResponse(responseText: String, allSources: List<Source>): CorvusResult {
+        Log.d(TAG, "Raw response: ${responseText.take(500)}")
+        
         val cleanedText = responseText
             .trim()
             .removePrefix("```json")
@@ -91,6 +108,7 @@ Respond ONLY with valid JSON, no markdown, no preamble:
 
         return try {
             val parsed = json.decodeFromString<LlmAnalysisResponse>(cleanedText)
+            Log.d(TAG, "Parsed verdict: ${parsed.verdict}")
             val usedSources = parsed.sourcesUsed.mapNotNull { allSources.getOrNull(it) }
 
             CorvusResult(
@@ -101,6 +119,7 @@ Respond ONLY with valid JSON, no markdown, no preamble:
                 sources = usedSources.ifEmpty { allSources.take(3) }
             )
         } catch (e: Exception) {
+            Log.e(TAG, "Parse failed: ${e.message}")
             throw Exception("Failed to parse LLM response: ${e.message}")
         }
     }
@@ -112,7 +131,10 @@ Respond ONLY with valid JSON, no markdown, no preamble:
             "MISLEADING" -> Verdict.MISLEADING
             "PARTIALLY_TRUE" -> Verdict.PARTIALLY_TRUE
             "UNVERIFIABLE" -> Verdict.UNVERIFIABLE
-            else -> Verdict.UNVERIFIABLE
+            else -> {
+                Log.w(TAG, "Unknown verdict: $verdict")
+                Verdict.UNVERIFIABLE
+            }
         }
     }
 }
