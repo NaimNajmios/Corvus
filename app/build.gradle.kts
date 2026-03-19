@@ -30,6 +30,10 @@ android {
             useSupportLibrary = true
         }
 
+        ndk {
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a"))
+        }
+
         buildConfigField("String", "GOOGLE_FACT_CHECK_API_KEY", "\"${localProperties.getProperty("GOOGLE_FACT_CHECK_API_KEY", "")}\"")
         buildConfigField("String", "TAVILY_API_KEY", "\"${localProperties.getProperty("TAVILY_API_KEY", "")}\"")
         buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"")
@@ -43,6 +47,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
