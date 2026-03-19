@@ -32,6 +32,7 @@ import com.najmi.corvus.ui.components.ConfidenceBar
 import com.najmi.corvus.ui.theme.CorvusAccent
 import com.najmi.corvus.ui.theme.CorvusSurface
 import com.najmi.corvus.ui.theme.CorvusTextSecondary
+import com.najmi.corvus.ui.theme.CorvusTextTertiary
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.theme.VerdictFalse
 import com.najmi.corvus.ui.theme.VerdictMisleading
@@ -140,5 +141,6 @@ fun getVerdictColor(verdict: Verdict): Color {
         Verdict.PARTIALLY_TRUE -> VerdictPartiallyTrue
         Verdict.UNVERIFIABLE -> VerdictUnverifiable
         Verdict.CHECKING -> CorvusAccent
+        Verdict.NOT_A_CLAIM -> CorvusTextTertiary
     }
 }

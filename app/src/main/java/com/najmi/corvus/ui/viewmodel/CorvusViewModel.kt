@@ -2,6 +2,7 @@ package com.najmi.corvus.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.najmi.corvus.data.repository.HistoryRepository
 import com.najmi.corvus.domain.model.CorvusResult
 import com.najmi.corvus.domain.model.CorvusUiState
 import com.najmi.corvus.domain.model.PipelineStep
@@ -16,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CorvusViewModel @Inject constructor(
-    private val factCheckUseCase: CorvusFactCheckUseCase
+    private val factCheckUseCase: CorvusFactCheckUseCase,
+    private val historyRepository: HistoryRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CorvusUiState())
@@ -47,6 +49,8 @@ class CorvusViewModel @Inject constructor(
                     _uiState.update { it.copy(currentStep = step) }
                 }
                 _uiState.update { it.copy(result = result, isLoading = false) }
+                
+                historyRepository.saveResult(result)
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(

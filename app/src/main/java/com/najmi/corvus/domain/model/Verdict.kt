@@ -6,5 +6,6 @@ enum class Verdict {
     MISLEADING,
     PARTIALLY_TRUE,
     UNVERIFIABLE,
-    CHECKING
+    CHECKING,
+    NOT_A_CLAIM
 }

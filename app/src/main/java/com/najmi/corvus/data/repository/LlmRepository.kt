@@ -1,8 +1,10 @@
 package com.najmi.corvus.data.repository
 
 import android.util.Log
+import com.najmi.corvus.data.remote.CerebrasClient
 import com.najmi.corvus.data.remote.GeminiClient
 import com.najmi.corvus.data.remote.GroqClient
+import com.najmi.corvus.data.remote.OpenRouterClient
 import com.najmi.corvus.domain.model.CorvusResult
 import com.najmi.corvus.domain.model.Source
 import com.najmi.corvus.domain.model.Verdict
@@ -15,7 +17,9 @@ import javax.inject.Singleton
 
 enum class LlmProvider {
     GEMINI,
-    GROQ
+    GROQ,
+    CEREBRAS,
+    OPENROUTER
 }
 
 @Serializable
@@ -31,6 +35,8 @@ data class LlmAnalysisResponse(
 class LlmRepository @Inject constructor(
     private val geminiClient: GeminiClient,
     private val groqClient: GroqClient,
+    private val cerebrasClient: CerebrasClient,
+    private val openRouterClient: OpenRouterClient,
     private val json: Json
 ) {
     companion object {
@@ -63,6 +69,14 @@ class LlmRepository @Inject constructor(
                     LlmProvider.GROQ -> {
                         Log.d(TAG, "Calling Groq (attempt ${attempt + 1})...")
                         groqClient.chat(prompt)
+                    }
+                    LlmProvider.CEREBRAS -> {
+                        Log.d(TAG, "Calling Cerebras (attempt ${attempt + 1})...")
+                        cerebrasClient.chat(prompt)
+                    }
+                    LlmProvider.OPENROUTER -> {
+                        Log.d(TAG, "Calling OpenRouter (attempt ${attempt + 1})...")
+                        openRouterClient.chat(prompt)
                     }
                 }
                 

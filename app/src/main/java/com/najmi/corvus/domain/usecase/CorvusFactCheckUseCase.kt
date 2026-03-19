@@ -2,19 +2,19 @@ package com.najmi.corvus.domain.usecase
 
 import android.util.Log
 import com.najmi.corvus.data.repository.GoogleFactCheckRepository
-import com.najmi.corvus.data.repository.LlmProvider
-import com.najmi.corvus.data.repository.LlmRepository
 import com.najmi.corvus.data.repository.TavilyRepository
 import com.najmi.corvus.domain.model.CorvusResult
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.domain.model.Verdict
+import com.najmi.corvus.domain.router.LlmRouter
+import com.najmi.corvus.domain.router.LlmRouterException
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 class CorvusFactCheckUseCase @Inject constructor(
     private val googleFactCheckRepository: GoogleFactCheckRepository,
     private val tavilyRepository: TavilyRepository,
-    private val llmRepository: LlmRepository
+    private val llmRouter: LlmRouter
 ) {
     companion object {
         private const val TAG = "CorvusFactCheck"
@@ -34,7 +34,7 @@ class CorvusFactCheckUseCase @Inject constructor(
             if (knownCheck != null) {
                 Log.d(TAG, "Found known fact check")
                 onStepChange(PipelineStep.DONE)
-                return knownCheck
+                return knownCheck.copy(claim = claim)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Google Fact Check failed: ${e.message}")
@@ -49,6 +49,7 @@ class CorvusFactCheckUseCase @Inject constructor(
         if (articles.isEmpty()) {
             Log.d(TAG, "No sources found - returning UNVERIFIABLE")
             return CorvusResult(
+                claim = claim,
                 verdict = Verdict.UNVERIFIABLE,
                 confidence = 0.3f,
                 explanation = "Unable to find reliable sources. Check your Tavily API key and internet connection.",
@@ -60,32 +61,37 @@ class CorvusFactCheckUseCase @Inject constructor(
         onStepChange(PipelineStep.ANALYZING)
         delay(300)
 
-        // Try Gemini first
-        try {
-            Log.d(TAG, "Attempting Gemini analysis...")
-            return llmRepository.analyze(claim, articles, LlmProvider.GEMINI)
-        } catch (geminiError: Exception) {
-            Log.e(TAG, "Gemini failed: ${geminiError.message}")
-            
-            // Try Groq as fallback
-            try {
-                Log.d(TAG, "Attempting Groq fallback...")
-                return llmRepository.analyze(claim, articles, LlmProvider.GROQ)
-            } catch (groqError: Exception) {
-                Log.e(TAG, "Groq also failed: ${groqError.message}")
-                
-                // Return partial result with sources
-                return                 CorvusResult(
-                    verdict = Verdict.UNVERIFIABLE,
-                    confidence = 0.2f,
-                    explanation = "AI analysis failed: ${geminiError.message}. " +
-                                  "Fallback error: ${groqError.message}. " +
-                                  "Showing available sources below.",
-                    keyFacts = emptyList(),
-                    sources = articles.take(3)
-                ).also {
-                    onStepChange(PipelineStep.DONE)
-                }
+        return try {
+            val (result, provider) = llmRouter.analyze(claim, articles)
+            Log.d(TAG, "Analysis succeeded with $provider")
+            result.copy(claim = claim, providerUsed = provider.name).also {
+                onStepChange(PipelineStep.DONE)
+            }
+        } catch (e: LlmRouterException) {
+            Log.e(TAG, "All providers exhausted: ${e.message}")
+            CorvusResult(
+                claim = claim,
+                verdict = Verdict.UNVERIFIABLE,
+                confidence = 0.2f,
+                explanation = "All AI providers failed. Check your API keys and internet connection. Showing available sources below.",
+                keyFacts = emptyList(),
+                sources = articles.take(3),
+                providerUsed = "none"
+            ).also {
+                onStepChange(PipelineStep.DONE)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error: ${e.message}")
+            CorvusResult(
+                claim = claim,
+                verdict = Verdict.UNVERIFIABLE,
+                confidence = 0.1f,
+                explanation = "Analysis failed: ${e.message}",
+                keyFacts = emptyList(),
+                sources = articles.take(3),
+                providerUsed = "error"
+            ).also {
+                onStepChange(PipelineStep.DONE)
             }
         }
     }

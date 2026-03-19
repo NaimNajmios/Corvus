@@ -69,4 +69,24 @@ object NetworkModule {
     @Singleton
     @Named("groq")
     fun provideGroqApiKey(): String = BuildConfig.GROQ_API_KEY
+
+    @Provides
+    @Singleton
+    @Named("cerebras")
+    fun provideCerebrasApiKey(): String = BuildConfig.CEREBRAS_API_KEY
+
+    @Provides
+    @Singleton
+    @Named("openrouter")
+    fun provideOpenRouterApiKey(): String = BuildConfig.OPENROUTER_API_KEY
+
+    @Provides
+    @Singleton
+    @Named("google_cse_api_key")
+    fun provideGoogleCseApiKey(): String = BuildConfig.GOOGLE_CUSTOM_SEARCH_API_KEY
+
+    @Provides
+    @Singleton
+    @Named("google_cse_id")
+    fun provideGoogleCseId(): String = BuildConfig.GOOGLE_CSE_ID
 }
