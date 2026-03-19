@@ -1,21 +1,15 @@
-# Corvus API Keys Configuration
-# Copy this file to local.properties and fill in your actual API keys.
-# local.properties is already in .gitignore and will NOT be committed.
+sdk.dir=/path/to/android/sdk
 
-sdk.dir=C\:\\Users\\NAIM\\AppData\\Local\\Android\\Sdk
+# API Keys - Copy this file to local.properties and fill in your keys
+# DO NOT commit local.properties - it is gitignored
+#
+# Get your free API keys from:
+# - Google Fact Check: https://developers.google.com/fact-check/tools-api
+# - Tavily: https://tavily.com
+# - Gemini (Google AI): https://aistudio.google.com/app/apikey
+# - Groq: https://console.groq.com/keys
 
-# Google Fact Check Tools API
-# Get key: https://console.cloud.google.com/apis/credentials
-GOOGLE_FACT_CHECK_API_KEY=your_google_fact_check_api_key_here
-
-# Tavily Search API
-# Get key: https://app.tavily.com (free tier: 1000 searches/month)
-TAVILY_API_KEY=your_tavily_api_key_here
-
-# Google Gemini (AI Studio)
-# Get key: https://aistudio.google.com/app/apikey
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# Groq (Llama 3.3 70B)
-# Get key: https://console.groq.com (free tier available)
-GROQ_API_KEY=your_groq_api_key_here
+GOOGLE_FACT_CHECK_API_KEY=your_google_fact_check_key_here
+TAVILY_API_KEY=your_tavily_key_here
+GEMINI_API_KEY=your_gemini_key_here
+GROQ_API_KEY=your_groq_key_here

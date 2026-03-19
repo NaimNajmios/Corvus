@@ -1,9 +1,17 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+}
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
 }
 
 android {
@@ -22,14 +30,14 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "GOOGLE_FACT_CHECK_API_KEY", "\"${project.findProperty("GOOGLE_FACT_CHECK_API_KEY") ?: ""}\"")
-        buildConfigField("String", "TAVILY_API_KEY", "\"${project.findProperty("TAVILY_API_KEY") ?: ""}\"")
-        buildConfigField("String", "GEMINI_API_KEY", "\"${project.findProperty("GEMINI_API_KEY") ?: ""}\"")
-        buildConfigField("String", "GROQ_API_KEY", "\"${project.findProperty("GROQ_API_KEY") ?: ""}\"")
-        buildConfigField("String", "CEREBRAS_API_KEY", "\"${project.findProperty("CEREBRAS_API_KEY") ?: ""}\"")
-        buildConfigField("String", "OPENROUTER_API_KEY", "\"${project.findProperty("OPENROUTER_API_KEY") ?: ""}\"")
-        buildConfigField("String", "GOOGLE_CUSTOM_SEARCH_API_KEY", "\"${project.findProperty("GOOGLE_CUSTOM_SEARCH_API_KEY") ?: ""}\"")
-        buildConfigField("String", "GOOGLE_CSE_ID", "\"${project.findProperty("GOOGLE_CSE_ID") ?: ""}\"")
+        buildConfigField("String", "GOOGLE_FACT_CHECK_API_KEY", "\"${localProperties.getProperty("GOOGLE_FACT_CHECK_API_KEY", "")}\"")
+        buildConfigField("String", "TAVILY_API_KEY", "\"${localProperties.getProperty("TAVILY_API_KEY", "")}\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"")
+        buildConfigField("String", "GROQ_API_KEY", "\"${localProperties.getProperty("GROQ_API_KEY", "")}\"")
+        buildConfigField("String", "CEREBRAS_API_KEY", "\"${localProperties.getProperty("CEREBRAS_API_KEY", "")}\"")
+        buildConfigField("String", "OPENROUTER_API_KEY", "\"${localProperties.getProperty("OPENROUTER_API_KEY", "")}\"")
+        buildConfigField("String", "GOOGLE_CUSTOM_SEARCH_API_KEY", "\"${localProperties.getProperty("GOOGLE_CUSTOM_SEARCH_API_KEY", "")}\"")
+        buildConfigField("String", "GOOGLE_CSE_ID", "\"${localProperties.getProperty("GOOGLE_CSE_ID", "")}\"")
     }
 
     buildTypes {
