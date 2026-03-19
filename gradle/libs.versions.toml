@@ -15,8 +15,6 @@ kotlinxSerialization = "1.6.2"
 navigationCompose = "2.7.6"
 room = "2.6.1"
 datastore = "1.0.0"
-mlkitLanguageId = "17.0.4"
-mlkitTextRecognition = "16.0.0"
 ksp = "1.9.22-1.0.17"
 materialIconsExtended = "1.6.1"
 coil = "2.5.0"
@@ -55,8 +53,6 @@ androidx-room-runtime = { group = "androidx.room", name = "room-runtime", versio
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
-google-mlkit-language-id = { group = "com.google.mlkit", name = "language-id", version.ref = "mlkitLanguageId" }
-google-mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIconsExtended" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
