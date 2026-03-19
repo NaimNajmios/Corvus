@@ -2,6 +2,7 @@ package com.najmi.corvus.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val DarkColorScheme = darkColorScheme(
@@ -27,12 +28,38 @@ private val DarkColorScheme = darkColorScheme(
     onError = CorvusVoid
 )
 
+private val LightColorScheme = lightColorScheme(
+    primary = CorvusAccent,
+    onPrimary = CorvusVoid,
+    primaryContainer = CorvusAccentDim,
+    onPrimaryContainer = CorvusTextPrimaryLight,
+    secondary = CorvusTextSecondaryLight,
+    onSecondary = CorvusVoidLight,
+    secondaryContainer = CorvusSurfaceRaisedLight,
+    onSecondaryContainer = CorvusTextPrimaryLight,
+    tertiary = CorvusAccentDim,
+    onTertiary = CorvusVoidLight,
+    background = CorvusVoidLight,
+    onBackground = CorvusTextPrimaryLight,
+    surface = CorvusSurfaceLight,
+    onSurface = CorvusTextPrimaryLight,
+    surfaceVariant = CorvusSurfaceRaisedLight,
+    onSurfaceVariant = CorvusTextSecondaryLight,
+    outline = CorvusBorderLight,
+    outlineVariant = CorvusBorderLight,
+    error = VerdictFalse,
+    onError = CorvusVoidLight
+)
+
 @Composable
 fun CorvusTheme(
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    
     MaterialTheme(
-        colorScheme = DarkColorScheme,
+        colorScheme = colorScheme,
         typography = Typography,
         shapes = CorvusShapes,
         content = content

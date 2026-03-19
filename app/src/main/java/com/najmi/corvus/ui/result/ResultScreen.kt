@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -65,7 +66,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun ResultScreen(
     viewModel: CorvusViewModel = hiltViewModel(),
-    onAnalyzeAnother: () -> Unit
+    onAnalyzeAnother: () -> Unit,
+    onBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val result = uiState.result
@@ -125,6 +127,27 @@ fun ResultScreen(
             ) {
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onBack()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = CorvusTextPrimary
+                            )
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
                 }
 
                 item {

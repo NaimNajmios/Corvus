@@ -219,6 +219,12 @@ fun CorvusApp(
                             navController.navigate(Routes.INPUT) {
                                 popUpTo(Routes.INPUT) { inclusive = true }
                             }
+                        },
+                        onBack = {
+                            viewModel.reset()
+                            navController.navigate(Routes.INPUT) {
+                                popUpTo(Routes.INPUT) { inclusive = true }
+                            }
                         }
                     )
                 }
