@@ -5,12 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.data.repository.HistoryRepository
 import com.najmi.corvus.domain.model.CorvusCheckResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -42,6 +38,7 @@ class HistoryViewModel @Inject constructor(
         observeHistory()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeHistory() {
         viewModelScope.launch {
             combine(
@@ -49,27 +46,37 @@ class HistoryViewModel @Inject constructor(
                 _selectedVerdictFilter,
                 _isAnalyticsVisible
             ) { query, filter, analyticsVisible ->
-                Triple(query, filter, analyticsVisible)
-            }.collect { (query, filter, analyticsVisible) ->
-                _uiState.update { it.copy(isLoading = true, searchQuery = query, selectedVerdictFilter = filter) }
+                HistoryParams(query, filter, analyticsVisible)
+            }.flatMapLatest { params ->
+                _uiState.update { it.copy(
+                    isLoading = true, 
+                    searchQuery = params.query, 
+                    selectedVerdictFilter = params.filter,
+                    isAnalyticsVisible = params.analyticsVisible
+                ) }
                 
                 val flow = when {
-                    query.isNotBlank() -> historyRepository.searchHistory(query)
-                    filter != null -> historyRepository.filterByVerdict(filter)
+                    params.query.isNotBlank() -> historyRepository.searchHistory(params.query)
+                    params.filter != null -> historyRepository.filterByVerdict(params.filter)
                     else -> historyRepository.getAllHistory()
                 }
-
-                flow.collect { items ->
-                    val stats = calculateStats(items)
-                    _uiState.update { it.copy(
-                        history = items, 
-                        isLoading = false,
-                        verdictDistribution = stats
-                    ) }
-                }
+                
+                flow.map { items -> items to calculateStats(items) }
+            }.collect { (items, stats) ->
+                _uiState.update { it.copy(
+                    history = items,
+                    isLoading = false,
+                    verdictDistribution = stats
+                ) }
             }
         }
     }
+
+    private data class HistoryParams(
+        val query: String,
+        val filter: String?,
+        val analyticsVisible: Boolean
+    )
 
     private fun calculateStats(items: List<CorvusCheckResult>): Map<String, Float> {
         if (items.isEmpty()) return emptyMap()
@@ -130,4 +137,3 @@ class HistoryViewModel @Inject constructor(
         }
     }
 }
-
