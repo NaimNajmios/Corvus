@@ -63,7 +63,8 @@ class NotificationHelper(private val context: Context) {
             .setSmallIcon(R.mipmap.ic_launcher) // Fallback to launcher icon
             .setContentTitle("Fact Checking in Progress")
             .setContentText(stepText)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setSubText("Tap to return to app")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(pendingIntent)

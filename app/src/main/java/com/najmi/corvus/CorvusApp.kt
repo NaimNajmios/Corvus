@@ -1,5 +1,6 @@
 package com.najmi.corvus
 
+import android.app.Activity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -32,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -74,6 +76,7 @@ fun CorvusApp(
 ) {
     val navController = rememberNavController()
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -216,6 +219,10 @@ fun CorvusApp(
                         onCancel = {
                             viewModel.cancelAnalysis()
                             navController.popBackStack()
+                        },
+                        onMinimize = {
+                            val activity = context as? Activity
+                            activity?.moveTaskToBack(true)
                         },
                         onResultReady = {
                             navController.navigate(Routes.RESULT) {

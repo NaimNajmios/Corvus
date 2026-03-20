@@ -47,6 +47,7 @@ fun LoadingScreen(
     error: String? = null,
     onRetry: () -> Unit = {},
     onCancel: () -> Unit = {},
+    onMinimize: () -> Unit = {},
     onResultReady: () -> Unit
 ) {
     val hapticFeedback = LocalHapticFeedback.current
@@ -85,7 +86,8 @@ fun LoadingScreen(
                 onCancel = {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     onCancel()
-                }
+                },
+                onMinimize = onMinimize
             )
         }
     }
@@ -95,7 +97,8 @@ fun LoadingScreen(
 private fun LoadingContent(
     currentStep: PipelineStep,
     elapsedSeconds: Int,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    onMinimize: () -> Unit
 ) {
     val minutes = elapsedSeconds / 60
     val seconds = elapsedSeconds % 60
@@ -142,17 +145,35 @@ private fun LoadingContent(
         
         Spacer(modifier = Modifier.height(48.dp))
         
-        OutlinedButton(
-            onClick = onCancel,
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-            ),
-            border = ButtonDefaults.outlinedButtonBorder.copy(
-                brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.outline)
-            ),
-            shape = MaterialTheme.shapes.small
+        androidx.compose.foundation.layout.Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Cancel")
+            OutlinedButton(
+                onClick = onMinimize,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                border = ButtonDefaults.outlinedButtonBorder.copy(
+                    brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
+                ),
+                shape = MaterialTheme.shapes.small
+            ) {
+                Text("Minimize")
+            }
+
+            OutlinedButton(
+                onClick = onCancel,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                border = ButtonDefaults.outlinedButtonBorder.copy(
+                    brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.outline)
+                ),
+                shape = MaterialTheme.shapes.small
+            ) {
+                Text("Cancel")
+            }
         }
     }
 }
