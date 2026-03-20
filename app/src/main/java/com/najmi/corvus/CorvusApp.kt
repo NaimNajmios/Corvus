@@ -136,9 +136,8 @@ fun CorvusApp(
     }
 
     LaunchedEffect(initialResultId) {
-        if (initialResultId != null) {
-            // Ideally we'd load the specific result into ViewModel
-            // For now, load last results and navigate
+        initialResultId?.let {
+            viewModel.loadResultById(it)
             navController.navigate(Routes.RESULT)
             onSharedTextProcessed()
         }

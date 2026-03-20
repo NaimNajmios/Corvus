@@ -42,6 +42,10 @@ class HistoryRepository @Inject constructor(
         }
     }
 
+    suspend fun getResultById(id: String): CorvusCheckResult? {
+        return historyDao.getById(id)?.toCorvusResult()
+    }
+
     suspend fun saveResult(result: CorvusCheckResult) {
         val entity = result.toEntity()
         historyDao.insert(entity)

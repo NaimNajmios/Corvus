@@ -91,6 +91,14 @@ class CorvusViewModel @Inject constructor(
         }
     }
 
+    fun loadResultById(id: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = historyRepository.getResultById(id)
+            _uiState.update { it.copy(result = result, isLoading = false) }
+        }
+    }
+
 
     fun cancelAnalysis() {
         analysisJob?.cancel()

@@ -1,6 +1,8 @@
 package com.najmi.corvus.worker
 
 import android.content.Context
+import android.content.pm.ServiceInfo
+import android.os.Build
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -58,7 +60,19 @@ class FactCheckWorker @AssistedInject constructor(
 
     private fun createForegroundInfo(step: PipelineStep): ForegroundInfo {
         val builder = notificationHelper.getProgressNotificationBuilder(step)
-        return ForegroundInfo(NotificationHelper.PROGRESS_NOTIFICATION_ID, builder.build())
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ForegroundInfo(
+                NotificationHelper.PROGRESS_NOTIFICATION_ID,
+                builder.build(),
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                } else {
+                    0
+                }
+            )
+        } else {
+            ForegroundInfo(NotificationHelper.PROGRESS_NOTIFICATION_ID, builder.build())
+        }
     }
 }
 
