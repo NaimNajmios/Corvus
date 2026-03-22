@@ -375,11 +375,32 @@ fun HistoryItem(
                 }
             }
             
-            when (result) {
-                is CorvusCheckResult.GeneralResult -> VerdictBadgeLarge(verdict = result.verdict)
-                is CorvusCheckResult.QuoteResult -> QuoteVerdictBadgeLarge(verdict = result.quoteVerdict)
-                is CorvusCheckResult.CompositeResult -> VerdictBadgeLarge(verdict = result.compositeVerdict)
-                is CorvusCheckResult.ViralHoaxResult -> VerdictBadgeLarge(verdict = Verdict.FALSE)
+            Box(contentAlignment = Alignment.BottomEnd) {
+                when (result) {
+                    is CorvusCheckResult.GeneralResult -> VerdictBadgeLarge(verdict = result.verdict)
+                    is CorvusCheckResult.QuoteResult -> QuoteVerdictBadgeLarge(verdict = result.quoteVerdict)
+                    is CorvusCheckResult.CompositeResult -> VerdictBadgeLarge(verdict = result.compositeVerdict)
+                    is CorvusCheckResult.ViralHoaxResult -> VerdictBadgeLarge(verdict = Verdict.FALSE)
+                }
+                
+                // Harm Indicator Overlay
+                val harmLevel = when (result) {
+                    is CorvusCheckResult.GeneralResult -> result.harmAssessment.level
+                    is CorvusCheckResult.QuoteResult -> result.harmAssessment.level
+                    else -> com.najmi.corvus.domain.model.HarmLevel.NONE
+                }
+                
+                if (harmLevel == com.najmi.corvus.domain.model.HarmLevel.HIGH) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "High Harm",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .size(16.dp)
+                            .background(MaterialTheme.colorScheme.surface, CircleShape)
+                            .padding(1.dp)
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.width(16.dp))
@@ -408,6 +429,22 @@ fun HistoryItem(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
+                    
+                    // Plausibility Indicator
+                    val plausibility = when (result) {
+                        is CorvusCheckResult.GeneralResult -> if (result.verdict == Verdict.UNVERIFIABLE) result.plausibility?.score else null
+                        is CorvusCheckResult.QuoteResult -> if (result.quoteVerdict == QuoteVerdict.UNVERIFIABLE) result.plausibility?.score else null
+                        else -> null
+                    }
+                    
+                    if (plausibility != null) {
+                        Text(
+                            text = " • ${plausibility.name}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
             

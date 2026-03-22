@@ -21,7 +21,8 @@ class QuoteVerificationPipeline @Inject constructor(
     private val googleFactCheckRepository: GoogleFactCheckRepository,
     private val tavilyRepository: TavilyRepository,
     private val llmRouter: LlmRouter,
-    private val ratingRepo: OutletRatingRepository
+    private val ratingRepo: OutletRatingRepository,
+    private val plausibilityEnricher: PlausibilityEnricherUseCase
 ) {
     companion object {
         private const val TAG = "QuotePipeline"
@@ -95,12 +96,23 @@ class QuoteVerificationPipeline @Inject constructor(
         
         val (generalResult, provider) = llmRouter.analyze(classified.raw, filteredSources, ClaimType.QUOTE)
         
+        // Plausibility Enrichment for UNVERIFIABLE
+        val finalPlausibility = if (generalResult.verdict == com.najmi.corvus.domain.model.Verdict.UNVERIFIABLE) {
+            plausibilityEnricher.enrich(
+                classified.raw,
+                filteredSources,
+                generalResult.plausibility
+            )
+        } else {
+            generalResult.plausibility
+        }
+
         return CorvusCheckResult.QuoteResult(
             claim = classified.raw,
             quoteVerdict = mapToQuoteVerdict(generalResult.verdict),
             confidence = generalResult.confidence,
             speaker = classified.speaker ?: "Unknown",
-            originalQuote = wikiquoteText ?: generalResult.keyFacts.firstOrNull(),
+            originalQuote = wikiquoteText ?: generalResult.keyFacts.firstOrNull()?.statement,
             submittedQuote = classified.quotedText ?: classified.raw,
             originalSource = enrichedSources.firstOrNull(),
             originalDate = classified.claimedDate,
@@ -108,7 +120,10 @@ class QuoteVerificationPipeline @Inject constructor(
             sources = enrichedSources,
             isVerbatim = foundInWikiquote,
             contextAccurate = generalResult.verdict == com.najmi.corvus.domain.model.Verdict.TRUE,
-            providerUsed = provider.name
+            providerUsed = provider.name,
+            harmAssessment = generalResult.harmAssessment,
+            plausibility = finalPlausibility,
+            keyFacts = generalResult.keyFacts
         )
     }
 

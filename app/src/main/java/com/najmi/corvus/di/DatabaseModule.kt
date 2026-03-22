@@ -23,7 +23,9 @@ object DatabaseModule {
             context,
             CorvusDatabase::class.java,
             CorvusDatabase.DATABASE_NAME
-        ).fallbackToDestructiveMigration().build()
+        ).addMigrations(CorvusDatabase.MIGRATION_4_5)
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

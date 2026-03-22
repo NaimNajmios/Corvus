@@ -5,5 +5,6 @@ data class CorvusUiState(
     val isLoading: Boolean = false,
     val result: CorvusCheckResult? = null,
     val error: String? = null,
-    val currentStep: PipelineStep = PipelineStep.IDLE
+    val currentStep: PipelineStep = PipelineStep.IDLE,
+    val isEntityContextLoading: Boolean = false
 )

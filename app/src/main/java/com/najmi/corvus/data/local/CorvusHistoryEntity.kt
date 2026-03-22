@@ -12,5 +12,8 @@ data class CorvusHistoryEntity(
     val verdict: String,
     val confidence: Float,
     val dataJson: String,   // Full serialized CorvusCheckResult
-    val checkedAt: Long
+    val checkedAt: Long,
+    val harmLevel: String = "NONE",
+    val harmCategory: String = "NONE",
+    val plausibilityScore: String? = null
 )

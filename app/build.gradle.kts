@@ -42,6 +42,7 @@ android {
         buildConfigField("String", "OPENROUTER_API_KEY", "\"${localProperties.getProperty("OPENROUTER_API_KEY", "")}\"")
         buildConfigField("String", "GOOGLE_CUSTOM_SEARCH_API_KEY", "\"${localProperties.getProperty("GOOGLE_CUSTOM_SEARCH_API_KEY", "")}\"")
         buildConfigField("String", "GOOGLE_CSE_ID", "\"${localProperties.getProperty("GOOGLE_CSE_ID", "")}\"")
+        buildConfigField("String", "GOOGLE_KG_API_KEY", "\"${localProperties.getProperty("GOOGLE_KG_API_KEY", "")}\"")
     }
 
     buildTypes {

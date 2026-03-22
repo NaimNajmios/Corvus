@@ -37,7 +37,8 @@ import com.najmi.corvus.ui.theme.CorvusShapes
 @Composable
 fun SourceCard(
     source: Source,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    index: Int? = null
 ) {
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
@@ -90,6 +91,14 @@ fun SourceCard(
                 publisher = source.publisher,
                 url = source.url
             )
+
+            index?.let { i ->
+                Text(
+                    text = "[${i + 1}]",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
 
             source.publisher?.let { publisher ->
                 Text(

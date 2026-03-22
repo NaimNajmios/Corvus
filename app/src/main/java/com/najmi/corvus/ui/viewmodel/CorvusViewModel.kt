@@ -61,10 +61,19 @@ class CorvusViewModel @Inject constructor(
                         WorkInfo.State.RUNNING -> {
                             val stepName = workInfo.progress.getString("step")
                             val step = stepName?.let { PipelineStep.valueOf(it) } ?: PipelineStep.IDLE
-                            _uiState.update { it.copy(isLoading = true, currentStep = step, error = null) }
+                            _uiState.update { it.copy(
+                                isLoading = true, 
+                                currentStep = step, 
+                                error = null,
+                                isEntityContextLoading = step != PipelineStep.DONE
+                            ) }
                         }
                         WorkInfo.State.SUCCEEDED -> {
-                            _uiState.update { it.copy(isLoading = false, currentStep = PipelineStep.DONE) }
+                            _uiState.update { it.copy(
+                                isLoading = false, 
+                                currentStep = PipelineStep.DONE,
+                                isEntityContextLoading = false
+                            ) }
                             // We might want to fetch the result from repository here if needed for UI
                             // but usually the result screen fetch it from state.
                             // For now, we rely on the background save.

@@ -10,6 +10,8 @@ import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.domain.router.LlmRouter
 import com.najmi.corvus.domain.router.LlmRouterException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import javax.inject.Inject
 
 class CorvusFactCheckUseCase @Inject constructor(
@@ -21,7 +23,8 @@ class CorvusFactCheckUseCase @Inject constructor(
     private val generalPipeline: GeneralFactCheckPipeline,
     private val statisticalPipeline: StatisticalFactCheckPipeline,
     private val scientificPipeline: ScientificFactCheckPipeline,
-    private val eventPipeline: CurrentEventPipeline
+    private val eventPipeline: CurrentEventPipeline,
+    private val kgEnricher: KgEnricherUseCase
 ) {
     companion object {
         private const val TAG = "CorvusFactCheck"
@@ -39,6 +42,14 @@ class CorvusFactCheckUseCase @Inject constructor(
         val classified = classifier.classify(claim)
         Log.d(TAG, "Claim classified as: ${classified.type}")
 
+        return runMainPipeline(claim, classified, onStepChange)
+    }
+
+    private suspend fun runMainPipeline(
+        claim: String,
+        classified: com.najmi.corvus.domain.model.ClassifiedClaim,
+        onStepChange: (PipelineStep) -> Unit
+    ): CorvusCheckResult {
         // For now, mapping old GoogleFactCheck return to GeneralResult
         try {
             val knownCheck = googleFactCheckRepository.search(claim)

@@ -16,7 +16,9 @@ class CompositeFactCheckPipeline @Inject constructor(
     private val viralDetector: ViralClaimDetectorUseCase,
     private val decomposer: ClaimDecomposerUseCase,
     private val factCheckUseCase: CorvusFactCheckUseCase,
-    private val timelineBuilder: ConfidenceTimelineBuilder
+    private val timelineBuilder: ConfidenceTimelineBuilder,
+    private val kgEnricher: KgEnricherUseCase,
+    private val classifier: ClaimClassifierUseCase
 ) {
     suspend fun check(
         raw: String,
@@ -29,18 +31,32 @@ class CompositeFactCheckPipeline @Inject constructor(
             return@coroutineScope viralHit
         }
 
-        onStepChange(PipelineStep.DISSECTING)
-        
-        val result = when (val decomposed = decomposer.decompose(raw)) {
-            is DecompositionResult.Single -> {
-                factCheckUseCase.check(decomposed.claim, onStepChange)
+        val classified = classifier.classify(raw)
+
+        val mainResultDeferred = async {
+            val res = when (val decomposed = decomposer.decompose(raw)) {
+                is DecompositionResult.Single -> {
+                    factCheckUseCase.check(decomposed.claim, onStepChange)
+                }
+                is DecompositionResult.Compound -> {
+                    checkCompound(decomposed, onStepChange)
+                }
             }
-            is DecompositionResult.Compound -> {
-                checkCompound(decomposed, onStepChange)
+            enrichWithTimeline(res)
+        }
+
+        val entityContextDeferred = async {
+            try {
+                kgEnricher.enrich(raw, classified)
+            } catch (e: Exception) {
+                null
             }
         }
 
-        enrichWithTimeline(result)
+        val mainResult = mainResultDeferred.await()
+        val entityContext = entityContextDeferred.await()
+
+        mainResult.withEntityContext(entityContext)
     }
 
     private suspend fun enrichWithTimeline(result: CorvusCheckResult): CorvusCheckResult {

@@ -20,7 +20,8 @@ class StatisticalFactCheckPipeline @Inject constructor(
     private val worldBankClient: WorldBankClient,
     private val tavilyRepository: TavilyRepository,
     private val llmRouter: LlmRouter,
-    private val ratingRepo: OutletRatingRepository
+    private val ratingRepo: OutletRatingRepository,
+    private val plausibilityEnricher: PlausibilityEnricherUseCase
 ) {
     companion object {
         private const val TAG = "StatsPipeline"
@@ -68,7 +69,20 @@ class StatisticalFactCheckPipeline @Inject constructor(
         }.sortedByDescending { it.outletRating?.credibility ?: 50 }
 
         // LLM Synthesis
-        val (result, provider) = llmRouter.analyze(classified.raw, filteredSources, ClaimType.STATISTICAL)
+        val (initialResult, provider) = llmRouter.analyze(classified.raw, filteredSources, ClaimType.STATISTICAL)
+
+        // Plausibility Enrichment for UNVERIFIABLE
+        val result = if (initialResult.verdict == com.najmi.corvus.domain.model.Verdict.UNVERIFIABLE) {
+            val enrichedPlausibility = plausibilityEnricher.enrich(
+                classified.raw,
+                filteredSources,
+                initialResult.plausibility
+            )
+            initialResult.copy(plausibility = enrichedPlausibility)
+        } else {
+            initialResult
+        }
+
         return result.copy(
             claim = classified.raw, 
             providerUsed = provider.name,

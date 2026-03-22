@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -37,13 +38,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -63,6 +60,8 @@ import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.QuoteVerdict
 import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.ui.theme.CorvusShapes
+import com.najmi.corvus.ui.components.EntityContextPanel
+import com.najmi.corvus.ui.components.EntityContextSkeleton
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
 import kotlinx.coroutines.delay
 
@@ -77,11 +76,24 @@ fun ResultScreen(
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
 
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     var showContent by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         delay(100)
         showContent = true
+    }
+
+    fun scrollToSource(sourceIndex: Int) {
+        scope.launch {
+            // Calculate index: VerdictCard(1) + Spacer(1) + BackButton(1) + ExplanationHeader(1) + Explanations(1) + ...
+            // It's easier to find the index by tag or just a fixed offset if possible.
+            // Sources start after everything else.
+            // Let's use a simple heuristic or find the item index dynamically.
+            val totalItemsBeforeSources = 8 // approximate
+            listState.animateScrollToItem(totalItemsBeforeSources + sourceIndex)
+        }
     }
 
     BackHandler(onBack = onBack)
@@ -98,7 +110,18 @@ fun ResultScreen(
                 when (r) {
                     is CorvusCheckResult.GeneralResult -> {
                         appendLine("Verdict: ${r.verdict.name.replace("_", " ")}")
+                        if (r.verdict == Verdict.UNVERIFIABLE && r.plausibility != null) {
+                            appendLine("Plausibility: ${r.plausibility.score.name}")
+                        }
                         appendLine("Confidence: ${(r.confidence * 100).toInt()}%")
+                        
+                        if (r.harmAssessment.level != com.najmi.corvus.domain.model.HarmLevel.NONE) {
+                            appendLine()
+                            appendLine("⚠️ HARM RISK: ${r.harmAssessment.level}")
+                            appendLine("Category: ${r.harmAssessment.category}")
+                            appendLine("Reason: ${r.harmAssessment.reason}")
+                        }
+
                         appendLine()
                         appendLine("Explanation:")
                         appendLine(r.explanation)
@@ -110,8 +133,19 @@ fun ResultScreen(
                     }
                     is CorvusCheckResult.QuoteResult -> {
                         appendLine("Verdict: ${r.quoteVerdict.name.replace("_", " ")}")
+                        if (r.quoteVerdict == QuoteVerdict.UNVERIFIABLE && r.plausibility != null) {
+                            appendLine("Plausibility: ${r.plausibility.score.name}")
+                        }
                         appendLine("Speaker: ${r.speaker}")
                         appendLine("Confidence: ${(r.confidence * 100).toInt()}%")
+
+                        if (r.harmAssessment.level != com.najmi.corvus.domain.model.HarmLevel.NONE) {
+                            appendLine()
+                            appendLine("⚠️ HARM RISK: ${r.harmAssessment.level}")
+                            appendLine("Category: ${r.harmAssessment.category}")
+                            appendLine("Reason: ${r.harmAssessment.reason}")
+                        }
+
                         appendLine()
                         appendLine("Context:")
                         appendLine(r.contextExplanation)
@@ -154,6 +188,7 @@ fun ResultScreen(
     ) {
         result?.let { corvusResult ->
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 24.dp),
@@ -205,6 +240,25 @@ fun ResultScreen(
                     )
                 }
 
+                if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.missingContext != null) {
+                    item {
+                        var mcVisible by remember { mutableStateOf(false) }
+                        LaunchedEffect(Unit) {
+                            delay(200)
+                            mcVisible = true
+                        }
+                        AnimatedVisibility(
+                            visible = mcVisible,
+                            enter = slideInVertically(
+                                initialOffsetY = { -20 },
+                                animationSpec = tween(400, easing = FastOutSlowInEasing)
+                            ) + fadeIn(tween(400))
+                        ) {
+                            MissingContextCallout(corvusResult.missingContext)
+                        }
+                    }
+                }
+
                 if (corvusResult !is CorvusCheckResult.ViralHoaxResult) {
                     item {
                         ExpandableExplanation(
@@ -218,32 +272,62 @@ fun ResultScreen(
                     }
                 }
 
-                if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.keyFacts.isNotEmpty()) {
+                if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.kernelOfTruth != null) {
                     item {
-                        Text(
-                            text = "KEY FACTS",
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                letterSpacing = 1.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        KernelOfTruthCard(
+                            kernel = corvusResult.kernelOfTruth,
+                            sources = corvusResult.sources,
+                            onSourceClick = { scrollToSource(it) }
                         )
                     }
+                }
 
-                    itemsIndexed(corvusResult.keyFacts) { _, fact ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.keyFacts.isNotEmpty()) {
+                    item {
+                        GroundedFactsList(
+                            facts = corvusResult.keyFacts,
+                            sources = corvusResult.sources,
+                            onSourceClick = { scrollToSource(it) }
+                        )
+                    }
+                }
+
+                if (corvusResult is CorvusCheckResult.QuoteResult && corvusResult.keyFacts.isNotEmpty()) {
+                    item {
+                        GroundedFactsList(
+                            facts = corvusResult.keyFacts,
+                            sources = corvusResult.sources,
+                            onSourceClick = { scrollToSource(it) }
+                        )
+                    }
+                }
+
+                // Entity Context Panel
+                corvusResult.entityContext?.let { entity ->
+                    item(key = "entity_context") {
+                        var entityVisible by remember { mutableStateOf(false) }
+                        LaunchedEffect(entity) {
+                            delay(450)
+                            entityVisible = true
+                        }
+                        
+                        AnimatedVisibility(
+                            visible = entityVisible,
+                            enter = fadeIn(tween(400)) + slideInVertically(
+                                animationSpec = tween(400, easing = FastOutSlowInEasing),
+                                initialOffsetY = { it / 4 }
+                            )
                         ) {
-                            Text(
-                                text = "-",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.primary
+                            EntityContextPanel(
+                                entity = entity,
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            Text(
-                                text = fact,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
+                        }
+                    }
+                } ?: run {
+                    if (uiState.isEntityContextLoading) {
+                        item(key = "entity_context_skeleton") {
+                            EntityContextSkeleton()
                         }
                     }
                 }
@@ -275,7 +359,10 @@ fun ResultScreen(
                                 initialOffsetY = { it / 2 }
                             )
                         ) {
-                            SourceCard(source = source)
+                            SourceCard(
+                                source = source,
+                                index = index
+                            )
                         }
                     }
                 }
@@ -291,6 +378,11 @@ fun ResultScreen(
                     item {
                         ConfidenceTimelineCard(points = timeline)
                     }
+                }
+
+                item {
+                    val methodology = (corvusResult as? CorvusCheckResult.GeneralResult)?.methodology
+                    MethodologyCard(methodology)
                 }
 
                 item {

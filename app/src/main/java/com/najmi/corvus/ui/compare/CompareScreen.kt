@@ -346,7 +346,7 @@ private fun ClaimPane(
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = fact,
+                            text = fact.statement,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
                         )
