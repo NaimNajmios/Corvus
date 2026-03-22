@@ -22,7 +22,7 @@ class CompositeFactCheckPipeline @Inject constructor(
 ) {
     suspend fun check(
         raw: String,
-        onStepChange: (PipelineStep) -> Unit
+        onStepChange: suspend (PipelineStep) -> Unit
     ): CorvusCheckResult = coroutineScope {
         onStepChange(PipelineStep.CHECKING_VIRAL_DATABASE)
         val viralHit = viralDetector.check(raw)
@@ -77,7 +77,7 @@ class CompositeFactCheckPipeline @Inject constructor(
 
     private suspend fun checkCompound(
         compound: DecompositionResult.Compound,
-        onStepChange: (PipelineStep) -> Unit
+        onStepChange: suspend (PipelineStep) -> Unit
     ): CorvusCheckResult.CompositeResult = coroutineScope {
         // Parallel check for each sub-claim
         // We use a simplified onStepChange that doesn't trigger for each sub-claim

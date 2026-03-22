@@ -37,12 +37,10 @@ class FactCheckWorker @AssistedInject constructor(
             val checkResult = compositePipeline.check(inputText) { step ->
                 // Update progress for live notification
                 val progress = workDataOf("step" to step.name)
-                setProgressAsync(progress)
+                setProgress(progress)
                 
                 // Update foreground notification
-                runBlocking {
-                    setForeground(createForegroundInfo(step))
-                }
+                setForeground(createForegroundInfo(step))
             }
 
             historyRepository.saveResult(checkResult)

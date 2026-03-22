@@ -32,7 +32,7 @@ class CorvusFactCheckUseCase @Inject constructor(
 
     suspend fun check(
         claim: String,
-        onStepChange: (PipelineStep) -> Unit
+        onStepChange: suspend (PipelineStep) -> Unit
     ): CorvusCheckResult {
         Log.d(TAG, "Starting fact check for: $claim")
         
@@ -48,7 +48,7 @@ class CorvusFactCheckUseCase @Inject constructor(
     private suspend fun runMainPipeline(
         claim: String,
         classified: com.najmi.corvus.domain.model.ClassifiedClaim,
-        onStepChange: (PipelineStep) -> Unit
+        onStepChange: suspend (PipelineStep) -> Unit
     ): CorvusCheckResult {
         // For now, mapping old GoogleFactCheck return to GeneralResult
         try {
