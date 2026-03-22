@@ -1,19 +1,14 @@
 package com.najmi.corvus.ui.input
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +22,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -54,9 +48,9 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.R
+import com.najmi.corvus.domain.model.CorvusUiState
 import com.najmi.corvus.ui.components.PipelineStepIndicator
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.theme.VerdictFalse
@@ -69,17 +63,38 @@ fun InputScreen(
     onAnalyze: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    StatelessInputScreen(
+        uiState = uiState,
+        onTextChange = { viewModel.updateInputText(it) },
+        onAnalyze = {
+            viewModel.analyze()
+            onAnalyze()
+        }
+    )
+}
+
+@Composable
+internal fun StatelessInputScreen(
+    uiState: CorvusUiState,
+    onTextChange: (String) -> Unit,
+    onAnalyze: () -> Unit
+) {
     val hapticFeedback = LocalHapticFeedback.current
     val characterCount = uiState.inputText.length
-    val isNearLimit = characterCount >= 400
-    val isAtLimit = characterCount >= 500
-    val remainingChars = (500 - characterCount).coerceAtLeast(0)
+    val maxLimit = CorvusViewModel.MAX_CLAIM_LENGTH
+    val isNearLimit = characterCount >= (maxLimit - 100)
+    val isAtLimit = characterCount >= maxLimit
+    val remainingChars = (maxLimit - characterCount).coerceAtLeast(0)
+
+    val typography = MaterialTheme.typography
+    val colorScheme = MaterialTheme.colorScheme
 
     val characterCountColor by animateColorAsState(
         targetValue = when {
             isAtLimit -> VerdictFalse
             isNearLimit -> VerdictMisleading
-            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            else -> colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         },
         animationSpec = tween(300),
         label = "counterColor"
@@ -89,7 +104,7 @@ fun InputScreen(
     var previousLength by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(characterCount) {
-        if (previousLength == 500 && characterCount > 500) {
+        if (previousLength == maxLimit && characterCount > maxLimit) {
             shakeOffset = 10f
             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
         }
@@ -109,7 +124,7 @@ fun InputScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colorScheme.background)
             .imePadding()
     ) {
         Column(
@@ -128,8 +143,8 @@ fun InputScreen(
 
             Text(
                 text = "See through the noise.",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = typography.headlineMedium,
+                color = colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
 
@@ -137,12 +152,12 @@ fun InputScreen(
 
             OutlinedTextField(
                 value = uiState.inputText,
-                onValueChange = {
-                    if (it.length <= 500) {
-                        viewModel.updateInputText(it)
-                        if (it.length == 450) {
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        }
+                onValueChange = { input: String ->
+                    val newText = if (input.length > maxLimit) input.take(maxLimit) else input
+                    onTextChange(newText)
+                    
+                    if (newText.length == maxLimit - 50) {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     }
                 },
                 modifier = Modifier
@@ -151,19 +166,19 @@ fun InputScreen(
                 placeholder = {
                     Text(
                         text = "Paste a claim, tweet, or statement",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        style = typography.bodyLarge,
+                        color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 },
-                textStyle = MaterialTheme.typography.bodyLarge,
+                textStyle = typography.bodyLarge,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                    focusedContainerColor = MaterialTheme.colorScheme.background,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.background
+                    focusedTextColor = colorScheme.onBackground,
+                    unfocusedTextColor = colorScheme.onBackground,
+                    focusedBorderColor = colorScheme.primary,
+                    unfocusedBorderColor = colorScheme.outline,
+                    cursorColor = colorScheme.primary,
+                    focusedContainerColor = colorScheme.background,
+                    unfocusedContainerColor = colorScheme.background
                 ),
                 shape = CorvusShapes.small,
                 visualTransformation = VisualTransformation.None
@@ -183,23 +198,23 @@ fun InputScreen(
                 ) {
                     Text(
                         text = if (isAtLimit) "Limit reached!" else "$remainingChars remaining",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = typography.labelSmall,
                         color = characterCountColor
                     )
                 }
 
                 Text(
-                    text = "$characterCount/500",
-                    style = MaterialTheme.typography.labelSmall,
+                    text = "$characterCount/$maxLimit",
+                    style = typography.labelSmall,
                     color = characterCountColor
                 )
             }
 
-            uiState.error?.let { error ->
+            if (uiState.error != null) {
                 Text(
-                    text = error,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
+                    text = uiState.error,
+                    style = typography.labelSmall,
+                    color = colorScheme.error,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -223,7 +238,6 @@ fun InputScreen(
                 Button(
                     onClick = {
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.analyze()
                         onAnalyze()
                     },
                     modifier = Modifier
@@ -231,16 +245,16 @@ fun InputScreen(
                         .height(52.dp),
                     enabled = uiState.inputText.isNotBlank() && !uiState.isLoading,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                        disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
+                        containerColor = colorScheme.primary,
+                        contentColor = colorScheme.onPrimary,
+                        disabledContainerColor = colorScheme.primary.copy(alpha = 0.3f),
+                        disabledContentColor = colorScheme.onPrimary.copy(alpha = 0.5f)
                     ),
                     shape = CorvusShapes.small
                 ) {
                     Text(
                         text = "ANALYSE",
-                        style = MaterialTheme.typography.titleMedium
+                        style = typography.titleMedium
                     )
                 }
             }

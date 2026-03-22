@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,13 +27,19 @@ class CorvusViewModel @Inject constructor(
     private val workManager: WorkManager
 ) : ViewModel() {
 
+    companion object {
+        const val MAX_CLAIM_LENGTH = 500
+        const val MIN_CLAIM_LENGTH = 10
+    }
+
     private val _uiState = MutableStateFlow(CorvusUiState())
     val uiState: StateFlow<CorvusUiState> = _uiState.asStateFlow()
 
     private var analysisJob: Job? = null
+    private var currentWorkRequestId: UUID? = null
 
     fun updateInputText(text: String) {
-        if (text.length <= 500) {
+        if (text.length <= MAX_CLAIM_LENGTH) {
             _uiState.update { it.copy(inputText = text, error = null) }
         }
     }
@@ -43,15 +50,19 @@ class CorvusViewModel @Inject constructor(
             _uiState.update { it.copy(error = "Please enter a claim to analyze") }
             return
         }
-        if (claim.length < 10) {
+        if (claim.length < MIN_CLAIM_LENGTH) {
             _uiState.update { it.copy(error = "Claim is too short to analyze") }
             return
         }
 
+        // Cancel previous analysis if any
+        cancelAnalysis()
+
         val workRequest = OneTimeWorkRequestBuilder<FactCheckWorker>()
             .setInputData(workDataOf("inputText" to claim))
             .build()
-
+        
+        currentWorkRequestId = workRequest.id
         workManager.enqueue(workRequest)
 
         analysisJob = viewModelScope.launch {
@@ -111,11 +122,13 @@ class CorvusViewModel @Inject constructor(
 
     fun cancelAnalysis() {
         analysisJob?.cancel()
-        _uiState.update { CorvusUiState() }
+        currentWorkRequestId?.let { workManager.cancelWorkById(it) }
+        currentWorkRequestId = null
+        _uiState.update { it.copy(isLoading = false) }
     }
 
     fun reset() {
-        analysisJob?.cancel()
+        cancelAnalysis()
         _uiState.update { CorvusUiState() }
     }
 }
