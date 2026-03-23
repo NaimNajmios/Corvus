@@ -9,6 +9,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -21,9 +22,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -34,12 +38,15 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,11 +62,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.najmi.corvus.ui.theme.*
+import com.najmi.corvus.domain.model.*
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.najmi.corvus.domain.model.CorvusCheckResult
-import com.najmi.corvus.domain.model.QuoteVerdict
-import com.najmi.corvus.domain.model.Verdict
-import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.components.EntityContextPanel
 import com.najmi.corvus.ui.components.EntityContextSkeleton
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
@@ -88,12 +93,12 @@ fun ResultScreen(
 
     fun scrollToSource(sourceIndex: Int) {
         scope.launch {
-            // Calculate index: VerdictCard(1) + Spacer(1) + BackButton(1) + ExplanationHeader(1) + Explanations(1) + ...
-            // It's easier to find the index by tag or just a fixed offset if possible.
-            // Sources start after everything else.
-            // Let's use a simple heuristic or find the item index dynamically.
-            val totalItemsBeforeSources = 8 // approximate
-            listState.animateScrollToItem(totalItemsBeforeSources + sourceIndex)
+            // Find the index of the evidence header and add sourceIndex + 1
+            val evidenceHeaderIndex = listState.layoutInfo.visibleItemsInfo
+                .find { it.key == "evidence_header" }?.index
+                ?: 10 // fallback heuristic
+            
+            listState.animateScrollToItem(evidenceHeaderIndex + sourceIndex + 1)
         }
     }
 
@@ -124,11 +129,11 @@ fun ResultScreen(
                     .padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item {
+                item(key = "top_spacer") {
                     Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                item {
+                item(key = "back_button_row") {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -149,14 +154,60 @@ fun ResultScreen(
                     }
                 }
 
-                item {
+                item(key = "query_card") {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                        ),
+                        border = BorderStroke(
+                            1.dp, 
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        ),
+                        shape = CorvusShapes.medium
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(4.dp)
+                                    .height(40.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                        CircleShape
+                                    )
+                            )
+                            Spacer(Modifier.width(16.dp))
+                            Column {
+                                Text(
+                                    text = "YOUR QUERY",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    letterSpacing = 1.sp
+                                )
+                                Text(
+                                    text = corvusResult.claim,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 3,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                }
+
+                item(key = "verdict_card") {
                     VerdictCard(
                         result = corvusResult,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        onSourceClick = { scrollToSource(it) }
                     )
                 }
 
-                item {
+                item(key = "explanation_header") {
                     Text(
                         text = when (corvusResult) {
                             is CorvusCheckResult.QuoteResult -> "CONTEXT"
@@ -171,11 +222,13 @@ fun ResultScreen(
                 }
 
                 if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.missingContext != null) {
-                    item {
-                        var mcVisible by remember { mutableStateOf(false) }
+                    item(key = "missing_context") {
+                        var mcVisible by rememberSaveable { mutableStateOf(false) }
                         LaunchedEffect(Unit) {
-                            delay(200)
-                            mcVisible = true
+                            if (!mcVisible) {
+                                delay(200)
+                                mcVisible = true
+                            }
                         }
                         AnimatedVisibility(
                             visible = mcVisible,
@@ -190,7 +243,7 @@ fun ResultScreen(
                 }
 
                 if (corvusResult !is CorvusCheckResult.ViralHoaxResult) {
-                    item {
+                    item(key = "expandable_explanation") {
                         ExpandableExplanation(
                             explanation = when (corvusResult) {
                                 is CorvusCheckResult.GeneralResult -> corvusResult.explanation
@@ -203,7 +256,7 @@ fun ResultScreen(
                 }
 
                 if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.kernelOfTruth != null) {
-                    item {
+                    item(key = "kernel_of_truth") {
                         KernelOfTruthCard(
                             kernel = corvusResult.kernelOfTruth,
                             sources = corvusResult.sources,
@@ -213,7 +266,7 @@ fun ResultScreen(
                 }
 
                 if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.keyFacts.isNotEmpty()) {
-                    item {
+                    item(key = "key_facts_general") {
                         GroundedFactsList(
                             facts = corvusResult.keyFacts,
                             sources = corvusResult.sources,
@@ -223,7 +276,7 @@ fun ResultScreen(
                 }
 
                 if (corvusResult is CorvusCheckResult.QuoteResult && corvusResult.keyFacts.isNotEmpty()) {
-                    item {
+                    item(key = "key_facts_quote") {
                         GroundedFactsList(
                             facts = corvusResult.keyFacts,
                             sources = corvusResult.sources,
@@ -263,7 +316,7 @@ fun ResultScreen(
                 }
 
                 if (corvusResult.sources.isNotEmpty()) {
-                    item {
+                    item(key = "evidence_header") {
                         Text(
                             text = "EVIDENCE",
                             style = MaterialTheme.typography.labelLarge.copy(
@@ -273,19 +326,24 @@ fun ResultScreen(
                         )
                     }
 
-                    itemsIndexed(corvusResult.sources) { index, source ->
+                    itemsIndexed(
+                        items = corvusResult.sources,
+                        key = { index, _ -> "source_$index" }
+                    ) { index, source ->
+                        var sourceVisible by rememberSaveable { mutableStateOf(false) }
+                        LaunchedEffect(Unit) {
+                            if (!sourceVisible) {
+                                delay(200 + (index * 80L))
+                                sourceVisible = true
+                            }
+                        }
+
                         AnimatedVisibility(
-                            visible = showContent,
+                            visible = sourceVisible,
                             enter = fadeIn(
-                                animationSpec = tween(
-                                    durationMillis = 280,
-                                    delayMillis = 200 + (index * 80)
-                                )
+                                animationSpec = tween(durationMillis = 280)
                             ) + slideInVertically(
-                                animationSpec = tween(
-                                    durationMillis = 280,
-                                    delayMillis = 200 + (index * 80)
-                                ),
+                                animationSpec = tween(durationMillis = 280),
                                 initialOffsetY = { it / 2 }
                             )
                         ) {
@@ -305,17 +363,17 @@ fun ResultScreen(
                 }
 
                 if (timeline.size >= 2) {
-                    item {
+                    item(key = "confidence_timeline") {
                         ConfidenceTimelineCard(points = timeline)
                     }
                 }
 
-                item {
+                item(key = "methodology") {
                     val methodology = (corvusResult as? CorvusCheckResult.GeneralResult)?.methodology
                     MethodologyCard(methodology)
                 }
 
-                item {
+                item(key = "bottom_spacer") {
                     Spacer(modifier = Modifier.height(80.dp))
                 }
             }
@@ -334,7 +392,6 @@ fun ResultScreen(
                     Button(
                         onClick = {
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.reset()
                             onAnalyzeAnother()
                         },
                         modifier = Modifier

@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -40,33 +42,14 @@ import com.najmi.corvus.ui.theme.CorvusShapes
 @Composable
 fun CompositeResultCard(
     result: CorvusCheckResult.CompositeResult,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSourceClick: (Int) -> Unit = {}
 ) {
-    var isRevealed by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(Unit) {
-        isRevealed = true
-    }
-
-    val scale by animateFloatAsState(
-        targetValue = if (isRevealed) 1f else 0.92f,
-        animationSpec = tween(380),
-        label = "verdictScale"
-    )
-    
-    val alpha by animateFloatAsState(
-        targetValue = if (isRevealed) 1f else 0f,
-        animationSpec = tween(380),
-        label = "verdictAlpha"
-    )
-
     val verdictColor = getVerdictColor(result.compositeVerdict)
     
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .scale(scale)
-            .alpha(alpha)
             .background(MaterialTheme.colorScheme.surface, CorvusShapes.medium)
             .border(
                 width = 3.dp,
@@ -82,14 +65,8 @@ fun CompositeResultCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    text = result.compositeVerdict.name.replace("_", " "),
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        fontSize = 28.sp,
-                        letterSpacing = 2.sp
-                    ),
-                    color = verdictColor
-                )
+                LargeVerdictBadge(verdict = result.compositeVerdict)
+                Spacer(Modifier.height(4.dp))
                 Text(
                     text = "Compound claim • ${result.subClaims.size} sub-claims",
                     style = MaterialTheme.typography.labelSmall,
@@ -126,7 +103,8 @@ fun CompositeResultCard(
         result.subClaims.forEachIndexed { index, subClaim ->
             SubClaimRow(
                 index = index + 1,
-                subClaim = subClaim
+                subClaim = subClaim,
+                onSourceClick = onSourceClick
             )
             if (index < result.subClaims.lastIndex) {
                  HorizontalDivider(
@@ -147,7 +125,11 @@ fun CompositeResultCard(
 }
 
 @Composable
-fun SubClaimRow(index: Int, subClaim: SubClaim) {
+fun SubClaimRow(
+    index: Int,
+    subClaim: SubClaim,
+    onSourceClick: (Int) -> Unit = {}
+) {
     var expanded by remember { mutableStateOf(false) }
 
     Column(
@@ -191,38 +173,51 @@ fun SubClaimRow(index: Int, subClaim: SubClaim) {
         }
 
         if (expanded && subClaim.result != null) {
-            SubClaimDetail(subClaim.result)
+            SubClaimDetail(
+                result = subClaim.result,
+                onSourceClick = onSourceClick
+            )
         }
     }
 }
 
 @Composable
-fun SubClaimDetail(result: CorvusCheckResult) {
+fun SubClaimDetail(
+    result: CorvusCheckResult,
+    onSourceClick: (Int) -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .padding(start = 28.dp, top = 8.dp, bottom = 8.dp)
             .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        val verdictText = when (result) {
-            is CorvusCheckResult.GeneralResult -> result.verdict.name.replace("_", " ")
-            is CorvusCheckResult.QuoteResult -> result.quoteVerdict.name.replace("_", " ")
-            else -> "UNKNOWN"
-        }
-        
-        val verdictColor = when (result) {
-            is CorvusCheckResult.GeneralResult -> getVerdictColor(result.verdict)
-            is CorvusCheckResult.QuoteResult -> getQuoteVerdictColor(result.quoteVerdict)
-            else -> MaterialTheme.colorScheme.onSurfaceVariant
-        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            when (result) {
+                is CorvusCheckResult.GeneralResult -> VerdictBadge(verdict = result.verdict)
+                is CorvusCheckResult.QuoteResult -> {
+                    // We don't have QuoteVerdictBadge but we can use getQuoteVerdictColor
+                    val color = getQuoteVerdictColor(result.quoteVerdict)
+                    Box(
+                        modifier = Modifier
+                            .background(color.copy(alpha = 0.1f), CorvusShapes.extraSmall)
+                            .border(1.dp, color.copy(alpha = 0.5f), CorvusShapes.extraSmall)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = result.quoteVerdict.name.replace("_", " "),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = color,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                else -> {}
+            }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = verdictText,
-                style = MaterialTheme.typography.labelMedium,
-                color = verdictColor,
-                fontWeight = FontWeight.Bold
-            )
             Text(
                 text = "• ${(result.confidence * 100).toInt()}% confidence",
                 style = MaterialTheme.typography.labelSmall,
@@ -241,5 +236,29 @@ fun SubClaimDetail(result: CorvusCheckResult) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface
         )
+
+        // Added source citations for subclaims
+        if (result.sources.isNotEmpty()) {
+            Row(
+                modifier = Modifier.padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Sources:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    result.sources.take(3).forEachIndexed { sourceIndex, source ->
+                        CitationBadge(
+                            index = sourceIndex,
+                            publisherName = source.publisher ?: "Source",
+                            onClick = { onSourceClick(sourceIndex) }
+                        )
+                    }
+                }
+            }
+        }
     }
 }

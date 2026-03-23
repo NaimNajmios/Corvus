@@ -7,8 +7,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,24 +41,6 @@ fun QuoteVerdictCard(
     result: CorvusCheckResult.QuoteResult,
     modifier: Modifier = Modifier
 ) {
-    var isRevealed by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(Unit) {
-        isRevealed = true
-    }
-
-    val scale by animateFloatAsState(
-        targetValue = if (isRevealed) 1f else 0.92f,
-        animationSpec = tween(380),
-        label = "verdictScale"
-    )
-    
-    val alpha by animateFloatAsState(
-        targetValue = if (isRevealed) 1f else 0f,
-        animationSpec = tween(380),
-        label = "verdictAlpha"
-    )
-
     val verdictColor = getQuoteVerdictColor(result.quoteVerdict)
     val harm = result.harmAssessment
 
@@ -74,8 +59,6 @@ fun QuoteVerdictCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .scale(scale)
-            .alpha(alpha)
             .background(
                 color = when (harm.level) {
                     HarmLevel.HIGH -> VerdictFalse.copy(alpha = 0.05f)
@@ -97,18 +80,11 @@ fun QuoteVerdictCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    text = result.quoteVerdict.name.replace("_", " "),
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        fontSize = 28.sp,
-                        letterSpacing = 1.sp
-                    ),
-                    color = verdictColor,
-                    fontWeight = FontWeight.Normal
-                )
+                LargeQuoteVerdictBadge(verdict = result.quoteVerdict)
                 
                 // Plausibility sub-label
                 if (result.quoteVerdict == QuoteVerdict.UNVERIFIABLE && result.plausibility != null) {
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         text = "↳ ${result.plausibility.score.displayLabel()}",
                         style = MaterialTheme.typography.labelSmall,

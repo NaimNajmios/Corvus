@@ -7,7 +7,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,24 +40,6 @@ fun GeneralVerdictCard(
     result: CorvusCheckResult.GeneralResult,
     modifier: Modifier = Modifier
 ) {
-    var isRevealed by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(Unit) {
-        isRevealed = true
-    }
-
-    val scale by animateFloatAsState(
-        targetValue = if (isRevealed) 1f else 0.92f,
-        animationSpec = tween(380),
-        label = "verdictScale"
-    )
-    
-    val alpha by animateFloatAsState(
-        targetValue = if (isRevealed) 1f else 0f,
-        animationSpec = tween(380),
-        label = "verdictAlpha"
-    )
-
     val verdictColor = getVerdictColor(result.verdict)
     val harm = result.harmAssessment
 
@@ -76,8 +60,6 @@ fun GeneralVerdictCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .scale(scale)
-            .alpha(alpha)
             .background(
                 color = when (harm.level) {
                     HarmLevel.HIGH -> VerdictFalse.copy(alpha = 0.05f)
@@ -99,18 +81,11 @@ fun GeneralVerdictCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    text = result.verdict.name.replace("_", " "),
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        fontSize = 32.sp,
-                        letterSpacing = 2.sp
-                    ),
-                    color = verdictColor,
-                    fontWeight = FontWeight.Normal
-                )
+                LargeVerdictBadge(verdict = result.verdict)
                 
                 // Plausibility sub-label for UNVERIFIABLE
                 if (result.verdict == Verdict.UNVERIFIABLE && result.plausibility != null) {
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         text = "↳ ${result.plausibility.score.displayLabel()}",
                         style = MaterialTheme.typography.labelSmall,

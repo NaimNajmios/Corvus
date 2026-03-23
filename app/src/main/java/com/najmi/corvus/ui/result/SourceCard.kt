@@ -33,6 +33,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.najmi.corvus.domain.model.Source
 import com.najmi.corvus.ui.theme.CorvusShapes
+import com.najmi.corvus.ui.theme.SectionEvidence
 
 @Composable
 fun SourceCard(
@@ -64,7 +65,7 @@ fun SourceCard(
             .background(MaterialTheme.colorScheme.surface, CorvusShapes.medium)
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = borderAlpha),
+                color = SectionEvidence.copy(alpha = borderAlpha * 0.4f),
                 shape = CorvusShapes.medium
             )
             .clickable(

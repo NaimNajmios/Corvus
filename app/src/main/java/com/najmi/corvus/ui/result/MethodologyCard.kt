@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.najmi.corvus.domain.model.MethodologyMetadata
 import com.najmi.corvus.ui.theme.VerdictTrue
+import com.najmi.corvus.ui.theme.SectionMethodology
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -29,10 +30,10 @@ fun MethodologyCard(metadata: MethodologyMetadata?) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BorderStroke(1.dp, SectionMethodology.copy(alpha = 0.2f)),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = SectionMethodology.copy(alpha = 0.02f)
         )
     ) {
         Column {

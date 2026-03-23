@@ -4,6 +4,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
@@ -30,13 +31,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -49,13 +53,51 @@ import com.najmi.corvus.ui.theme.*
 @Composable
 fun VerdictCard(
     result: CorvusCheckResult,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSourceClick: (Int) -> Unit = {}
 ) {
-    when (result) {
-        is CorvusCheckResult.GeneralResult -> GeneralVerdictCard(result, modifier)
-        is CorvusCheckResult.QuoteResult -> QuoteVerdictCard(result, modifier)
-        is CorvusCheckResult.CompositeResult -> CompositeResultCard(result, modifier)
-        is CorvusCheckResult.ViralHoaxResult -> ViralHoaxResultCard(result, modifier)
+    AnimatedVerdictCard(modifier = modifier) {
+        when (result) {
+            is CorvusCheckResult.GeneralResult -> GeneralVerdictCard(result)
+            is CorvusCheckResult.QuoteResult -> QuoteVerdictCard(result)
+            is CorvusCheckResult.CompositeResult -> CompositeResultCard(
+                result = result,
+                onSourceClick = onSourceClick
+            )
+            is CorvusCheckResult.ViralHoaxResult -> ViralHoaxResultCard(result)
+        }
+    }
+}
+
+@Composable
+fun AnimatedVerdictCard(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    var isRevealed by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        isRevealed = true
+    }
+
+    val scale by animateFloatAsState(
+        targetValue = if (isRevealed) 1f else 0.92f,
+        animationSpec = tween(380),
+        label = "verdictScale"
+    )
+    
+    val alpha by animateFloatAsState(
+        targetValue = if (isRevealed) 1f else 0f,
+        animationSpec = tween(380),
+        label = "verdictAlpha"
+    )
+
+    Box(
+        modifier = modifier
+            .scale(scale)
+            .alpha(alpha)
+    ) {
+        content()
     }
 }
 
@@ -88,8 +130,8 @@ fun VerdictBadge(
     
     Box(
         modifier = modifier
-            .background(color.copy(alpha = 0.15f), CorvusShapes.extraSmall)
-            .border(1.dp, color, CorvusShapes.extraSmall)
+            .background(color.copy(alpha = 0.1f), CorvusShapes.extraSmall)
+            .border(1.dp, color.copy(alpha = 0.5f), CorvusShapes.extraSmall)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -97,7 +139,7 @@ fun VerdictBadge(
                 text = verdict.name.replace("_", " "),
                 style = MaterialTheme.typography.labelSmall,
                 color = color,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Bold
             )
             
             if (verdict == Verdict.UNVERIFIABLE && plausibility != null) {
@@ -108,6 +150,54 @@ fun VerdictBadge(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun LargeVerdictBadge(
+    verdict: Verdict,
+    modifier: Modifier = Modifier
+) {
+    val color = getVerdictColor(verdict)
+    
+    Box(
+        modifier = modifier
+            .background(color.copy(alpha = 0.1f), CorvusShapes.small)
+            .border(2.dp, color, CorvusShapes.small)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = verdict.name.replace("_", " "),
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            ),
+            color = color
+        )
+    }
+}
+
+@Composable
+fun LargeQuoteVerdictBadge(
+    verdict: QuoteVerdict,
+    modifier: Modifier = Modifier
+) {
+    val color = getQuoteVerdictColor(verdict)
+    
+    Box(
+        modifier = modifier
+            .background(color.copy(alpha = 0.1f), CorvusShapes.small)
+            .border(2.dp, color, CorvusShapes.small)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = verdict.name.replace("_", " "),
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            ),
+            color = color
+        )
     }
 }
 

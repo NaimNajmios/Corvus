@@ -35,29 +35,9 @@ fun ViralHoaxResultCard(
     result: CorvusCheckResult.ViralHoaxResult,
     modifier: Modifier = Modifier
 ) {
-    var isRevealed by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(Unit) {
-        isRevealed = true
-    }
-
-    val scale by animateFloatAsState(
-        targetValue = if (isRevealed) 1f else 0.95f,
-        animationSpec = tween(380),
-        label = "verdictScale"
-    )
-    
-    val alpha by animateFloatAsState(
-        targetValue = if (isRevealed) 1f else 0f,
-        animationSpec = tween(380),
-        label = "verdictAlpha"
-    )
-
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .scale(scale)
-            .alpha(alpha)
             .background(VerdictFalse.copy(alpha = 0.1f), CorvusShapes.medium)
             .border(
                 width = 3.dp,

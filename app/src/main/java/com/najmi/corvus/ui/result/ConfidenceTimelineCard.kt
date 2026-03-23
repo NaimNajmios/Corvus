@@ -1,11 +1,9 @@
 package com.najmi.corvus.ui.result
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.najmi.corvus.domain.model.ConfidencePoint
 import com.najmi.corvus.ui.theme.CorvusShapes
+import com.najmi.corvus.ui.theme.SectionTimeline
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -28,43 +27,48 @@ fun ConfidenceTimelineCard(
 ) {
     if (points.size < 2) return
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, CorvusShapes.medium)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CorvusShapes.medium)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = SectionTimeline.copy(alpha = 0.05f)
+        ),
+        border = BorderStroke(1.dp, SectionTimeline.copy(alpha = 0.1f)),
+        shape = CorvusShapes.medium
     ) {
-        Text(
-            text = "CONFIDENCE TIMELINE",
-            style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.sp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        TimelineChart(
-            points = points,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            val dateFormat = SimpleDateFormat("MMM d", Locale.getDefault())
             Text(
-                text = dateFormat.format(Date(points.first().timestamp)),
-                style = MaterialTheme.typography.labelSmall,
+                text = "CONFIDENCE TIMELINE",
+                style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text(
-                text = "TODAY",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
+
+            TimelineChart(
+                points = points,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                val dateFormat = SimpleDateFormat("MMM d", Locale.getDefault())
+                Text(
+                    text = dateFormat.format(Date(points.first().timestamp)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "TODAY",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

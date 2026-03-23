@@ -29,3 +29,9 @@ val VerdictFalse = Color(0xFF8A4A4A)
 val VerdictMisleading = Color(0xFF8A7A4A)
 val VerdictPartiallyTrue = Color(0xFF4A6A8A)
 val VerdictUnverifiable = Color(0xFF5A5A6A)
+
+// Section-specific accent colors (very subtle tints for cards)
+val SectionEvidence = Color(0xFF4A6A8A) // Subtle blue-gray
+val SectionFacts = Color(0xFF4A8A5A)    // Subtle green-gray
+val SectionMethodology = Color(0xFF6A5A8A) // Subtle purple-gray
+val SectionTimeline = Color(0xFF8A7A4A)    // Subtle amber-gray
