@@ -20,7 +20,7 @@ import com.najmi.corvus.ui.theme.VerdictMisleading
 
 @Composable
 fun MissingContextCallout(missingContext: MissingContextInfo?) {
-    if (missingContext == null) return
+    if (missingContext == null || missingContext.content.isBlank()) return
 
     val accentColor = VerdictMisleading
 

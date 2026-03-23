@@ -30,6 +30,7 @@ fun KernelOfTruthCard(
     onSourceClick: (Int) -> Unit
 ) {
     if (kernel == null) return
+    if (kernel.twistExplanation.isBlank() && kernel.trueParts.isEmpty() && kernel.falseParts.isEmpty()) return
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -62,45 +63,49 @@ fun KernelOfTruthCard(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
             // True parts block
-            KernelSection(
-                label = "WHAT IS TRUE",
-                icon = Icons.Default.Check,
-                iconTint = VerdictTrue,
-                facts = kernel.trueParts,
-                sources = sources,
-                onSourceClick = onSourceClick,
-                leftBarColor = VerdictTrue
-            )
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            if (kernel.trueParts.isNotEmpty()) {
+                KernelSection(
+                    label = "WHAT IS TRUE",
+                    icon = Icons.Default.Check,
+                    iconTint = VerdictTrue,
+                    facts = kernel.trueParts,
+                    sources = sources,
+                    onSourceClick = onSourceClick,
+                    leftBarColor = VerdictTrue
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            }
 
             // False parts block
-            KernelSection(
-                label = "WHAT IS FALSE OR MISLEADING",
-                icon = Icons.Default.Close,
-                iconTint = VerdictFalse,
-                facts = kernel.falseParts,
-                sources = sources,
-                onSourceClick = onSourceClick,
-                leftBarColor = VerdictFalse
-            )
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            if (kernel.falseParts.isNotEmpty()) {
+                KernelSection(
+                    label = "WHAT IS FALSE OR MISLEADING",
+                    icon = Icons.Default.Close,
+                    iconTint = VerdictFalse,
+                    facts = kernel.falseParts,
+                    sources = sources,
+                    onSourceClick = onSourceClick,
+                    leftBarColor = VerdictFalse
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            }
 
             // Twist explanation
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "HOW IT WAS TWISTED",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = kernel.twistExplanation,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontStyle = FontStyle.Italic
-                )
+            if (kernel.twistExplanation.isNotBlank()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "HOW IT WAS TWISTED",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = kernel.twistExplanation,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontStyle = FontStyle.Italic
+                    )
+                }
             }
         }
     }

@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -162,16 +164,11 @@ fun SubClaimRow(
             )
 
             subClaim.result?.let { res ->
-                val color = when (res) {
-                    is CorvusCheckResult.GeneralResult -> getVerdictColor(res.verdict)
-                    is CorvusCheckResult.QuoteResult -> getQuoteVerdictColor(res.quoteVerdict)
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                when (res) {
+                    is CorvusCheckResult.GeneralResult -> VerdictBadge(verdict = res.verdict)
+                    is CorvusCheckResult.QuoteResult -> QuoteVerdictBadge(verdict = res.quoteVerdict)
+                    else -> {}
                 }
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(color, CircleShape)
-                )
             }
         }
 
@@ -201,23 +198,7 @@ fun SubClaimDetail(
         ) {
             when (result) {
                 is CorvusCheckResult.GeneralResult -> VerdictBadge(verdict = result.verdict)
-                is CorvusCheckResult.QuoteResult -> {
-                    // We don't have QuoteVerdictBadge but we can use getQuoteVerdictColor
-                    val color = getQuoteVerdictColor(result.quoteVerdict)
-                    Box(
-                        modifier = Modifier
-                            .background(color.copy(alpha = 0.1f), CorvusShapes.extraSmall)
-                            .border(1.dp, color.copy(alpha = 0.5f), CorvusShapes.extraSmall)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = result.quoteVerdict.name.replace("_", " "),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = color,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                is CorvusCheckResult.QuoteResult -> QuoteVerdictBadge(verdict = result.quoteVerdict)
                 else -> {}
             }
 
@@ -252,7 +233,11 @@ fun SubClaimDetail(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     result.sources.take(3).forEachIndexed { sourceIndex, source ->
                         CitationBadge(
                             index = sourceIndex,

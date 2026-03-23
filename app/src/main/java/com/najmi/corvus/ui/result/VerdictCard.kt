@@ -158,6 +158,28 @@ fun VerdictBadge(
 }
 
 @Composable
+fun QuoteVerdictBadge(
+    verdict: QuoteVerdict,
+    modifier: Modifier = Modifier
+) {
+    val color = getQuoteVerdictColor(verdict)
+    
+    Box(
+        modifier = modifier
+            .background(color.copy(alpha = 0.1f), CorvusShapes.extraSmall)
+            .border(1.dp, color.copy(alpha = 0.5f), CorvusShapes.extraSmall)
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Text(
+            text = verdict.name.replace("_", " "),
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
 fun LargeVerdictBadge(
     verdict: Verdict,
     modifier: Modifier = Modifier

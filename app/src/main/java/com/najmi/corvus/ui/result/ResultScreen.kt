@@ -57,6 +57,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -85,6 +86,7 @@ fun ResultScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var showContent by remember { mutableStateOf(false) }
+    var queryExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         delay(100)
@@ -156,7 +158,10 @@ fun ResultScreen(
 
                 item(key = "query_card") {
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateContentSize()
+                            .clickable { queryExpanded = !queryExpanded },
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                         ),
@@ -173,25 +178,41 @@ fun ResultScreen(
                             Box(
                                 modifier = Modifier
                                     .width(4.dp)
-                                    .height(40.dp)
+                                    .height(if (queryExpanded) Int.MAX_VALUE.dp else 40.dp)
                                     .background(
                                         MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                                         CircleShape
                                     )
+                                    .align(if (queryExpanded) Alignment.Top else Alignment.CenterVertically)
                             )
                             Spacer(Modifier.width(16.dp))
                             Column {
-                                Text(
-                                    text = "YOUR QUERY",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    letterSpacing = 1.sp
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "YOUR QUERY",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        letterSpacing = 1.sp
+                                    )
+                                    
+                                    if (!queryExpanded && corvusResult.claim.length > 100) {
+                                        Text(
+                                            text = "tap to expand",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                            fontStyle = FontStyle.Italic
+                                        )
+                                    }
+                                }
                                 Text(
                                     text = corvusResult.claim,
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 3,
+                                    maxLines = if (queryExpanded) Int.MAX_VALUE else 3,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }

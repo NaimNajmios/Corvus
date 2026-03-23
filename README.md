@@ -1,56 +1,58 @@
-# Corvus
+# 🦅 Corvus
 
-*See through the noise.*
+*See through the noise. Verify the truth.*
 
-A high-fidelity fact-checking Android application that orchestrates multi-stage verification pipelines to combat misinformation.
+Corvus is a high-fidelity fact-checking Android application that orchestrates multi-stage verification pipelines to combat misinformation. It decomposes complex claims into verifiable components and routes them through specialized analysis engines for unparalleled precision.
 
-## Overview
+---
 
-Corvus moves beyond simple lookups by decomposing complex claims into verifiable components and routing them through specialized pipelines:
+## 🚀 Overview
 
-- **General Pipeline** - Hybrid search and LLM reasoning for broad claims.
-- **Scientific Pipeline** - Powered by PubMed and World Bank data for health and technical claims.
-- **Statistical Pipeline** - Direct integration with DOSM and World Bank Open Data.
-- **Current Event Pipeline** - Real-time monitoring via GDELT and Junkipedia.
-- **Quote Verification** - Cross-referencing Hansard (Parliamentary) and Wikiquote records.
+Corvus moves beyond simple database lookups. It treats fact-checking as an investigative process, utilizing a suite of specialized pipelines:
 
-## Core Features
+- **🌍 General Pipeline** - Hybrid web search and LLM-driven reasoning for broad social and political claims.
+- **🧬 Scientific Pipeline** - Technical verification powered by PubMed and World Bank health datasets.
+- **📊 Statistical Pipeline** - Direct integration with DOSM (Department of Statistics Malaysia) and World Bank Open Data.
+- **🔥 Current Events** - Real-time monitoring of breaking news via GDELT and viral hoax tracking via Junkipedia.
+- **🎙️ Quote Verification** - Cross-referencing against Hansard (Parliamentary records) and Wikiquote.
 
-- **Claim Decomposition** - Breaks down compound statements into atomic units for individual testing.
-- **Vision Extraction** - Intelligent OCR and image context analysis via PaliGemma and Gemini Nano.
-- **Confidence Timeline** - Visual representation of verification certainty over time.
-- **Multi-Provider LLM** - Seamless switching between Cerebras, Groq, Gemini, and OpenRouter.
-- **On-Device Intelligence** - LiteRT Engine (formerly TFLite) for privacy-preserving local inference.
+---
 
-## Tech Stack
+## ✨ Core Features
 
-- **Kotlin** & **Jetpack Compose** - Reactive, modern UI with custom monochromatic design system.
-- **LiteRT (TFLite)** - On-device model execution for vision and language tasks.
-- **Ktor** - Asynchronous networking for high-concurrency pipeline execution.
-- **Hilt** - Scalable dependency injection.
-- **Room** - Local persistence for fact-check history and analytics.
+- **🧩 Claim Decomposition** - Automatically breaks compound or "slanted" statements into atomic units for individual multi-pipeline testing.
+- **👁️ Vision Extraction** - Intelligent OCR and image context analysis powered by PaliGemma and Gemini Nano for on-device multi-modal checks.
+- **⏳ Confidence Timeline** - A visual journey of verification certainty, showing how confidence shifts as evidence is retrieved.
+- **🧠 Multi-Provider LLM** - Seamlessly switch between Cerebras, Groq, Gemini, and OpenRouter to balance speed and reasoning depth.
+- **🛡️ Privacy-First ML** - Leverages the LiteRT Engine (formerly TFLite) for local vision and language tasks, keeping your data on-device.
 
-## Project Structure
+---
 
-```
-app/src/main/java/com/najmi/corvus/
-├── data/
-│   ├── remote/        # 16+ API Clients (Cerebras, DOSM, GDELT, PubMed, etc.)
-│   └── repository/    # Unified data access for LLMs and verification sources
-├── domain/
-│   ├── model/         # Domain-driven models for claims and verdicts
-│   └── usecase/       # Orchestration logic for verification pipelines
-└── ui/
-    ├── compare/       # Multi-source comparison view
-    ├── history/       # Persistent audit log of past checks
-    └── settings/      # Provider API management (HuggingFace, Groq, etc.)
-```
+## 🎨 Premium Design & Theming
 
-## Setup
+Corvus is built with a custom **Monochromatic Precise** design system, now expanded with dynamic palettes to match your style:
+
+- **Dynamic Color Palettes** - Choose from `Monochrome`, `Ocean`, `Forest`, `Sunset`, or `Lavender` themes.
+- ** autoridad Typography** - Uses *DM Serif Display* for authoritative headings and *IBM Plex Mono* for information-dense results.
+- **Interactive Results** - Rich, expandable cards with micro-animations, glassmorphism, and smooth transitions.
+- **Thread-Safe Architecture** - Fully asynchronous orchestration using Kotlin Coroutines and Ktor, ensuring zero UI jank during heavy analysis.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Modern UI**: Jetpack Compose with Material 3 integration.
+- **Dependency Injection**: Hilt (Dagger) for scalable architecture.
+- **Networking**: Ktor for concurrent, high-performance API orchestration.
+- **Database**: Room for persistent audit logs, history, and analytical insights.
+- **Background Tasks**: WorkManager for robust, backgrounded analysis and notifications.
+
+---
+
+## ⚙️ Setup
 
 ### API Keys
-
-Create `local.properties` in the project root. Most providers are optional, but at least one LLM provider is recommended:
+Create a `local.properties` file in the project root. While most providers are optional, at least one LLM key is required for analysis:
 
 ```properties
 # Primary LLM Providers
@@ -65,19 +67,13 @@ GOOGLE_FACT_CHECK_API_KEY=your_key
 HF_TOKEN=your_huggingface_token_for_gated_models
 ```
 
-### Build
+### Build Requirements
+- Android Studio Ladybug+
+- JDK 17
+- `.\gradlew assembleDebug` to build the app package.
 
-```bash
-./gradlew assembleDebug   # Requires API keys for full functionality
-```
+---
 
-## Design
-
-Corvus features a custom **Monochromatic Precise** design system:
-- **Primary Color:** High-contrast Black/White/Gray palette.
-- **Typography:** DM Serif Display (Authority) + IBM Plex Mono (Information).
-- **Aesthetic:** Brutalist edges, glassmorphism, and micro-animations for pipeline state.
-
-## License
+## 📜 License
 
 Personal project. All rights reserved.
