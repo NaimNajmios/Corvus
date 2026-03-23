@@ -3,6 +3,7 @@ package com.najmi.corvus.ui.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -154,7 +155,7 @@ fun SettingsScreen(
             SettingsSection(title = "Appearance") {
                 SettingsItemWithDropdown(
                     icon = Icons.Default.DarkMode,
-                    title = "Dark Mode",
+                    title = "Appearance",
                     subtitle = when (uiState.preferences.darkMode) {
                         true -> "On"
                         false -> "Off"
@@ -452,14 +453,6 @@ fun ThemePreviewSwatch(isDark: Boolean) {
     }
 }
 
-@Composable
-fun isSystemInDarkTheme(): Boolean {
-    val bgColor = MaterialTheme.colorScheme.background
-    val r = bgColor.red
-    val g = bgColor.green
-    val b = bgColor.blue
-    return 0.299f * r + 0.587f * g + 0.114f * b > 0.5f
-}
 
 @Composable
 fun SettingsItemWithDropdownWithPreview(

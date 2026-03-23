@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.najmi.corvus.domain.model.ConfidencePoint
 import com.najmi.corvus.ui.theme.CorvusShapes
+import com.najmi.corvus.ui.theme.CorvusTheme
 import com.najmi.corvus.ui.theme.SectionTimeline
 import java.text.SimpleDateFormat
 import java.util.*
@@ -30,9 +31,9 @@ fun ConfidenceTimelineCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = SectionTimeline.copy(alpha = 0.05f)
+            containerColor = CorvusTheme.colors.sectionTimeline.copy(alpha = 0.05f)
         ),
-        border = BorderStroke(1.dp, SectionTimeline.copy(alpha = 0.1f)),
+        border = BorderStroke(1.dp, CorvusTheme.colors.sectionTimeline.copy(alpha = 0.1f)),
         shape = CorvusShapes.medium
     ) {
         Column(

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.najmi.corvus.domain.model.GroundedFact
 import com.najmi.corvus.domain.model.Source
 import com.najmi.corvus.ui.theme.CorvusShapes
+import com.najmi.corvus.ui.theme.CorvusTheme
 import com.najmi.corvus.ui.theme.SectionFacts
 import com.najmi.corvus.ui.theme.CorvusTextSecondary
 import com.najmi.corvus.ui.theme.CorvusTextTertiary
@@ -33,8 +34,14 @@ fun GroundedFactsList(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SectionFacts.copy(alpha = 0.05f), CorvusShapes.medium)
-            .border(1.dp, SectionFacts.copy(alpha = 0.1f), CorvusShapes.medium)
+            .background(
+                color = CorvusTheme.colors.sectionFacts.copy(alpha = 0.05f),
+                shape = CorvusShapes.medium
+            )
+            .border(
+                border = BorderStroke(1.dp, CorvusTheme.colors.sectionFacts.copy(alpha = 0.1f)),
+                shape = CorvusShapes.medium
+            )
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

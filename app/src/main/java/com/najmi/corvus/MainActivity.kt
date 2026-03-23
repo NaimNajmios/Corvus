@@ -15,6 +15,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,6 +35,9 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     
+    @Inject
+    lateinit var userPreferencesRepository: UserPreferencesRepository
+    
     var sharedText by mutableStateOf<String?>(null)
     var instantAnalyze by mutableStateOf(false)
     var initialResultId by mutableStateOf<String?>(null)
@@ -45,7 +49,11 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
         
         setContent {
-            CorvusTheme(darkTheme = isSystemInDarkTheme(this)) {
+            val preferences by userPreferencesRepository.preferences.collectAsState(initial = null)
+            val systemDark = isSystemInDarkTheme()
+            val darkTheme = preferences?.darkMode ?: systemDark
+
+            CorvusTheme(darkTheme = darkTheme) {
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
                     onResult = { isGranted ->
@@ -98,13 +106,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun getClipboardText(): String? {
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        return clipboard.primaryClip?.getItemAt(0)?.text?.toString()
-    }
-}
-
-fun isSystemInDarkTheme(context: Context): Boolean {
-    val nightModeFlags = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-    return nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES
 }

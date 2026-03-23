@@ -4,6 +4,40 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
+
+data class SectionColors(
+    val sectionEvidence: Color,
+    val sectionFacts: Color,
+    val sectionMethodology: Color,
+    val sectionTimeline: Color
+)
+
+private val DarkSectionColors = SectionColors(
+    sectionEvidence = SectionEvidence,
+    sectionFacts = SectionFacts,
+    sectionMethodology = SectionMethodology,
+    sectionTimeline = SectionTimeline
+)
+
+private val LightSectionColors = SectionColors(
+    sectionEvidence = SectionEvidenceLight,
+    sectionFacts = SectionFactsLight,
+    sectionMethodology = SectionMethodologyLight,
+    sectionTimeline = SectionTimelineLight
+)
+
+val LocalCorvusColors = staticCompositionLocalOf { DarkSectionColors }
+
+object CorvusTheme {
+    val colors: SectionColors
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalCorvusColors.current
+}
 
 private val DarkColorScheme = darkColorScheme(
     primary = MonochromeWhite,
@@ -57,11 +91,16 @@ fun CorvusTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val sectionColors = if (darkTheme) DarkSectionColors else LightSectionColors
     
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        shapes = CorvusShapes,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalCorvusColors provides sectionColors
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            shapes = CorvusShapes,
+            content = content
+        )
+    }
 }
