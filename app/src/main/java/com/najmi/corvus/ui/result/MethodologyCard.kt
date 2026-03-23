@@ -17,7 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.MethodologyMetadata
+import com.najmi.corvus.domain.model.displayLabel
 import com.najmi.corvus.ui.theme.VerdictTrue
 import com.najmi.corvus.ui.theme.CorvusTheme
 import com.najmi.corvus.ui.theme.CorvusShapes
@@ -87,7 +89,7 @@ fun MethodologyCard(metadata: MethodologyMetadata?) {
                                 tint = VerdictTrue
                             )
                             Text(
-                                text = step.step.name.padEnd(25),
+                                text = step.step.displayLabel().padEnd(25),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
@@ -102,10 +104,20 @@ fun MethodologyCard(metadata: MethodologyMetadata?) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                     // Summary stats
-                    MethodologyStatRow("Claim type", metadata.claimTypeDetected.name)
-                    MethodologyStatRow("Sources retrieved", "${metadata.sourcesRetrieved}")
-                    MethodologyStatRow("Avg. credibility", "${metadata.avgSourceCredibility}%")
-                    MethodologyStatRow("Analysis provider", metadata.llmProviderUsed)
+                    MethodologyStatRow("Claim type", metadata.claimTypeDetected.displayLabel())
+                    
+                    if (metadata.sourcesRetrieved > 0) {
+                        MethodologyStatRow("Sources retrieved", "${metadata.sourcesRetrieved}")
+                    }
+                    
+                    if (metadata.avgSourceCredibility > 0) {
+                        MethodologyStatRow("Avg. credibility", "${metadata.avgSourceCredibility}%")
+                    }
+                    
+                    if (metadata.llmProviderUsed.isNotBlank() && metadata.llmProviderUsed != "unknown") {
+                        MethodologyStatRow("Analysis provider", metadata.llmProviderUsed)
+                    }
+                    
                     MethodologyStatRow("Checked at", metadata.checkedAt.toFormattedDate())
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

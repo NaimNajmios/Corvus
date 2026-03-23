@@ -106,20 +106,22 @@ fun QuoteVerdictCard(
             HarmInlineTag(harm)
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = "Speaker: ${result.speaker}",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold
-            )
-            
-            if (result.originalDate != null) {
+        if (result.speaker.isNotBlank() && result.speaker != "Unknown") {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Claimed Date: ${result.originalDate}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Speaker: ${result.speaker}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
                 )
+
+                if (result.originalDate != null && result.originalDate.isNotBlank()) {
+                    Text(
+                        text = "Claimed Date: ${result.originalDate}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 

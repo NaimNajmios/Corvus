@@ -115,12 +115,15 @@ fun CompositeResultCard(
             }
         }
 
-        Text(
-            text = result.compositeSummary,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp)
-        )
+        if (result.compositeSummary.isNotBlank()) {
+            Text(
+                text = result.compositeSummary,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

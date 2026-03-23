@@ -40,3 +40,63 @@ val SectionEvidenceLight = Color(0xFFD0E0EF)
 val SectionFactsLight = Color(0xFFD0EFC0)
 val SectionMethodologyLight = Color(0xFFE0D0EF)
 val SectionTimelineLight = Color(0xFFEFE0D0)
+
+enum class ColorPalette(val label: String) {
+    MONOCHROME("Monochrome"),
+    OCEAN("Ocean"),
+    FOREST("Forest"),
+    SUNSET("Sunset"),
+    LAVENDER("Lavender")
+}
+
+data class PaletteColors(
+    val primaryDark: Color,
+    val primaryLight: Color,
+    val surfaceDark: Color,
+    val surfaceLight: Color,
+    val surfaceRaisedDark: Color,
+    val surfaceRaisedLight: Color
+)
+
+val Palettes = mapOf(
+    ColorPalette.MONOCHROME to PaletteColors(
+        primaryDark = MonochromeWhite,
+        primaryLight = MonochromeBlack,
+        surfaceDark = CorvusSurface,
+        surfaceLight = CorvusSurfaceLight,
+        surfaceRaisedDark = CorvusSurfaceRaised,
+        surfaceRaisedLight = CorvusSurfaceRaisedLight
+    ),
+    ColorPalette.OCEAN to PaletteColors(
+        primaryDark = Color(0xFF8AB4F8), // Soft Blue
+        primaryLight = Color(0xFF1967D2), // Deep Blue
+        surfaceDark = Color(0xFF1A1C1E), // Navy Surface
+        surfaceLight = Color(0xFFF1F3F4), // Very Light Blue-Gray
+        surfaceRaisedDark = Color(0xFF2D2F31),
+        surfaceRaisedLight = Color(0xFFE8EAED)
+    ),
+    ColorPalette.FOREST to PaletteColors(
+        primaryDark = Color(0xFF81C995), // Soft Green
+        primaryLight = Color(0xFF188038), // Deep Green
+        surfaceDark = Color(0xFF171B17), // Forest Surface
+        surfaceLight = Color(0xFFF3F5F3), // Light Sage
+        surfaceRaisedDark = Color(0xFF282C28),
+        surfaceRaisedLight = Color(0xFFE6E8E6)
+    ),
+    ColorPalette.SUNSET to PaletteColors(
+        primaryDark = Color(0xFFFDB462), // Soft Amber
+        primaryLight = Color(0xFFE37400), // Deep Orange
+        surfaceDark = Color(0xFF1E1A17), // Warm Surface
+        surfaceLight = Color(0xFFF5F3F1), // Light Peach
+        surfaceRaisedDark = Color(0xFF2D2825),
+        surfaceRaisedLight = Color(0xFFE9E6E3)
+    ),
+    ColorPalette.LAVENDER to PaletteColors(
+        primaryDark = Color(0xFFD7AEFB), // Soft Purple
+        primaryLight = Color(0xFF9334E6), // Deep Purple
+        surfaceDark = Color(0xFF1C1A1E), // Violet Surface
+        surfaceLight = Color(0xFFF4F1F5), // Light Lavender
+        surfaceRaisedDark = Color(0xFF2C282D),
+        surfaceRaisedLight = Color(0xFFE8E5E9)
+    )
+)

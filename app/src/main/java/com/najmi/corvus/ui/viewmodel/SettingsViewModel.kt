@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.data.local.UserPreferences
 import com.najmi.corvus.data.local.UserPreferencesRepository
+import com.najmi.corvus.ui.theme.ColorPalette
 import com.najmi.corvus.data.repository.HistoryRepository
 import com.najmi.corvus.data.repository.LlmProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -70,6 +71,12 @@ class SettingsViewModel @Inject constructor(
     fun setShowAnimations(show: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.setShowAnimations(show)
+        }
+    }
+
+    fun setColorPalette(palette: ColorPalette) {
+        viewModelScope.launch {
+            userPreferencesRepository.setColorPalette(palette)
         }
     }
 

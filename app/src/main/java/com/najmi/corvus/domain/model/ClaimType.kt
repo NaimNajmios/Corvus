@@ -12,3 +12,13 @@ enum class ClaimType {
     PERSON_FACT,    // "Anwar Ibrahim is the 10th PM"
     GENERAL         // Catch-all
 }
+
+fun ClaimType.displayLabel(): String = when (this) {
+    ClaimType.QUOTE -> "Quote"
+    ClaimType.STATISTICAL -> "Statistical"
+    ClaimType.HISTORICAL -> "Historical"
+    ClaimType.SCIENTIFIC -> "Scientific"
+    ClaimType.CURRENT_EVENT -> "Current Event"
+    ClaimType.PERSON_FACT -> "Person Fact"
+    ClaimType.GENERAL -> "General"
+}

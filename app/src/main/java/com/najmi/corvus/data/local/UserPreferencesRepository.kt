@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.najmi.corvus.data.repository.LlmProvider
+import com.najmi.corvus.ui.theme.ColorPalette
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -21,7 +22,8 @@ data class UserPreferences(
     val responseLanguage: String = "auto",
     val prioritizeLocalSources: Boolean = false,
     val darkMode: Boolean? = null,
-    val showAnimations: Boolean = true
+    val showAnimations: Boolean = true,
+    val colorPalette: ColorPalette = ColorPalette.MONOCHROME
 )
 
 @Singleton
@@ -34,6 +36,7 @@ class UserPreferencesRepository @Inject constructor(
         private val PRIORITIZE_LOCAL = booleanPreferencesKey("prioritize_local_sources")
         private val DARK_MODE = stringPreferencesKey("dark_mode")
         private val SHOW_ANIMATIONS = booleanPreferencesKey("show_animations")
+        private val COLOR_PALETTE = stringPreferencesKey("color_palette")
     }
 
     val preferences: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
@@ -50,7 +53,10 @@ class UserPreferencesRepository @Inject constructor(
                     else -> null
                 }
             },
-            showAnimations = prefs[SHOW_ANIMATIONS] ?: true
+            showAnimations = prefs[SHOW_ANIMATIONS] ?: true,
+            colorPalette = prefs[COLOR_PALETTE]?.let {
+                try { ColorPalette.valueOf(it) } catch (e: Exception) { ColorPalette.MONOCHROME }
+            } ?: ColorPalette.MONOCHROME
         )
     }
 
@@ -81,6 +87,12 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setShowAnimations(show: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[SHOW_ANIMATIONS] = show
+        }
+    }
+
+    suspend fun setColorPalette(palette: ColorPalette) {
+        context.dataStore.edit { prefs ->
+            prefs[COLOR_PALETTE] = palette.name
         }
     }
 }

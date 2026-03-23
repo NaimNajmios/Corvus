@@ -248,3 +248,13 @@ data class PipelineStepResult(
     val step: PipelineStep,
     val outcome: String
 )
+
+fun HarmCategory.displayLabel(): String = when (this) {
+    HarmCategory.NONE -> "None"
+    HarmCategory.HEALTH -> "Health"
+    HarmCategory.SAFETY -> "Safety"
+    HarmCategory.RACIAL_ETHNIC -> "Racial/Ethnic"
+    HarmCategory.RELIGIOUS -> "Religious"
+    HarmCategory.POLITICAL -> "Political"
+    HarmCategory.FINANCIAL -> "Financial"
+}

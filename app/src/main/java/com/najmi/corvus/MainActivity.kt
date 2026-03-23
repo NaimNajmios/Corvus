@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.najmi.corvus.data.local.UserPreferencesRepository
 import com.najmi.corvus.ui.theme.CorvusTheme
+import com.najmi.corvus.ui.theme.ColorPalette
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -52,8 +53,9 @@ class MainActivity : ComponentActivity() {
             val preferences by userPreferencesRepository.preferences.collectAsState(initial = null)
             val systemDark = isSystemInDarkTheme()
             val darkTheme = preferences?.darkMode ?: systemDark
+            val colorPalette = preferences?.colorPalette ?: ColorPalette.MONOCHROME
 
-            CorvusTheme(darkTheme = darkTheme) {
+            CorvusTheme(darkTheme = darkTheme, colorPalette = colorPalette) {
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
                     onResult = { isGranted ->

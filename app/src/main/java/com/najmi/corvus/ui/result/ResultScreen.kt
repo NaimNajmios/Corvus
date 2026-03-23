@@ -243,15 +243,17 @@ fun ResultScreen(
                 }
 
                 if (corvusResult !is CorvusCheckResult.ViralHoaxResult) {
-                    item(key = "expandable_explanation") {
-                        ExpandableExplanation(
-                            explanation = when (corvusResult) {
-                                is CorvusCheckResult.GeneralResult -> corvusResult.explanation
-                                is CorvusCheckResult.QuoteResult -> corvusResult.contextExplanation
-                                is CorvusCheckResult.CompositeResult -> corvusResult.compositeSummary
-                                else -> ""
-                            }
-                        )
+                    val explanation = when (corvusResult) {
+                        is CorvusCheckResult.GeneralResult -> corvusResult.explanation
+                        is CorvusCheckResult.QuoteResult -> corvusResult.contextExplanation
+                        is CorvusCheckResult.CompositeResult -> corvusResult.compositeSummary
+                        else -> ""
+                    }
+
+                    if (explanation.isNotBlank()) {
+                        item(key = "expandable_explanation") {
+                            ExpandableExplanation(explanation = explanation)
+                        }
                     }
                 }
 

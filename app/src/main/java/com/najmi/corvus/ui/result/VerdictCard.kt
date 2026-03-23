@@ -47,6 +47,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.najmi.corvus.domain.model.ClaimType
+import com.najmi.corvus.domain.model.PlausibilityScore
+import com.najmi.corvus.domain.model.Verdict
+import com.najmi.corvus.domain.model.displayLabel
 import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.ui.theme.*
 
@@ -112,7 +116,7 @@ fun TypeBadge(
             .padding(horizontal = 8.dp, vertical = 2.dp)
     ) {
         Text(
-            text = type.name,
+            text = type.displayLabel(),
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold
@@ -144,7 +148,7 @@ fun VerdictBadge(
             
             if (verdict == Verdict.UNVERIFIABLE && plausibility != null) {
                 Text(
-                    text = plausibility.name,
+                    text = plausibility.displayLabel(),
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
                     color = plausibility.labelColor()
                 )
@@ -259,7 +263,7 @@ fun HarmWarningBlock(harm: HarmAssessment) {
             )
             Column {
                 Text(
-                    text = "${harm.category.name} RISK".uppercase(),
+                    text = "${harm.category.displayLabel()} RISK".uppercase(),
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = VerdictFalse
                 )
@@ -290,7 +294,7 @@ fun HarmInlineTag(harm: HarmAssessment) {
             modifier = Modifier.size(14.dp)
         )
         Text(
-            text = "MODERATE ${harm.category.name} CONCERN",
+            text = "MODERATE ${harm.category.displayLabel()} CONCERN",
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
             color = VerdictMisleading,
             fontWeight = FontWeight.Bold
@@ -384,7 +388,7 @@ fun PlausibilitySpectrumBar(score: PlausibilityScore) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text("IMPLAUSIBLE", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = VerdictFalse)
-            Text(score.name, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = score.labelColor())
+            Text(score.displayLabel(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = score.labelColor())
             Text("PROBABLE", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = VerdictTrue)
         }
 

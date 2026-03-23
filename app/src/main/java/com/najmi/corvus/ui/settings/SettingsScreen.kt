@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -61,6 +62,8 @@ import com.najmi.corvus.ui.theme.CorvusBorder
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.theme.CorvusVoid
 import com.najmi.corvus.ui.theme.CorvusVoidLight
+import com.najmi.corvus.ui.theme.ColorPalette
+import com.najmi.corvus.ui.theme.Palettes
 import com.najmi.corvus.ui.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,6 +77,7 @@ fun SettingsScreen(
     var showProviderMenu by remember { mutableStateOf(false) }
     var showLanguageMenu by remember { mutableStateOf(false) }
     var showDarkModeMenu by remember { mutableStateOf(false) }
+    var showPaletteMenu by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -153,13 +157,14 @@ fun SettingsScreen(
             }
 
             SettingsSection(title = "Appearance") {
+                // Dark Mode
                 SettingsItemWithDropdown(
                     icon = Icons.Default.DarkMode,
-                    title = "Appearance",
+                    title = "Theme Mode",
                     subtitle = when (uiState.preferences.darkMode) {
-                        true -> "On"
-                        false -> "Off"
-                        null -> "System"
+                        true -> "Always Dark"
+                        false -> "Always Light"
+                        else -> "System Default"
                     },
                     onClick = { showDarkModeMenu = true },
                     dropdownContent = {
@@ -248,6 +253,51 @@ fun SettingsScreen(
                         ThemePreviewSwatch(
                             isDark = uiState.preferences.darkMode ?: isSystemInDarkTheme()
                         )
+                    }
+                )
+
+                // Color Palette
+                SettingsItemWithDropdown(
+                    icon = Icons.Default.Palette,
+                    title = "Color Palette",
+                    subtitle = uiState.preferences.colorPalette.label,
+                    onClick = { showPaletteMenu = true },
+                    dropdownContent = {
+                        ColorPalette.values().forEach { palette ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        val colors = Palettes[palette] ?: Palettes[ColorPalette.MONOCHROME]!!
+                                        val isDark = isSystemInDarkTheme()
+                                        Box(
+                                            modifier = Modifier
+                                                .size(16.dp)
+                                                .clip(CircleShape)
+                                                .background(if (isDark) colors.primaryDark else colors.primaryLight)
+                                        )
+                                        Text(palette.label)
+                                    }
+                                },
+                                onClick = {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.setColorPalette(palette)
+                                    showPaletteMenu = false
+                                },
+                                trailingIcon = {
+                                    if (uiState.preferences.colorPalette == palette) {
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            )
+                        }
+                    },
+                    expanded = showPaletteMenu,
+                    onDismiss = { showPaletteMenu = false },
+                    trailingPreview = {
+                        PalettePreviewSwatch(palette = uiState.preferences.colorPalette)
                     }
                 )
 
@@ -427,6 +477,32 @@ fun SettingsItemWithDropdown(
                 dropdownContent()
             }
         }
+    }
+}
+
+@Composable
+fun PalettePreviewSwatch(palette: ColorPalette) {
+    val colors = Palettes[palette] ?: Palettes[ColorPalette.MONOCHROME]!!
+    val isDark = isSystemInDarkTheme()
+    
+    Row(
+        modifier = Modifier.padding(end = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CorvusShapes.extraSmall)
+                .background(if (isDark) colors.surfaceDark else colors.surfaceLight)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CorvusShapes.extraSmall)
+        )
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CorvusShapes.extraSmall)
+                .background(if (isDark) colors.primaryDark else colors.primaryLight)
+        )
     }
 }
 

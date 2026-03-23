@@ -88,9 +88,27 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun CorvusTheme(
     darkTheme: Boolean = true,
+    colorPalette: ColorPalette = ColorPalette.MONOCHROME,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val palette = Palettes[colorPalette] ?: Palettes[ColorPalette.MONOCHROME]!!
+    
+    val colorScheme = if (darkTheme) {
+        DarkColorScheme.copy(
+            primary = palette.primaryDark,
+            background = palette.surfaceDark,
+            surface = palette.surfaceDark,
+            surfaceVariant = palette.surfaceRaisedDark
+        )
+    } else {
+        LightColorScheme.copy(
+            primary = palette.primaryLight,
+            background = palette.surfaceLight,
+            surface = palette.surfaceLight,
+            surfaceVariant = palette.surfaceRaisedLight
+        )
+    }
+    
     val sectionColors = if (darkTheme) DarkSectionColors else LightSectionColors
     
     CompositionLocalProvider(

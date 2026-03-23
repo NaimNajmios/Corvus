@@ -75,24 +75,28 @@ fun ViralHoaxResultCard(
             color = VerdictFalse.copy(alpha = 0.3f)
         )
 
-        Text(
-            text = "Original Match:",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Text(
-            text = result.matchedClaim,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium
-        )
+        if (result.matchedClaim.isNotBlank()) {
+            Text(
+                text = "Original Match:",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-        Text(
-            text = result.summary,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+            Text(
+                text = result.matchedClaim,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        if (result.summary.isNotBlank()) {
+            Text(
+                text = result.summary,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
         if (result.debunkUrls.isNotEmpty()) {
             Text(
