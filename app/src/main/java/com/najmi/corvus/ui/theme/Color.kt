@@ -36,6 +36,17 @@ val SectionFacts = Color(0xFF4A8A5A)    // Subtle green-gray
 val SectionMethodology = Color(0xFF6A5A8A) // Subtle purple-gray
 val SectionTimeline = Color(0xFF8A7A4A)    // Subtle amber-gray
 
+// Source Indicator Colors
+val CredibilityHigh = Color(0xFF4CAF50)
+val CredibilityMedium = Color(0xFFFFC107)
+val CredibilityLow = Color(0xFFF44336)
+
+val BiasLeft = Color(0xFF2196F3)
+val BiasLeftCenter = Color(0xFF03A9F4)
+val BiasCenter = Color(0xFF9E9E9E)
+val BiasRightCenter = Color(0xFFFF9800)
+val BiasRight = Color(0xFFF44336)
+
 val SectionEvidenceLight = Color(0xFFD0E0EF)
 val SectionFactsLight = Color(0xFFD0EFC0)
 val SectionMethodologyLight = Color(0xFFE0D0EF)

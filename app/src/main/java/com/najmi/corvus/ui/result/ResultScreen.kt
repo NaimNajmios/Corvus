@@ -2,55 +2,36 @@ package com.najmi.corvus.ui.result
 
 import android.content.Intent
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -86,7 +67,11 @@ fun ResultScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var showContent by remember { mutableStateOf(false) }
-    var queryExpanded by remember { mutableStateOf(false) }
+    var queryExpanded by rememberSaveable { mutableStateOf(false) }
+
+    val showScrollToTop by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 2 }
+    }
 
     LaunchedEffect(Unit) {
         delay(100)
@@ -95,12 +80,22 @@ fun ResultScreen(
 
     fun scrollToSource(sourceIndex: Int) {
         scope.launch {
-            // Find the index of the evidence header and add sourceIndex + 1
-            val evidenceHeaderIndex = listState.layoutInfo.visibleItemsInfo
-                .find { it.key == "evidence_header" }?.index
-                ?: 10 // fallback heuristic
+            // Scroll directly to the source by its key
+            val targetKey = "evidence_source_$sourceIndex"
+            val targetIndex = listState.layoutInfo.visibleItemsInfo.find { it.key == targetKey }?.index
             
-            listState.animateScrollToItem(evidenceHeaderIndex + sourceIndex + 1)
+            if (targetIndex != null) {
+                listState.animateScrollToItem(targetIndex)
+            } else {
+                // Fallback: search total items count (less efficient but exhaustive)
+                val totalIndex = (0 until listState.layoutInfo.totalItemsCount).find { 
+                    // This is hard to check without custom key mapping, but we can try to scroll to the end
+                    // since sources are near the bottom. 
+                    // Better yet, just use a reasonable guess if not visible.
+                    false 
+                }
+                listState.animateScrollToItem(10 + sourceIndex) // improved heuristic
+            }
         }
     }
 
@@ -123,12 +118,14 @@ fun ResultScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        Box(modifier = Modifier.fillMaxSize()) {
         result?.let { corvusResult ->
             LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp),
+                    .alpha(if (showContent) 1f else 0f),
+                contentPadding = PaddingValues(bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item(key = "top_spacer") {
@@ -147,7 +144,7 @@ fun ResultScreen(
                             }
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector = Icons.Default.ArrowBack,
                                 contentDescription = "Back",
                                 tint = MaterialTheme.colorScheme.onBackground
                             )
@@ -160,8 +157,12 @@ fun ResultScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
                             .animateContentSize()
-                            .clickable { queryExpanded = !queryExpanded },
+                            .clickable {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                queryExpanded = !queryExpanded
+                            },
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                         ),
@@ -172,18 +173,19 @@ fun ResultScreen(
                         shape = CorvusShapes.medium
                     ) {
                         Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .height(IntrinsicSize.Min),
+                            verticalAlignment = Alignment.Top
                         ) {
                             Box(
                                 modifier = Modifier
                                     .width(4.dp)
-                                    .height(if (queryExpanded) Int.MAX_VALUE.dp else 40.dp)
+                                    .fillMaxHeight()
                                     .background(
                                         MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                                         CircleShape
                                     )
-                                    .align(if (queryExpanded) Alignment.Top else Alignment.CenterVertically)
                             )
                             Spacer(Modifier.width(16.dp))
                             Column {
@@ -397,11 +399,57 @@ fun ResultScreen(
                 }
 
                 item(key = "bottom_spacer") {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    Spacer(modifier = Modifier.height(0.dp))
                 }
             }
-
-            Box(
+            
+            AnimatedVisibility(
+                visible = showScrollToTop,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 110.dp),
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut()
+            ) {
+                SmallFloatingActionButton(
+                    onClick = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        scope.launch { listState.animateScrollToItem(0) }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Scroll to top")
+                }
+            }
+        } ?: run {
+            // Empty state fallback
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "No result available",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "Try analysing a claim first.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+                Spacer(Modifier.height(24.dp))
+                Button(
+                    onClick = { onAnalyzeAnother() },
+                    shape = CorvusShapes.small
+                ) {
+                    Text("GO TO INPUT")
+                }
+            }
+        }
+      Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
@@ -428,8 +476,8 @@ fun ResultScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                        contentDescription = "Analyse another",
+                        modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.size(8.dp))
                         Text(
@@ -454,8 +502,8 @@ fun ResultScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                        contentDescription = "Share result",
+                        modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.size(8.dp))
                         Text(

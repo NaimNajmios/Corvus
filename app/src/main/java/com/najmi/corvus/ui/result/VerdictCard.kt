@@ -279,7 +279,7 @@ fun HarmWarningBlock(harm: HarmAssessment) {
         ) {
             Icon(
                 imageVector = Icons.Default.Warning,
-                contentDescription = null,
+                contentDescription = "Warning",
                 tint = VerdictFalse.copy(alpha = pulseAlpha),
                 modifier = Modifier.size(20.dp)
             )
@@ -311,8 +311,8 @@ fun HarmInlineTag(harm: HarmAssessment) {
     ) {
         Icon(
             imageVector = Icons.Default.Info,
-            contentDescription = null,
-            tint = VerdictMisleading,
+            contentDescription = "Information",
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(14.dp)
         )
         Text(

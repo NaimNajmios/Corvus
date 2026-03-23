@@ -67,6 +67,7 @@ fun KernelOfTruthCard(
                 KernelSection(
                     label = "WHAT IS TRUE",
                     icon = Icons.Default.Check,
+                    iconContentDescription = "True fact",
                     iconTint = VerdictTrue,
                     facts = kernel.trueParts,
                     sources = sources,
@@ -81,6 +82,7 @@ fun KernelOfTruthCard(
                 KernelSection(
                     label = "WHAT IS FALSE OR MISLEADING",
                     icon = Icons.Default.Close,
+                    iconContentDescription = "False fact",
                     iconTint = VerdictFalse,
                     facts = kernel.falseParts,
                     sources = sources,
@@ -115,6 +117,7 @@ fun KernelOfTruthCard(
 private fun KernelSection(
     label: String,
     icon: ImageVector,
+    iconContentDescription: String,
     iconTint: Color,
     facts: List<GroundedFact>,
     sources: List<Source>,
@@ -129,7 +132,7 @@ private fun KernelSection(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = iconContentDescription,
                 tint = iconTint,
                 modifier = Modifier.size(16.dp)
             )

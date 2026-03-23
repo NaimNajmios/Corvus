@@ -47,8 +47,8 @@ fun MissingContextCallout(missingContext: MissingContextInfo?) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Missing context warning",
                         modifier = Modifier.size(16.dp),
                         tint = accentColor
                     )

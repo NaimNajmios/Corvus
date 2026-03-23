@@ -11,6 +11,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.semantics.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,11 +33,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.najmi.corvus.domain.model.Source
-import com.najmi.corvus.ui.theme.CorvusShapes
-import com.najmi.corvus.ui.theme.VerdictTrue
-import com.najmi.corvus.ui.theme.CorvusTheme
-import com.najmi.corvus.ui.theme.SectionMethodology
-import com.najmi.corvus.ui.theme.SectionEvidence
+import com.najmi.corvus.ui.theme.*
 
 @Composable
 fun SourceCard(
@@ -55,11 +52,6 @@ fun SourceCard(
         label = "cardScale"
     )
     
-    val borderAlpha by animateFloatAsState(
-        targetValue = if (isPressed) 1f else 0.6f,
-        animationSpec = spring(dampingRatio = 0.5f),
-        label = "borderAlpha"
-    )
 
     Column(
         modifier = modifier
@@ -80,7 +72,7 @@ fun SourceCard(
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(source.url))
                     context.startActivity(intent)
                 } catch (e: Exception) {
-                    // Fallback
+                    android.widget.Toast.makeText(context, "Unable to open link", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
             .padding(12.dp),
@@ -153,9 +145,9 @@ fun SourceCard(
 @Composable
 private fun CredibilityIndicator(score: Int) {
     val color = when {
-        score >= 80 -> Color(0xFF4CAF50)
-        score >= 60 -> Color(0xFFFFC107)
-        else -> Color(0xFFF44336)
+        score >= 80 -> CredibilityHigh
+        score >= 60 -> CredibilityMedium
+        else -> CredibilityLow
     }
     
     Row(
@@ -169,6 +161,7 @@ private fun CredibilityIndicator(score: Int) {
             modifier = Modifier
                 .size(6.dp)
                 .background(color, CircleShape)
+                .semantics { contentDescription = "Credibility: $score percent" }
         )
         Text(
             text = "$score%",
@@ -182,12 +175,12 @@ private fun CredibilityIndicator(score: Int) {
 @Composable
 private fun BiasTag(bias: Int) {
     val (label, color) = when (bias) {
-        -2 -> "LEFT" to Color(0xFF2196F3)
-        -1 -> "L-CENTER" to Color(0xFF03A9F4)
-        0 -> "CENTER" to Color(0xFF9E9E9E)
-        1 -> "R-CENTER" to Color(0xFFFF9800)
-        2 -> "RIGHT" to Color(0xFFF44336)
-        else -> "UNKNOWN" to Color(0xFF9E9E9E)
+        -2 -> "LEFT" to BiasLeft
+        -1 -> "L-CENTER" to BiasLeftCenter
+        0 -> "CENTER" to BiasCenter
+        1 -> "R-CENTER" to BiasRightCenter
+        2 -> "RIGHT" to BiasRight
+        else -> "UNKNOWN" to BiasCenter
     }
 
     Text(
@@ -197,6 +190,7 @@ private fun BiasTag(bias: Int) {
         modifier = Modifier
             .border(1.dp, color.copy(alpha = 0.5f), CorvusShapes.small)
             .padding(horizontal = 4.dp, vertical = 1.dp)
+            .semantics { contentDescription = "Political bias: $label" }
     )
 }
 

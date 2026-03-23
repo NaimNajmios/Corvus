@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -83,10 +84,10 @@ fun MethodologyCard(metadata: MethodologyMetadata?) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ChevronLeft, // Placeholder for check
-                                contentDescription = null,
+                                imageVector = Icons.Default.CheckCircle, // Assuming it's a step indicator
+                                contentDescription = "Pipeline step",
                                 modifier = Modifier.size(12.dp),
-                                tint = VerdictTrue
+                                tint = MaterialTheme.colorScheme.primary
                             )
                             Text(
                                 text = step.step.displayLabel().padEnd(25),
