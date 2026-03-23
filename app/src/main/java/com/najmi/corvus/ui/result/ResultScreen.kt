@@ -125,7 +125,7 @@ fun ResultScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .alpha(if (showContent) 1f else 0f),
-                contentPadding = PaddingValues(bottom = 120.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item(key = "top_spacer") {
@@ -157,7 +157,6 @@ fun ResultScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
                             .animateContentSize()
                             .clickable {
                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)

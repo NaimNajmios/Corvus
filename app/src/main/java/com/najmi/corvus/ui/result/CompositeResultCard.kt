@@ -117,15 +117,6 @@ fun CompositeResultCard(
             }
         }
 
-        if (result.compositeSummary.isNotBlank()) {
-            Text(
-                text = result.compositeSummary,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
@@ -192,22 +183,12 @@ fun SubClaimDetail(
             .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            when (result) {
-                is CorvusCheckResult.GeneralResult -> VerdictBadge(verdict = result.verdict)
-                is CorvusCheckResult.QuoteResult -> QuoteVerdictBadge(verdict = result.quoteVerdict)
-                else -> {}
-            }
-
-            Text(
+        Text(
                 text = "• ${(result.confidence * 100).toInt()}% confidence",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
             )
-        }
 
         val explanation = when (result) {
             is CorvusCheckResult.GeneralResult -> result.explanation
