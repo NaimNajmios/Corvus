@@ -204,10 +204,9 @@ fun SubClaimDetail(
 
         // Added source citations for subclaims
         if (result.sources.isNotEmpty()) {
-            Row(
+            Column(
                 modifier = Modifier.padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = "Sources:",
@@ -216,8 +215,8 @@ fun SubClaimDetail(
                 )
                 @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     result.sources.take(3).forEachIndexed { sourceIndex, source ->
                         CitationBadge(

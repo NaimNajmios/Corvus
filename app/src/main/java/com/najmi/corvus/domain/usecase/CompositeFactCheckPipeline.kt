@@ -137,8 +137,8 @@ class CompositeFactCheckPipeline @Inject constructor(
     private fun buildCompositeSummary(subClaims: List<SubClaim>): String {
         return subClaims.joinToString("\n") { sub ->
             val verdict = when (val res = sub.result) {
-                is CorvusCheckResult.GeneralResult -> res.verdict.name
-                is CorvusCheckResult.QuoteResult -> res.quoteVerdict.name
+                is CorvusCheckResult.GeneralResult -> res.verdict.name.replace("_", " ")
+                is CorvusCheckResult.QuoteResult -> res.quoteVerdict.name.replace("_", " ")
                 else -> "UNKNOWN"
             }
             "• ${sub.text}: $verdict"
