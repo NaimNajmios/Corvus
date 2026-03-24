@@ -30,7 +30,8 @@ class GoogleFactCheckRepository @Inject constructor(
                         Source(
                             title = firstReview.title,
                             url = firstReview.url,
-                            publisher = firstReview.publisher.name
+                            publisher = firstReview.publisher.name,
+                            publishedDate = firstReview.reviewDate
                         )
                     )
                 )

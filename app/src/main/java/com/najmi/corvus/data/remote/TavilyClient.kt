@@ -32,7 +32,8 @@ data class TavilyResult(
     val title: String,
     val url: String,
     val publisher: String? = null,
-    val content: String? = null
+    val content: String? = null,
+    @SerialName("published_date") val publishedDate: String? = null
 )
 
 @Singleton

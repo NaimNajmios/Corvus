@@ -23,7 +23,8 @@ class TavilyRepository @Inject constructor(
                     title = result.title,
                     url = result.url,
                     publisher = result.publisher,
-                    snippet = result.content?.take(200)
+                    snippet = result.content?.take(200),
+                    publishedDate = result.publishedDate
                 )
             }
             Log.d(TAG, "Found ${sources.size} sources")

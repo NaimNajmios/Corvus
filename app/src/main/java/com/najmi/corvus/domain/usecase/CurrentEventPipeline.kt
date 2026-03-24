@@ -36,7 +36,7 @@ class CurrentEventPipeline @Inject constructor(
                     title = it.title,
                     url = it.url,
                     publisher = it.domain ?: "Unknown",
-                    snippet = "Recorded on ${it.seendate}",
+                    publishedDate = it.seendate,
                     sourceType = SourceType.NEWS_ARCHIVE
                 ))
             }

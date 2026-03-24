@@ -27,6 +27,7 @@ data class ClaimReview(
     val url: String,
     val title: String,
     val textualRating: String,
+    val reviewDate: String? = null,
     val languageCode: String = "en"
 )
 

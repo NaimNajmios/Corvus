@@ -32,6 +32,10 @@ import com.najmi.corvus.ui.theme.CorvusTheme
 import com.najmi.corvus.ui.theme.ColorPalette
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -42,9 +46,19 @@ class MainActivity : ComponentActivity() {
     var sharedText by mutableStateOf<String?>(null)
     var instantAnalyze by mutableStateOf(false)
     var initialResultId by mutableStateOf<String?>(null)
+    private var isReady by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        
+        splashScreen.setKeepOnScreenCondition { !isReady }
+        
+        lifecycleScope.launch {
+            userPreferencesRepository.preferences.first()
+            isReady = true
+        }
+
         enableEdgeToEdge()
         
         handleIntent(intent)

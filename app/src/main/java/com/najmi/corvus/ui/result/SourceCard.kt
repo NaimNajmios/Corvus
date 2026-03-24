@@ -32,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material3.Icon
 import com.najmi.corvus.domain.model.Source
 import com.najmi.corvus.ui.theme.*
 
@@ -107,6 +110,10 @@ fun SourceCard(
                 )
             }
 
+            source.publishedDate?.let { date ->
+                DateBadge(date)
+            }
+
             source.outletRating?.let { rating ->
                 BiasTag(rating.bias)
                 CredibilityIndicator(rating.credibility)
@@ -139,6 +146,30 @@ fun SourceCard(
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun DateBadge(date: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CorvusShapes.extraSmall)
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.History,
+            contentDescription = null,
+            modifier = Modifier.size(10.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+        )
+        Text(
+            text = date.take(10), // Take the first 10 chars (e.g., YYYY-MM-DD) for brevity if it's a long timestamp
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
