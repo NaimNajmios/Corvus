@@ -123,7 +123,8 @@ data class SubClaim(
 data class ConfidencePoint(
     val timestamp: Long,
     val confidence: Float,
-    val sourceTitle: String? = null
+    val sourceTitle: String? = null,
+    val id: String = java.util.UUID.randomUUID().toString()
 )
 
 @Serializable
@@ -180,7 +181,8 @@ data class PlausibilityAssessment(
 data class GroundedFact(
     val statement: String,
     val sourceIndex: Int?,
-    val isDirectQuote: Boolean = false
+    val isDirectQuote: Boolean = false,
+    val id: String = java.util.UUID.randomUUID().toString()
 )
 
 object GroundedFactSerializer : KSerializer<GroundedFact> {
@@ -190,15 +192,15 @@ object GroundedFactSerializer : KSerializer<GroundedFact> {
         val input = decoder as? JsonDecoder ?: throw SerializationException("Expected JsonDecoder")
         val element = input.decodeJsonElement()
         return if (element is JsonPrimitive && element.isString) {
-            GroundedFact(element.content, null, false)
+            GroundedFact(element.content, null, false, java.util.UUID.randomUUID().toString())
         } else {
             val surrogate = input.json.decodeFromJsonElement(GroundedFactSurrogate.serializer(), element)
-            GroundedFact(surrogate.statement, surrogate.sourceIndex, surrogate.isDirectQuote)
+            GroundedFact(surrogate.statement, surrogate.sourceIndex, surrogate.isDirectQuote, surrogate.id)
         }
     }
 
     override fun serialize(encoder: Encoder, value: GroundedFact) {
-        val surrogate = GroundedFactSurrogate(value.statement, value.sourceIndex, value.isDirectQuote)
+        val surrogate = GroundedFactSurrogate(value.statement, value.sourceIndex, value.isDirectQuote, value.id)
         encoder.encodeSerializableValue(GroundedFactSurrogate.serializer(), surrogate)
     }
 }
@@ -207,7 +209,8 @@ object GroundedFactSerializer : KSerializer<GroundedFact> {
 private data class GroundedFactSurrogate(
     val statement: String,
     val sourceIndex: Int?,
-    val isDirectQuote: Boolean = false
+    val isDirectQuote: Boolean = false,
+    val id: String = java.util.UUID.randomUUID().toString()
 )
 
 @Serializable
@@ -246,7 +249,8 @@ data class MethodologyMetadata(
 @Serializable
 data class PipelineStepResult(
     val step: PipelineStep,
-    val outcome: String
+    val outcome: String,
+    val id: String = java.util.UUID.randomUUID().toString()
 )
 
 fun HarmCategory.displayLabel(): String = when (this) {

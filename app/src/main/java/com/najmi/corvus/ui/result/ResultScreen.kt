@@ -32,16 +32,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.najmi.corvus.ui.theme.*
@@ -52,6 +59,7 @@ import com.najmi.corvus.ui.components.EntityContextSkeleton
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
 import com.najmi.corvus.domain.model.toShareText
 import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
 @Composable
 fun ResultScreen(
@@ -73,30 +81,45 @@ fun ResultScreen(
         derivedStateOf { listState.firstVisibleItemIndex > 2 }
     }
 
+    // Hide-on-scroll logic for bottom bar
+    val density = LocalDensity.current
+    val bottomBarHeight = 120.dp
+    val bottomBarHeightPx = with(density) { bottomBarHeight.toPx() }
+    var bottomBarOffsetHeightPx by remember { mutableStateOf(0f) }
+
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                val newOffset = bottomBarOffsetHeightPx - delta
+                bottomBarOffsetHeightPx = newOffset.coerceIn(0f, bottomBarHeightPx)
+                return Offset.Zero
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         delay(100)
         showContent = true
     }
 
-    fun scrollToSource(sourceIndex: Int) {
+    fun scrollToSource(sourceId: String, sourceIndex: Int) {
         scope.launch {
-            // Scroll directly to the source by its key
-            val targetKey = "evidence_source_$sourceIndex"
+            // Scroll directly to the source by its ID-based key
+            val targetKey = "source_${sourceId}"
             val targetIndex = listState.layoutInfo.visibleItemsInfo.find { it.key == targetKey }?.index
             
             if (targetIndex != null) {
                 listState.animateScrollToItem(targetIndex)
             } else {
-                // Fallback: search total items count (less efficient but exhaustive)
-                val totalIndex = (0 until listState.layoutInfo.totalItemsCount).find { 
-                    // This is hard to check without custom key mapping, but we can try to scroll to the end
-                    // since sources are near the bottom. 
-                    // Better yet, just use a reasonable guess if not visible.
-                    false 
-                }
-                listState.animateScrollToItem(10 + sourceIndex) // improved heuristic
+                // Fallback: heuristic scroll
+                listState.animateScrollToItem(12 + sourceIndex)
             }
         }
+    }
+
+    fun scrollToSourceById(sourceId: String, index: Int) {
+        scrollToSource(sourceId, index)
     }
 
     BackHandler(onBack = onBack)
@@ -116,6 +139,7 @@ fun ResultScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .nestedScroll(nestedScrollConnection)
             .background(MaterialTheme.colorScheme.background)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -163,11 +187,11 @@ fun ResultScreen(
                                 queryExpanded = !queryExpanded
                             },
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f)
                         ),
                         border = BorderStroke(
                             1.dp, 
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                         ),
                         shape = CorvusShapes.medium
                     ) {
@@ -182,7 +206,7 @@ fun ResultScreen(
                                     .width(4.dp)
                                     .fillMaxHeight()
                                     .background(
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                        MaterialTheme.colorScheme.primary,
                                         CircleShape
                                     )
                             )
@@ -194,10 +218,12 @@ fun ResultScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "YOUR QUERY",
-                                        style = MaterialTheme.typography.labelSmall,
+                                        text = "ANALYZED CLAIM",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Black
+                                        ),
                                         color = MaterialTheme.colorScheme.primary,
-                                        letterSpacing = 1.sp
+                                        letterSpacing = 1.2.sp
                                     )
                                     
                                     if (!queryExpanded && corvusResult.claim.length > 100) {
@@ -225,7 +251,9 @@ fun ResultScreen(
                     VerdictCard(
                         result = corvusResult,
                         modifier = Modifier.fillMaxWidth(),
-                        onSourceClick = { scrollToSource(it) }
+                        onSourceClick = { index -> 
+                            corvusResult.sources.getOrNull(index)?.let { scrollToSource(it.id, index) }
+                        }
                     )
                 }
 
@@ -284,7 +312,9 @@ fun ResultScreen(
                         KernelOfTruthCard(
                             kernel = corvusResult.kernelOfTruth,
                             sources = corvusResult.sources,
-                            onSourceClick = { scrollToSource(it) }
+                            onSourceClick = { index -> 
+                                corvusResult.sources.getOrNull(index)?.let { scrollToSource(it.id, index) }
+                            }
                         )
                     }
                 }
@@ -294,7 +324,9 @@ fun ResultScreen(
                         GroundedFactsList(
                             facts = corvusResult.keyFacts,
                             sources = corvusResult.sources,
-                            onSourceClick = { scrollToSource(it) }
+                            onSourceClick = { index -> 
+                                corvusResult.sources.getOrNull(index)?.let { scrollToSource(it.id, index) }
+                            }
                         )
                     }
                 }
@@ -304,7 +336,9 @@ fun ResultScreen(
                         GroundedFactsList(
                             facts = corvusResult.keyFacts,
                             sources = corvusResult.sources,
-                            onSourceClick = { scrollToSource(it) }
+                            onSourceClick = { index -> 
+                                corvusResult.sources.getOrNull(index)?.let { scrollToSource(it.id, index) }
+                            }
                         )
                     }
                 }
@@ -352,7 +386,7 @@ fun ResultScreen(
 
                     itemsIndexed(
                         items = corvusResult.sources,
-                        key = { index, _ -> "source_$index" }
+                        key = { _, source -> "source_${source.id}" }
                     ) { index, source ->
                         var sourceVisible by rememberSaveable { mutableStateOf(false) }
                         LaunchedEffect(Unit) {
@@ -406,7 +440,8 @@ fun ResultScreen(
                 visible = showScrollToTop,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 110.dp),
+                    .padding(end = 16.dp, bottom = 110.dp)
+                    .graphicsLayer { translationY = bottomBarOffsetHeightPx },
                 enter = fadeIn() + scaleIn(),
                 exit = fadeOut() + scaleOut()
             ) {
@@ -452,6 +487,7 @@ fun ResultScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
+                    .graphicsLayer { translationY = bottomBarOffsetHeightPx }
                     .background(MaterialTheme.colorScheme.surface)
                     .padding(24.dp)
             ) {
