@@ -25,8 +25,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -44,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.VisualTransformation
@@ -81,6 +89,7 @@ internal fun StatelessInputScreen(
     onAnalyze: () -> Unit
 ) {
     val hapticFeedback = LocalHapticFeedback.current
+    val clipboardManager = LocalClipboardManager.current
     val characterCount = uiState.inputText.length
     val maxLimit = CorvusViewModel.MAX_CLAIM_LENGTH
     val isNearLimit = characterCount >= (maxLimit - 100)
@@ -170,6 +179,16 @@ internal fun StatelessInputScreen(
                         color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 },
+                trailingIcon = {
+                    if (uiState.inputText.isNotEmpty()) {
+                        IconButton(onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onTextChange("")
+                        }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear text")
+                        }
+                    }
+                },
                 textStyle = typography.bodyLarge,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = colorScheme.onBackground,
@@ -183,6 +202,36 @@ internal fun StatelessInputScreen(
                 shape = CorvusShapes.small,
                 visualTransformation = VisualTransformation.None
             )
+
+            AnimatedVisibility(
+                visible = uiState.inputText.isEmpty(),
+                enter = fadeIn() + slideInVertically(initialOffsetY = { -20 }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { -20 })
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    AssistChip(
+                        onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            clipboardManager.getText()?.text?.let { clipboardText ->
+                                val newText = if (clipboardText.length > maxLimit) clipboardText.take(maxLimit) else clipboardText
+                                onTextChange(newText)
+                            }
+                        },
+                        label = { Text("Paste from Clipboard") },
+                        leadingIcon = {
+                            Icon(Icons.Default.ContentPaste, contentDescription = "Paste", modifier = Modifier.size(16.dp))
+                        },
+                        colors = AssistChipDefaults.assistChipColors(
+                            leadingIconContentColor = colorScheme.primary,
+                            labelColor = colorScheme.primary
+                        ),
+                        border = AssistChipDefaults.assistChipBorder(enabled = true, borderColor = colorScheme.outlineVariant)
+                    )
+                }
+            }
 
             Row(
                 modifier = Modifier
