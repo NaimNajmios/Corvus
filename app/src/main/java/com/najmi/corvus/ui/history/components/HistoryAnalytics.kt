@@ -1,5 +1,6 @@
 package com.najmi.corvus.ui.history.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -28,6 +29,7 @@ fun HistoryAnalytics(
             .fillMaxWidth()
             .padding(16.dp)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+            .animateContentSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -73,9 +75,11 @@ private fun VerdictProgressRow(verdict: String, percentage: Float) {
             )
             Text(
                 text = "${(percentage * 100).toInt()}%",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                ),
+                color = color
             )
         }
         Box(

@@ -2,6 +2,7 @@ package com.najmi.corvus.ui.history
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,6 +35,7 @@ import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.ui.history.components.HistoryAnalytics
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.viewmodel.CompareViewModel
+import com.najmi.corvus.ui.viewmodel.HistorySort
 import com.najmi.corvus.ui.viewmodel.HistoryViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -54,6 +56,9 @@ fun HistoryScreen(
     val scope = rememberCoroutineScope()
 
     var pendingDeleteItem by remember { mutableStateOf<CorvusCheckResult?>(null) }
+    var showClearAllDialog by remember { mutableStateOf(false) }
+    var showSortMenu by remember { mutableStateOf(false) }
+    var showOptionsMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(pendingDeleteItem) {
         pendingDeleteItem?.let { item ->
@@ -89,22 +94,68 @@ fun HistoryScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
             
-            IconButton(
-                onClick = { 
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                    historyViewModel.toggleAnalytics() 
-                },
-                modifier = Modifier.background(
-                    if (uiState.isAnalyticsVisible) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                    CircleShape
-                )
-            ) {
-                Icon(
-                    Icons.Default.BarChart,
-                    contentDescription = "Show Analytics",
-                    tint = if (uiState.isAnalyticsVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = { 
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        historyViewModel.toggleAnalytics() 
+                    },
+                    modifier = Modifier.background(
+                        if (uiState.isAnalyticsVisible) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                        CircleShape
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.BarChart,
+                        contentDescription = "Show Analytics",
+                        tint = if (uiState.isAnalyticsVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                    )
+                }
+
+                Box {
+                    IconButton(onClick = { showOptionsMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(
+                        expanded = showOptionsMenu,
+                        onDismissRequest = { showOptionsMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Clear All History") },
+                            onClick = {
+                                showOptionsMenu = false
+                                showClearAllDialog = true
+                            },
+                            leadingIcon = { Icon(Icons.Default.DeleteForever, contentDescription = null) }
+                        )
+                    }
+                }
             }
+        }
+
+        if (showClearAllDialog) {
+            AlertDialog(
+                onDismissRequest = { showClearAllDialog = false },
+                title = { Text("Clear All History") },
+                text = { Text("Are you sure you want to permanently delete all fact-check records? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            historyViewModel.clearAll()
+                            showClearAllDialog = false
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("CLEAR ALL")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showClearAllDialog = false }) {
+                        Text("CANCEL")
+                    }
+                }
+            )
         }
 
         AnimatedVisibility(visible = uiState.isAnalyticsVisible) {
@@ -150,6 +201,45 @@ fun HistoryScreen(
                 "PARTIALLY_TRUE" to "Partially True",
                 "UNVERIFIABLE" to "Unverifiable"
             )
+            
+            item {
+                Box {
+                    AssistChip(
+                        onClick = { showSortMenu = true },
+                        label = { Text(uiState.currentSort.name.lowercase().capitalize()) },
+                        leadingIcon = { Icon(Icons.Default.Sort, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            labelColor = MaterialTheme.colorScheme.primary,
+                            leadingIconContentColor = MaterialTheme.colorScheme.primary
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                        shape = CorvusShapes.medium
+                    )
+                    
+                    DropdownMenu(
+                        expanded = showSortMenu,
+                        onDismissRequest = { showSortMenu = false }
+                    ) {
+                        HistorySort.entries.forEach { sortItem ->
+                            DropdownMenuItem(
+                                text = { Text(sortItem.name.replace("_", " ").lowercase().capitalize()) },
+                                onClick = {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    historyViewModel.setSort(sortItem)
+                                    showSortMenu = false
+                                },
+                                leadingIcon = {
+                                    if (uiState.currentSort == sortItem) {
+                                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
             items(verdictFilters) { (value, label) ->
                 FilterChip(
                     selected = uiState.selectedVerdictFilter == value,
@@ -284,6 +374,11 @@ fun HistoryScreen(
                     selectedCount = compareUiState.selectedClaims.size,
                     onClear = {
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        compareViewModel.clearSelection()
+                    },
+                    onDelete = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        historyViewModel.deleteSelected(compareUiState.selectedClaims.map { it.id })
                         compareViewModel.clearSelection()
                     },
                     onCompare = {
@@ -560,6 +655,7 @@ fun QuoteVerdictBadgeLarge(verdict: QuoteVerdict) {
 private fun CompareSelectionBar(
     selectedCount: Int,
     onClear: () -> Unit,
+    onDelete: () -> Unit = {},
     onCompare: () -> Unit
 ) {
     Surface(
@@ -592,6 +688,15 @@ private fun CompareSelectionBar(
                 Text("Clear")
             }
             
+            IconButton(
+                onClick = onDelete,
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete selected")
+            }
+            
             androidx.compose.material3.Button(
                 onClick = onCompare,
                 enabled = selectedCount >= 2,
@@ -618,6 +723,8 @@ private fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("MMM dd, yyyy · HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
+
+private fun String.capitalize() = this.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 
 @Composable
 private fun EmptyHistoryState() {

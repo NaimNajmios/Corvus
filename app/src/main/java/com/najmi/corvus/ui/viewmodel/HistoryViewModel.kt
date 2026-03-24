@@ -10,11 +10,16 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class HistorySort {
+    NEWEST, OLDEST, HIGHEST_HARM
+}
+
 data class HistoryUiState(
     val history: List<CorvusCheckResult> = emptyList(),
     val isLoading: Boolean = false,
     val searchQuery: String = "",
     val selectedVerdictFilter: String? = null,
+    val currentSort: HistorySort = HistorySort.NEWEST,
     val isAnalyticsVisible: Boolean = false,
     val verdictDistribution: Map<String, Float> = emptyMap(),
     val error: String? = null
@@ -27,6 +32,7 @@ class HistoryViewModel @Inject constructor(
 
     private val _searchQuery = MutableStateFlow("")
     private val _selectedVerdictFilter = MutableStateFlow<String?>(null)
+    private val _currentSort = MutableStateFlow(HistorySort.NEWEST)
     private val _isAnalyticsVisible = MutableStateFlow(false)
 
     private val _uiState = MutableStateFlow(HistoryUiState())
@@ -44,14 +50,16 @@ class HistoryViewModel @Inject constructor(
             combine(
                 _searchQuery,
                 _selectedVerdictFilter,
+                _currentSort,
                 _isAnalyticsVisible
-            ) { query, filter, analyticsVisible ->
-                HistoryParams(query, filter, analyticsVisible)
+            ) { query, filter, sort, analyticsVisible ->
+                HistoryParams(query, filter, sort, analyticsVisible)
             }.flatMapLatest { params ->
                 _uiState.update { it.copy(
                     isLoading = true, 
                     searchQuery = params.query, 
                     selectedVerdictFilter = params.filter,
+                    currentSort = params.sort,
                     isAnalyticsVisible = params.analyticsVisible
                 ) }
                 
@@ -61,7 +69,14 @@ class HistoryViewModel @Inject constructor(
                     else -> historyRepository.getAllHistory()
                 }
                 
-                flow.map { items -> items to calculateStats(items) }
+                flow.map { items -> 
+                    val sortedItems = when (params.sort) {
+                        HistorySort.NEWEST -> items.sortedByDescending { it.checkedAt }
+                        HistorySort.OLDEST -> items.sortedBy { it.checkedAt }
+                        HistorySort.HIGHEST_HARM -> items.sortedByDescending { it.harmScore() }
+                    }
+                    sortedItems to calculateStats(items) 
+                }
             }.collect { (items, stats) ->
                 _uiState.update { it.copy(
                     history = items,
@@ -75,8 +90,16 @@ class HistoryViewModel @Inject constructor(
     private data class HistoryParams(
         val query: String,
         val filter: String?,
+        val sort: HistorySort,
         val analyticsVisible: Boolean
     )
+
+    private fun CorvusCheckResult.harmScore(): Int = when (this) {
+        is CorvusCheckResult.GeneralResult -> harmAssessment.level.ordinal
+        is CorvusCheckResult.QuoteResult -> harmAssessment.level.ordinal
+        is CorvusCheckResult.CompositeResult -> 0
+        is CorvusCheckResult.ViralHoaxResult -> 3
+    }
 
     private fun calculateStats(items: List<CorvusCheckResult>): Map<String, Float> {
         if (items.isEmpty()) return emptyMap()
@@ -103,6 +126,10 @@ class HistoryViewModel @Inject constructor(
         _isAnalyticsVisible.value = !_isAnalyticsVisible.value
     }
 
+    fun setSort(sort: HistorySort) {
+        _currentSort.value = sort
+    }
+
     fun prepareDelete(item: CorvusCheckResult) {
         pendingDeleteItem = item
     }
@@ -123,6 +150,14 @@ class HistoryViewModel @Inject constructor(
     fun deleteItem(id: String) {
         viewModelScope.launch {
             historyRepository.deleteResult(id)
+        }
+    }
+
+    fun deleteSelected(ids: List<String>) {
+        viewModelScope.launch {
+            ids.forEach { id ->
+                historyRepository.deleteResult(id)
+            }
         }
     }
 
