@@ -165,7 +165,7 @@ private fun DateBadge(date: String) {
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
         Text(
-            text = date.take(10), // Take the first 10 chars (e.g., YYYY-MM-DD) for brevity if it's a long timestamp
+            text = date.take(10),
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             fontWeight = FontWeight.Bold
