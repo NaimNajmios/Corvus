@@ -13,21 +13,33 @@ data class SectionColors(
     val sectionEvidence: Color,
     val sectionFacts: Color,
     val sectionMethodology: Color,
-    val sectionTimeline: Color
+    val sectionTimeline: Color,
+    val verdictTrue: Color,
+    val verdictFalse: Color,
+    val verdictMisleading: Color,
+    val textTertiary: Color
 )
 
 private val DarkSectionColors = SectionColors(
     sectionEvidence = SectionEvidence,
     sectionFacts = SectionFacts,
     sectionMethodology = SectionMethodology,
-    sectionTimeline = SectionTimeline
+    sectionTimeline = SectionTimeline,
+    verdictTrue = VerdictTrue,
+    verdictFalse = VerdictFalse,
+    verdictMisleading = VerdictMisleading,
+    textTertiary = CorvusTextTertiary
 )
 
 private val LightSectionColors = SectionColors(
     sectionEvidence = SectionEvidenceLight,
     sectionFacts = SectionFactsLight,
     sectionMethodology = SectionMethodologyLight,
-    sectionTimeline = SectionTimelineLight
+    sectionTimeline = SectionTimelineLight,
+    verdictTrue = VerdictTrue,
+    verdictFalse = VerdictFalse,
+    verdictMisleading = VerdictMisleading,
+    textTertiary = CorvusTextTertiaryLight
 )
 
 val LocalCorvusColors = staticCompositionLocalOf { DarkSectionColors }

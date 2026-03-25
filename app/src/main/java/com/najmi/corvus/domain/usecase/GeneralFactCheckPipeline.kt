@@ -25,7 +25,8 @@ class GeneralFactCheckPipeline @Inject constructor(
     private val tavilyRepository: TavilyRepository,
     private val llmRouter: LlmRouter,
     private val ratingRepo: OutletRatingRepository,
-    private val plausibilityEnricher: PlausibilityEnricherUseCase
+    private val plausibilityEnricher: PlausibilityEnricherUseCase,
+    private val ragVerifier: RagVerifierUseCase
 ) {
     companion object {
         private const val TAG = "GeneralPipeline"
@@ -138,11 +139,29 @@ class GeneralFactCheckPipeline @Inject constructor(
             checkedAt = System.currentTimeMillis()
         )
 
+        // ── RAG Verification pass ────────────────────────────────────────
+        val verifiedFacts = ragVerifier.verifyFacts(finalResult.keyFacts, enrichedSources)
+        val explanationVerification = ragVerifier.verifyExplanation(
+            finalResult.explanation,
+            enrichedSources
+        )
+
+        // Escalate verdict confidence if explanation is poorly grounded
+        val adjustedConfidence = when (explanationVerification.overallConfidence) {
+            com.najmi.corvus.domain.model.ExplanationConfidence.POORLY_GROUNDED     -> finalResult.confidence * 0.6f
+            com.najmi.corvus.domain.model.ExplanationConfidence.PARTIALLY_GROUNDED  -> finalResult.confidence * 0.8f
+            else                                      -> finalResult.confidence
+        }
+        // ────────────────────────────────────────────────────────────────
+
         return finalResult.copy(
             claim = classified.raw, 
             providerUsed = provider.name,
             sources = enrichedSources,
-            methodology = methodology
+            methodology = methodology,
+            keyFacts = verifiedFacts,
+            confidence = adjustedConfidence,
+            explanationVerification = explanationVerification
         )
     }
 }

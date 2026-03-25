@@ -54,10 +54,8 @@ import androidx.compose.ui.unit.sp
 import com.najmi.corvus.ui.theme.*
 import com.najmi.corvus.domain.model.*
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.najmi.corvus.ui.components.EntityContextPanel
-import com.najmi.corvus.ui.components.EntityContextSkeleton
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
-import com.najmi.corvus.domain.model.toShareText
+import com.najmi.corvus.ui.components.*
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
@@ -118,10 +116,6 @@ fun ResultScreen(
         }
     }
 
-    fun scrollToSourceById(sourceId: String, index: Int) {
-        scrollToSource(sourceId, index)
-    }
-
     BackHandler(onBack = onBack)
 
     fun shareResult() {
@@ -129,7 +123,7 @@ fun ResultScreen(
             val shareText = r.toShareText()
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, shareText)
+                putExtra(Intent.EXTRA_TEXT, shareText as String)
             }
             context.startActivity(Intent.createChooser(intent, "Share fact check"))
         }
@@ -142,8 +136,9 @@ fun ResultScreen(
             .nestedScroll(nestedScrollConnection)
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-        result?.let { corvusResult ->
+        val corvusResult = result
+        if (corvusResult != null) {
+            val sources = corvusResult.sources
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -252,7 +247,10 @@ fun ResultScreen(
                         result = corvusResult,
                         modifier = Modifier.fillMaxWidth(),
                         onSourceClick = { index -> 
-                            corvusResult.sources.getOrNull(index)?.let { scrollToSource(it.id, index) }
+                            val source = sources.getOrNull(index)
+                            if (source != null) {
+                                scrollToSource(source.id, index)
+                            }
                         }
                     )
                 }
@@ -302,7 +300,16 @@ fun ResultScreen(
 
                     if (explanation.isNotBlank()) {
                         item(key = "expandable_explanation") {
-                            ExpandableExplanation(explanation = explanation)
+                            Column {
+                                if (corvusResult is CorvusCheckResult.GeneralResult) {
+                                    val verification = corvusResult.explanationVerification
+                                    if (verification != null) {
+                                        ExplanationConfidenceBanner(verification)
+                                        Spacer(Modifier.height(12.dp))
+                                    }
+                                }
+                                ExpandableExplanation(explanation = explanation)
+                            }
                         }
                     }
                 }
@@ -311,9 +318,12 @@ fun ResultScreen(
                     item(key = "kernel_of_truth") {
                         KernelOfTruthCard(
                             kernel = corvusResult.kernelOfTruth,
-                            sources = corvusResult.sources,
+                            sources = sources,
                             onSourceClick = { index -> 
-                                corvusResult.sources.getOrNull(index)?.let { scrollToSource(it.id, index) }
+                                val source = sources.getOrNull(index)
+                                if (source != null) {
+                                    scrollToSource(source.id, index)
+                                }
                             }
                         )
                     }
@@ -323,9 +333,12 @@ fun ResultScreen(
                     item(key = "key_facts_general") {
                         GroundedFactsList(
                             facts = corvusResult.keyFacts,
-                            sources = corvusResult.sources,
+                            sources = sources,
                             onSourceClick = { index -> 
-                                corvusResult.sources.getOrNull(index)?.let { scrollToSource(it.id, index) }
+                                val source = sources.getOrNull(index)
+                                if (source != null) {
+                                    scrollToSource(source.id, index)
+                                }
                             }
                         )
                     }
@@ -335,16 +348,20 @@ fun ResultScreen(
                     item(key = "key_facts_quote") {
                         GroundedFactsList(
                             facts = corvusResult.keyFacts,
-                            sources = corvusResult.sources,
+                            sources = sources,
                             onSourceClick = { index -> 
-                                corvusResult.sources.getOrNull(index)?.let { scrollToSource(it.id, index) }
+                                val source = sources.getOrNull(index)
+                                if (source != null) {
+                                    scrollToSource(source.id, index)
+                                }
                             }
                         )
                     }
                 }
 
                 // Entity Context Panel
-                corvusResult.entityContext?.let { entity ->
+                val entity = corvusResult.entityContext
+                if (entity != null) {
                     item(key = "entity_context") {
                         var entityVisible by remember { mutableStateOf(false) }
                         LaunchedEffect(entity) {
@@ -365,15 +382,13 @@ fun ResultScreen(
                             )
                         }
                     }
-                } ?: run {
-                    if (uiState.isEntityContextLoading) {
-                        item(key = "entity_context_skeleton") {
-                            EntityContextSkeleton()
-                        }
+                } else if (uiState.isEntityContextLoading) {
+                    item(key = "entity_context_skeleton") {
+                        EntityContextSkeleton()
                     }
                 }
 
-                if (corvusResult.sources.isNotEmpty()) {
+                if (sources.isNotEmpty()) {
                     item(key = "evidence_header") {
                         Text(
                             text = "EVIDENCE",
@@ -384,31 +399,31 @@ fun ResultScreen(
                         )
                     }
 
-                    itemsIndexed(
-                        items = corvusResult.sources,
-                        key = { _, source -> "source_${source.id}" }
-                    ) { index, source ->
-                        var sourceVisible by rememberSaveable { mutableStateOf(false) }
-                        LaunchedEffect(Unit) {
-                            if (!sourceVisible) {
-                                delay(200 + (index * 80L))
-                                sourceVisible = true
+                    for (index in sources.indices) {
+                        val source = sources[index]
+                        item(key = "source_${source.id}") {
+                            var sourceVisible by rememberSaveable { mutableStateOf(false) }
+                            LaunchedEffect(Unit) {
+                                if (!sourceVisible) {
+                                    delay(200 + (index * 80L))
+                                    sourceVisible = true
+                                }
                             }
-                        }
 
-                        AnimatedVisibility(
-                            visible = sourceVisible,
-                            enter = fadeIn(
-                                animationSpec = tween(durationMillis = 280)
-                            ) + slideInVertically(
-                                animationSpec = tween(durationMillis = 280),
-                                initialOffsetY = { it / 2 }
-                            )
-                        ) {
-                            SourceCard(
-                                source = source,
-                                index = index
-                            )
+                            AnimatedVisibility(
+                                visible = sourceVisible,
+                                enter = fadeIn(
+                                    animationSpec = tween(durationMillis = 280)
+                                ) + slideInVertically(
+                                    animationSpec = tween(durationMillis = 280),
+                                    initialOffsetY = { it / 2 }
+                                )
+                            ) {
+                                SourceCard(
+                                    source = source,
+                                    index = index
+                                )
+                            }
                         }
                     }
                 }
@@ -417,7 +432,7 @@ fun ResultScreen(
                     is CorvusCheckResult.GeneralResult -> corvusResult.confidenceTimeline
                     is CorvusCheckResult.QuoteResult -> corvusResult.confidenceTimeline
                     is CorvusCheckResult.CompositeResult -> corvusResult.confidenceTimeline
-                    else -> emptyList()
+                    else -> emptyList<ConfidencePoint>()
                 }
 
                 if (timeline.size >= 2) {
@@ -456,7 +471,7 @@ fun ResultScreen(
                     Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Scroll to top")
                 }
             }
-        } ?: run {
+        } else {
             // Empty state fallback
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -548,7 +563,6 @@ fun ResultScreen(
                     }
                 }
             }
-        }
     }
 }
 

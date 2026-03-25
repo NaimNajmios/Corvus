@@ -111,3 +111,8 @@ val Palettes = mapOf(
         surfaceRaisedLight = Color(0xFFE8E5E9)
     )
 )
+
+// ── Additional UI Colors ────────────────────────────────────────────
+val VerdictUnverified = Color(0xFF5A5A6A)
+val CorvusTextTertiaryAlpha = Color(0xB34A4A5A)
+val CorvusTextTertiaryLightAlpha = Color(0xB39A9A9A)

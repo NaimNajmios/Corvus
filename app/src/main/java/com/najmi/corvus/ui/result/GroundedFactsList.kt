@@ -18,13 +18,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.najmi.corvus.domain.model.GroundedFact
-import com.najmi.corvus.domain.model.Source
-import com.najmi.corvus.ui.theme.CorvusShapes
-import com.najmi.corvus.ui.theme.CorvusTheme
-import com.najmi.corvus.ui.theme.SectionFacts
-import com.najmi.corvus.ui.theme.CorvusTextSecondary
-import com.najmi.corvus.ui.theme.CorvusTextTertiary
+import com.najmi.corvus.domain.model.*
+import com.najmi.corvus.ui.components.*
+import com.najmi.corvus.ui.theme.*
 
 @Composable
 fun GroundedFactsList(
@@ -75,17 +71,19 @@ fun GroundedFactRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top
     ) {
-        // Left bar indicator
+        // Left bar indicator — color based on verification
+        val barColor = fact.verification?.confidence?.barColor() 
+            ?: leftBarColor 
+            ?: if (fact.sourceIndex != null) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) 
+               else MaterialTheme.colorScheme.outlineVariant
+
         Box(
             modifier = Modifier
                 .width(3.dp)
                 .height(IntrinsicSize.Min)
                 .padding(vertical = 2.dp)
                 .background(
-                    color = leftBarColor ?: if (fact.sourceIndex != null) 
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) 
-                    else 
-                        MaterialTheme.colorScheme.outlineVariant,
+                    color = barColor,
                     shape = RoundedCornerShape(2.dp)
                 )
         )
@@ -99,21 +97,37 @@ fun GroundedFactRow(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
             
-            if (fact.sourceIndex != null && source != null) {
-                CitationBadge(
-                    index = fact.sourceIndex,
-                    publisherName = source.publisher ?: "Source ${fact.sourceIndex + 1}",
-                    onClick = onCitationClick
-                )
-            } else {
-                Text(
-                    text = "General knowledge — not from retrieved sources",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = CorvusTextTertiary,
-                    fontStyle = FontStyle.Italic
-                )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (fact.sourceIndex != null && source != null) {
+                    CitationBadge(
+                        index = fact.sourceIndex,
+                        publisherName = source.publisher ?: "Source ${fact.sourceIndex + 1}",
+                        onClick = onCitationClick
+                    )
+                } else {
+                    Text(
+                        text = "General knowledge",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = CorvusTextTertiary,
+                        fontStyle = FontStyle.Italic
+                    )
+                }
+
+                // Verification confidence badge
+                fact.verification?.let { v ->
+                    CitationConfidenceBadge(v.confidence)
+                }
+            }
+
+            // Matched fragment context
+            fact.verification?.matchedFragment?.let { fragment ->
+                Spacer(Modifier.height(8.dp))
+                MatchedFragmentCard(fragment)
             }
         }
     }

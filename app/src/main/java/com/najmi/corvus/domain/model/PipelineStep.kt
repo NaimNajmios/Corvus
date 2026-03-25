@@ -1,5 +1,36 @@
 package com.najmi.corvus.domain.model
 
+data class CheckingStatus(
+    val status: String,
+    val progress: Int,
+    val isComplete: Boolean = false
+) {
+    companion object {
+        val IDLE = CheckingStatus("Idle", 0)
+        val CHECKING_VIRAL_DATABASE = CheckingStatus("Checking viral database...", 15)
+        val CHECKING_KNOWN_FACTS = CheckingStatus("Checking known facts...", 30)
+        val DISSECTING = CheckingStatus("Dissecting claim...", 45)
+        val CHECKING_SUB_CLAIMS = CheckingStatus("Checking sub-claims...", 60)
+        val RETRIEVING_SOURCES = CheckingStatus("Retrieving sources...", 75)
+        val ANALYZING = CheckingStatus("Analyzing sources...", 90)
+        val DONE = CheckingStatus("Analysis complete", 100, true)
+
+        fun fromStep(step: String): CheckingStatus {
+            return when (step) {
+                "CHECKING_VIRAL_DATABASE" -> CHECKING_VIRAL_DATABASE
+                "CHECKING_KNOWN_FACTS" -> CHECKING_KNOWN_FACTS
+                "DISSECTING" -> DISSECTING
+                "CHECKING_SUB_CLAIMS" -> CHECKING_SUB_CLAIMS
+                "RETRIEVING_SOURCES" -> RETRIEVING_SOURCES
+                "ANALYZING" -> ANALYZING
+                "DONE" -> DONE
+                else -> IDLE
+            }
+        }
+    }
+}
+
+@Deprecated("Use CheckingStatus data class instead", ReplaceWith("CheckingStatus"))
 enum class PipelineStep {
     IDLE,
     CHECKING_VIRAL_DATABASE,
@@ -11,13 +42,16 @@ enum class PipelineStep {
     DONE
 }
 
+@Deprecated("Use CheckingStatus directly instead", ReplaceWith("CheckingStatus"))
 fun PipelineStep.displayLabel(): String = when (this) {
     PipelineStep.IDLE -> "Idle"
     PipelineStep.CHECKING_VIRAL_DATABASE -> "Checking Viral Database"
     PipelineStep.CHECKING_KNOWN_FACTS -> "Checking Known Facts"
     PipelineStep.DISSECTING -> "Dissecting"
-    PipelineStep.CHECKING_SUB_CLAIMS -> "Checking Sub-Claims"
+    PipelineStep.CHECKING_SUB_CLAIMS -> "Sub-Claims"
     PipelineStep.RETRIEVING_SOURCES -> "Retrieving Sources"
     PipelineStep.ANALYZING -> "Analyzing"
     PipelineStep.DONE -> "Done"
 }
+
+fun CheckingStatus.displayLabel(): String = status

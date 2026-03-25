@@ -1,0 +1,21 @@
+name,url,bias,factual_reporting,country,media_type,credibility
+Reuters,reuters.com,center,very high,international,news,95
+Associated Press,apnews.com,center,very high,international,news,95
+The New York Times,nytimes.com,left-center,high,usa,news,85
+The Wall Street Journal,wsj.com,right-center,high,usa,news,82
+BBC News,bbc.com,center,high,uk,news,88
+Al Jazeera,aljazeera.com,left-center,high,qatar,news,80
+The Guardian,theguardian.com,left-center,high,uk,news,80
+Fox News,foxnews.com,right,mixed,usa,news,45
+RT,rt.com,right,mixed,russia,news,40
+Breitbart,breitbart.com,far right,mixed,usa,news,30
+InfoWars,infowars.com,far right,low,usa,conspiracy,10
+The Onion,theonion.com,satire,satire,usa,satire,50
+Malaysiakini,malaysiakini.com,left-center,high,malaysia,news,80
+Bernama,bernama.com,center,high,malaysia,news,78
+The Star,thestar.com.my,center,high,malaysia,news,78
+FMT,freemalaysiatoday.com,left-center,high,malaysia,news,75
+NST,nst.com.my,right-center,mostly,malaysia,news,70
+Utusan,utusan.com.my,right,mixed,malaysia,news,55
+Harapan Daily,harapandaily.com,left,mostly,malaysia,news,65
+HarakahDaily,harakahdaily.net,right,mixed,malaysia,news,50

@@ -15,59 +15,69 @@ sealed class LlmRouterException(message: String) : Exception(message) {
 
 @Singleton
 class LlmRouter @Inject constructor(
-    private val llmRepository: LlmRepository
+    private val llmRepository: LlmRepository,
+    private val healthTracker: LlmProviderHealthTracker
 ) {
     companion object {
         private const val TAG = "LlmRouter"
-        private val DEFAULT_PROVIDER_ORDER = listOf(
-            LlmProvider.GEMINI,
-            LlmProvider.GROQ,
-            LlmProvider.CEREBRAS,
-            LlmProvider.OPENROUTER
-        )
     }
 
     suspend fun analyze(
         claim: String,
         sources: List<Source>,
-        claimType: ClaimType = ClaimType.GENERAL,
-        preferredProvider: LlmProvider? = null
+        type: ClaimType
     ): Pair<CorvusCheckResult.GeneralResult, LlmProvider> {
-        val providers = buildProviderOrder(preferredProvider)
         
-        Log.d(TAG, "Starting LLM analysis with provider order: ${providers.map { it.name }}")
-        
+        // ── Step 1: Determine Provider Priority ──────────────────────────
+        val priorityList = when (type) {
+            ClaimType.SCIENTIFIC, ClaimType.STATISTICAL -> listOf(
+                LlmProvider.GEMINI,
+                LlmProvider.OPENROUTER, // Often has DeepSeek V3/R1
+                LlmProvider.GROQ
+            )
+            else -> listOf(
+                LlmProvider.GEMINI,
+                LlmProvider.GROQ,
+                LlmProvider.CEREBRAS
+            )
+        }
+
+        // ── Step 2: Cascade through healthy providers ────────────────────
         var lastError: Exception? = null
-        
-        for (provider in providers) {
+
+        for (provider in priorityList) {
+            if (!healthTracker.isHealthy(provider.name)) {
+                Log.w(TAG, "Skipping unhealthy provider: ${provider.name}")
+                continue
+            }
+
             try {
                 Log.d(TAG, "Attempting analysis with ${provider.name}")
-                val result = llmRepository.analyze(claim, sources, provider, claimType)
-                Log.d(TAG, "Success with ${provider.name}, verdict: ${result.verdict}")
+                val result = llmRepository.analyze(claim, sources, provider, type)
+                
+                // Success — reset health
+                healthTracker.reset(provider.name)
                 return result to provider
+
             } catch (e: Exception) {
                 lastError = e
-                val isRetryable = isRetryableError(e)
-                Log.w(TAG, "${provider.name} failed: ${e.message}")
+                healthTracker.reportError(provider.name)
+                Log.e(TAG, "Provider ${provider.name} failed: ${e.message}")
                 
-                if (isRetryable) {
+                // If the error is about rate limits or service unavailable, continue to next provider
+                if (isRetryableError(e)) {
                     continue
+                } else {
+                    // For structural errors (e.g. prompt too long), we might want to stop, 
+                    // but usually safe to try another provider who might handle it differently.
+                    continue 
                 }
-                
-                Log.d(TAG, "Non-retryable error, trying next provider")
             }
         }
-        
-        Log.e(TAG, "All providers exhausted, last error: ${lastError?.message}")
-        throw LlmRouterException.AllProvidersExhausted
-    }
 
-    private fun buildProviderOrder(preferred: LlmProvider?): List<LlmProvider> {
-        if (preferred == null) {
-            return DEFAULT_PROVIDER_ORDER
-        }
-        
-        return listOf(preferred) + DEFAULT_PROVIDER_ORDER.filter { it != preferred }
+        // ── Step 3: Final fallback to primary if all "unhealthy" ─────────
+        Log.e(TAG, "All preferred providers unhealthy/failed. Last error: ${lastError?.message}")
+        throw LlmRouterException.AllProvidersExhausted
     }
 
     private fun isRetryableError(e: Exception): Boolean {

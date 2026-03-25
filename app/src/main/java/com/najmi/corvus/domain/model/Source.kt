@@ -13,16 +13,8 @@ data class Source(
     val sourceType: SourceType = SourceType.WEB_SEARCH,
     val credibilityTier: CredibilityTier = CredibilityTier.GENERAL,
     val outletRating: OutletRating? = null,
+    val rawContent: String? = null,
     val id: String = java.util.UUID.randomUUID().toString()
-)
-
-@Serializable
-data class OutletRating(
-    val credibility: Int,           // 0–100
-    val bias: Int,                  // -2 to +2
-    val isGovAffiliated: Boolean,
-    val isSatire: Boolean = false,
-    val mbfcCategory: String? = null
 )
 
 @Serializable

@@ -33,6 +33,7 @@ data class TavilyResult(
     val url: String,
     val publisher: String? = null,
     val content: String? = null,
+    @SerialName("raw_content") val rawContent: String? = null,
     @SerialName("published_date") val publishedDate: String? = null
 )
 
@@ -53,7 +54,9 @@ class TavilyClient @Inject constructor(
             setBody(TavilySearchRequest(
                 query = query,
                 apiKey = apiKey,
-                maxResults = maxResults
+                maxResults = maxResults,
+                includeRawContent = true,
+                searchDepth = "advanced"
             ))
         }.body()
     }

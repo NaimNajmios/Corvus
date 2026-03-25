@@ -10,7 +10,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.najmi.corvus.MainActivity
 import com.najmi.corvus.R
-import com.najmi.corvus.domain.model.PipelineStep
+import com.najmi.corvus.domain.model.CheckingStatus
 
 class NotificationHelper(private val context: Context) {
 
@@ -21,6 +21,9 @@ class NotificationHelper(private val context: Context) {
         
         const val PROGRESS_NOTIFICATION_ID = 1001
         const val RESULT_NOTIFICATION_ID = 1002
+
+        const val EXTRA_RESULT_ID = "resultId"
+        const val EXTRA_SHARED_TEXT = "sharedText"
     }
 
     init {
@@ -39,7 +42,7 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun getProgressNotificationBuilder(step: PipelineStep): NotificationCompat.Builder {
+    fun getProgressNotificationBuilder(status: CheckingStatus): NotificationCompat.Builder {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -48,33 +51,29 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        val stepText = when (step) {
-            PipelineStep.CHECKING_VIRAL_DATABASE -> "Checking viral database..."
-            PipelineStep.CHECKING_KNOWN_FACTS -> "Checking known facts..."
-            PipelineStep.DISSECTING -> "Dissecting claim..."
-            PipelineStep.CHECKING_SUB_CLAIMS -> "Checking sub-claims..."
-            PipelineStep.RETRIEVING_SOURCES -> "Retrieving sources..."
-            PipelineStep.ANALYZING -> "Analyzing sources..."
-            PipelineStep.DONE -> "Analysis complete"
-            else -> "Processing..."
-        }
-
         return NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher) // Fallback to launcher icon
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Fact Checking in Progress")
-            .setContentText(stepText)
+            .setContentText(status.status)
             .setSubText("Tap to return to app")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(pendingIntent)
-            .setProgress(0, 0, true)
+            .setProgress(100, status.progress, false)
+    }
+
+    fun showProgressNotification(status: CheckingStatus) {
+        val notification = getProgressNotificationBuilder(status).build()
+        with(NotificationManagerCompat.from(context)) {
+            notify(PROGRESS_NOTIFICATION_ID, notification)
+        }
     }
 
     fun showResultNotification(title: String, summary: String, resultId: String) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            putExtra("resultId", resultId)
+            putExtra(EXTRA_RESULT_ID, resultId)
         }
         val pendingIntent: PendingIntent = PendingIntent.getActivity(
             context, 1, intent,
@@ -92,9 +91,13 @@ class NotificationHelper(private val context: Context) {
             .build()
 
         with(NotificationManagerCompat.from(context)) {
-            // Check for permission in Android 13+ is required by system, 
-            // but we assume it's granted for now as per plan focus on logic.
             notify(RESULT_NOTIFICATION_ID, notification)
+        }
+    }
+
+    fun cancelProgressNotification() {
+        with(NotificationManagerCompat.from(context)) {
+            cancel(PROGRESS_NOTIFICATION_ID)
         }
     }
 }

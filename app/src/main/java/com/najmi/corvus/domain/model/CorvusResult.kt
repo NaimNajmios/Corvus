@@ -51,7 +51,8 @@ sealed class CorvusCheckResult {
         val plausibility: PlausibilityAssessment? = null,
         val kernelOfTruth: KernelOfTruth? = null,
         val missingContext: MissingContextInfo? = null,
-        val methodology: MethodologyMetadata? = null
+        val methodology: MethodologyMetadata? = null,
+        val explanationVerification: ExplanationVerification? = null
     ) : CorvusCheckResult()
 
     @Serializable
@@ -182,6 +183,7 @@ data class GroundedFact(
     val statement: String,
     val sourceIndex: Int?,
     val isDirectQuote: Boolean = false,
+    val verification: FactVerification? = null,
     val id: String = java.util.UUID.randomUUID().toString()
 )
 
@@ -192,15 +194,15 @@ object GroundedFactSerializer : KSerializer<GroundedFact> {
         val input = decoder as? JsonDecoder ?: throw SerializationException("Expected JsonDecoder")
         val element = input.decodeJsonElement()
         return if (element is JsonPrimitive && element.isString) {
-            GroundedFact(element.content, null, false, java.util.UUID.randomUUID().toString())
+            GroundedFact(element.content, null, false, null, java.util.UUID.randomUUID().toString())
         } else {
             val surrogate = input.json.decodeFromJsonElement(GroundedFactSurrogate.serializer(), element)
-            GroundedFact(surrogate.statement, surrogate.sourceIndex, surrogate.isDirectQuote, surrogate.id)
+            GroundedFact(surrogate.statement, surrogate.sourceIndex, surrogate.isDirectQuote, surrogate.verification, surrogate.id)
         }
     }
 
     override fun serialize(encoder: Encoder, value: GroundedFact) {
-        val surrogate = GroundedFactSurrogate(value.statement, value.sourceIndex, value.isDirectQuote, value.id)
+        val surrogate = GroundedFactSurrogate(value.statement, value.sourceIndex, value.isDirectQuote, value.verification, value.id)
         encoder.encodeSerializableValue(GroundedFactSurrogate.serializer(), surrogate)
     }
 }
@@ -210,6 +212,7 @@ private data class GroundedFactSurrogate(
     val statement: String,
     val sourceIndex: Int?,
     val isDirectQuote: Boolean = false,
+    val verification: FactVerification? = null,
     val id: String = java.util.UUID.randomUUID().toString()
 )
 
