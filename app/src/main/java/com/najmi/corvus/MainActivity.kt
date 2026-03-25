@@ -50,7 +50,6 @@ class MainActivity : ComponentActivity() {
     var instantAnalyze by mutableStateOf(false)
     var initialResultId by mutableStateOf<String?>(null)
     private var isReady by mutableStateOf(false)
-    var showShareConfirmSheet by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -90,39 +89,14 @@ class MainActivity : ComponentActivity() {
 
                 Surface(modifier = Modifier.fillMaxSize()) {
                     CorvusApp(
-                        sharedText = if (showShareConfirmSheet) null else sharedText,
-                        instantAnalyze = if (showShareConfirmSheet) false else instantAnalyze,
+                        sharedText = sharedText,
+                        instantAnalyze = instantAnalyze,
                         initialResultId = initialResultId,
                         viewModel = viewModel,
                         onSharedTextProcessed = { 
                             sharedText = null
                             instantAnalyze = false
                             initialResultId = null
-                            showShareConfirmSheet = false
-                        }
-                    )
-                }
-
-                if (showShareConfirmSheet && sharedText != null) {
-                    ShareConfirmBottomSheet(
-                        sharedText = sharedText ?: "",
-                        onConfirm = {
-                            val textToAnalyze = sharedText ?: return@ShareConfirmBottomSheet
-                            val truncatedText = if (textToAnalyze.length > 500) {
-                                textToAnalyze.take(500)
-                            } else {
-                                textToAnalyze
-                            }
-                            viewModel.updateInputText(truncatedText)
-                            viewModel.analyzeInBackground(truncatedText) {
-                                showShareConfirmSheet = false
-                            }
-                            sharedText = null
-                            instantAnalyze = false
-                        },
-                        onDismiss = {
-                            showShareConfirmSheet = false
-                            sharedText = null
                         }
                     )
                 }
@@ -136,19 +110,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        when (intent?.action) {
-            Intent.ACTION_SEND -> {
-                if (intent.type == "text/plain") {
-                    val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-                    if (!text.isNullOrBlank()) {
-                        sharedText = text
-                        instantAnalyze = false
-                        showShareConfirmSheet = true
-                    }
-                }
-            }
-        }
-        
         val resultId = intent?.getStringExtra("resultId")
         if (resultId != null) {
             initialResultId = resultId

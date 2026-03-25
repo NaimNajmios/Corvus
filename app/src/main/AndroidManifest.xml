@@ -47,17 +47,17 @@
             </intent-filter>
         </activity>
 
-        <activity-alias
-            android:name=".FactCheckShareActivity"
+        <activity
+            android:name=".ShareBottomSheetActivity"
             android:exported="true"
             android:label="@string/fact_check"
-            android:targetActivity=".MainActivity">
+            android:theme="@style/Theme.Corvus.Transparent">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
-        </activity-alias>
+        </activity>
     </application>
 
 </manifest>
