@@ -71,6 +71,7 @@ fun CorvusApp(
     sharedText: String? = null,
     instantAnalyze: Boolean = false,
     initialResultId: String? = null,
+    isCheckingInProgress: Boolean = false,
     onSharedTextProcessed: () -> Unit = {},
     viewModel: CorvusViewModel = hiltViewModel()
 ) {
@@ -194,7 +195,11 @@ fun CorvusApp(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            val startDestination = remember { if (initialResultId != null) Routes.RESULT else Routes.INPUT }
+            val startDestination = remember { 
+                if (initialResultId != null) Routes.RESULT 
+                else if (isCheckingInProgress) Routes.LOADING 
+                else Routes.INPUT 
+            }
             NavHost(
                 navController = navController,
                 startDestination = startDestination
@@ -269,6 +274,17 @@ fun CorvusApp(
                     )
                 }
             }
+        }
+    }
+
+    LaunchedEffect(isCheckingInProgress) {
+        if (isCheckingInProgress) {
+            if (navController.currentDestination?.route != Routes.LOADING) {
+                navController.navigate(Routes.LOADING) {
+                    launchSingleTop = true
+                }
+            }
+            onSharedTextProcessed()
         }
     }
 

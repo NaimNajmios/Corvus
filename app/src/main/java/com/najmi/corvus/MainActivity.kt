@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
     var sharedText by mutableStateOf<String?>(null)
     var instantAnalyze by mutableStateOf(false)
     var initialResultId by mutableStateOf<String?>(null)
+    var isCheckingInProgress by mutableStateOf(false)
     private var isReady by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,11 +93,13 @@ class MainActivity : ComponentActivity() {
                         sharedText = sharedText,
                         instantAnalyze = instantAnalyze,
                         initialResultId = initialResultId,
+                        isCheckingInProgress = isCheckingInProgress,
                         viewModel = viewModel,
                         onSharedTextProcessed = { 
                             sharedText = null
                             instantAnalyze = false
                             initialResultId = null
+                            isCheckingInProgress = false
                         }
                     )
                 }
@@ -113,6 +116,11 @@ class MainActivity : ComponentActivity() {
         val resultId = intent?.getStringExtra("resultId")
         if (resultId != null) {
             initialResultId = resultId
+        }
+        val isChecking = intent?.getBooleanExtra(com.najmi.corvus.util.NotificationHelper.EXTRA_IS_CHECKING, false) == true
+        if (isChecking) {
+            isCheckingInProgress = true
+            intent?.removeExtra(com.najmi.corvus.util.NotificationHelper.EXTRA_IS_CHECKING)
         }
     }
 

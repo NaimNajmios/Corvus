@@ -28,6 +28,7 @@ class NotificationHelper(private val context: Context) {
 
         const val EXTRA_RESULT_ID = "resultId"
         const val EXTRA_SHARED_TEXT = "sharedText"
+        const val EXTRA_IS_CHECKING = "isChecking"
     }
 
     init {
@@ -55,6 +56,7 @@ class NotificationHelper(private val context: Context) {
     fun getProgressNotificationBuilder(status: CheckingStatus): NotificationCompat.Builder {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(EXTRA_IS_CHECKING, true)
         }
         val pendingIntent: PendingIntent = PendingIntent.getActivity(
             context, 0, intent,
