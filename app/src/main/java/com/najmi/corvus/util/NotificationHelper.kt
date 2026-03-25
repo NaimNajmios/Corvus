@@ -54,7 +54,7 @@ class NotificationHelper(private val context: Context) {
 
     fun getProgressNotificationBuilder(status: CheckingStatus): NotificationCompat.Builder {
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val pendingIntent: PendingIntent = PendingIntent.getActivity(
             context, 0, intent,

@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import androidx.work.ExistingWorkPolicy
 import java.util.UUID
 import javax.inject.Inject
 
@@ -35,8 +36,47 @@ class CorvusViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CorvusUiState())
     val uiState: StateFlow<CorvusUiState> = _uiState.asStateFlow()
 
-    private var analysisJob: Job? = null
-    private var currentWorkRequestId: UUID? = null
+    init {
+        observeFactCheckWork()
+    }
+
+    private fun observeFactCheckWork() {
+        viewModelScope.launch {
+            workManager.getWorkInfosForUniqueWorkFlow("FactCheckWork").collect { workInfos ->
+                val workInfo = workInfos.firstOrNull() ?: return@collect
+                
+                when (workInfo.state) {
+                    WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING -> {
+                        val stepName = workInfo.progress.getString("step")
+                        val step = stepName?.let { PipelineStep.valueOf(it) } ?: PipelineStep.IDLE
+                        _uiState.update { it.copy(
+                            isLoading = true, 
+                            currentStep = step, 
+                            error = null,
+                            isEntityContextLoading = step != PipelineStep.DONE
+                        ) }
+                    }
+                    WorkInfo.State.SUCCEEDED -> {
+                        if (_uiState.value.isLoading) {
+                            _uiState.update { it.copy(
+                                isLoading = false, 
+                                currentStep = PipelineStep.DONE,
+                                isEntityContextLoading = false
+                            ) }
+                            loadLastResult()
+                        }
+                    }
+                    WorkInfo.State.FAILED -> {
+                        if (_uiState.value.isLoading) {
+                            val error = workInfo.outputData.getString("error") ?: "Analysis failed"
+                            _uiState.update { it.copy(isLoading = false, error = error) }
+                        }
+                    }
+                    else -> {}
+                }
+            }
+        }
+    }
 
     fun updateInputText(text: String) {
         if (text.length <= MAX_CLAIM_LENGTH) {
@@ -62,43 +102,7 @@ class CorvusViewModel @Inject constructor(
             .setInputData(workDataOf("inputText" to claim))
             .build()
         
-        currentWorkRequestId = workRequest.id
-        workManager.enqueue(workRequest)
-
-        analysisJob = viewModelScope.launch {
-            workManager.getWorkInfoByIdFlow(workRequest.id).collect { workInfo ->
-                if (workInfo != null) {
-                    when (workInfo.state) {
-                        WorkInfo.State.RUNNING -> {
-                            val stepName = workInfo.progress.getString("step")
-                            val step = stepName?.let { PipelineStep.valueOf(it) } ?: PipelineStep.IDLE
-                            _uiState.update { it.copy(
-                                isLoading = true, 
-                                currentStep = step, 
-                                error = null,
-                                isEntityContextLoading = step != PipelineStep.DONE
-                            ) }
-                        }
-                        WorkInfo.State.SUCCEEDED -> {
-                            _uiState.update { it.copy(
-                                isLoading = false, 
-                                currentStep = PipelineStep.DONE,
-                                isEntityContextLoading = false
-                            ) }
-                            // We might want to fetch the result from repository here if needed for UI
-                            // but usually the result screen fetch it from state.
-                            // For now, we rely on the background save.
-                            loadLastResult()
-                        }
-                        WorkInfo.State.FAILED -> {
-                            val error = workInfo.outputData.getString("error") ?: "Analysis failed"
-                            _uiState.update { it.copy(isLoading = false, error = error) }
-                        }
-                        else -> {}
-                    }
-                }
-            }
-        }
+        workManager.enqueueUniqueWork("FactCheckWork", ExistingWorkPolicy.REPLACE, workRequest)
     }
 
     private fun loadLastResult() {
@@ -121,9 +125,7 @@ class CorvusViewModel @Inject constructor(
 
 
     fun cancelAnalysis() {
-        analysisJob?.cancel()
-        currentWorkRequestId?.let { workManager.cancelWorkById(it) }
-        currentWorkRequestId = null
+        workManager.cancelUniqueWork("FactCheckWork")
         _uiState.update { it.copy(isLoading = false) }
     }
 
@@ -137,8 +139,7 @@ class CorvusViewModel @Inject constructor(
             .setInputData(workDataOf("inputText" to claim))
             .build()
         
-        currentWorkRequestId = workRequest.id
-        workManager.enqueue(workRequest)
+        workManager.enqueueUniqueWork("FactCheckWork", ExistingWorkPolicy.REPLACE, workRequest)
         
         _uiState.update { it.copy(inputText = claim) }
         onStarted()

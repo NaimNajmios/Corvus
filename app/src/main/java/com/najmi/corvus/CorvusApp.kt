@@ -286,6 +286,10 @@ fun CorvusApp(
                     navController.popBackStack()
                 }
             }
+        } else if (uiState.isLoading && route != Routes.LOADING) {
+            navController.navigate(Routes.LOADING) {
+                launchSingleTop = true
+            }
         }
     }
 }

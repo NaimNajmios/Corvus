@@ -52,7 +52,11 @@ sealed class CorvusCheckResult {
         val kernelOfTruth: KernelOfTruth? = null,
         val missingContext: MissingContextInfo? = null,
         val methodology: MethodologyMetadata? = null,
-        val explanationVerification: ExplanationVerification? = null
+        val explanationVerification: ExplanationVerification? = null,
+        val actorProvider: LlmProvider? = null,
+        val criticProvider: LlmProvider? = null,
+        val correctionsLog: List<String>? = null,
+        val reasoningScratchpad: String? = null
     ) : CorvusCheckResult()
 
     @Serializable

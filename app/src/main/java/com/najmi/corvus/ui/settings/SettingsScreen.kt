@@ -59,7 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.najmi.corvus.data.repository.LlmProvider
+import com.najmi.corvus.domain.model.LlmProvider
 import com.najmi.corvus.ui.theme.CorvusBorder
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.theme.CorvusVoid

@@ -36,7 +36,9 @@ fun PipelineStepIndicator(
         "Dissecting claim" to PipelineStep.DISSECTING,
         "Checking sub-claims" to PipelineStep.CHECKING_SUB_CLAIMS,
         "Retrieving sources" to PipelineStep.RETRIEVING_SOURCES,
-        "Analyzing" to PipelineStep.ANALYZING
+        "Drafting analysis" to PipelineStep.ANALYZING,
+        "Verifying evidence" to PipelineStep.VERIFYING,
+        "Grounding check" to PipelineStep.GROUNDING_CHECK
     )
 
     Column(

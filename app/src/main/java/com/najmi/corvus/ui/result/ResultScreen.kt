@@ -442,8 +442,9 @@ fun ResultScreen(
                 }
 
                 item(key = "methodology") {
-                    val methodology = (corvusResult as? CorvusCheckResult.GeneralResult)?.methodology
-                    MethodologyCard(methodology)
+                    if (corvusResult is CorvusCheckResult.GeneralResult) {
+                        MethodologyCard(corvusResult)
+                    }
                 }
 
                 item(key = "bottom_spacer") {

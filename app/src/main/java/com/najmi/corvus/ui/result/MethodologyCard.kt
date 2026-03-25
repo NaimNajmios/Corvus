@@ -16,8 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.Warning
 import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.MethodologyMetadata
 import com.najmi.corvus.domain.model.displayLabel
@@ -28,9 +30,12 @@ import com.najmi.corvus.ui.theme.SectionMethodology
 import java.text.SimpleDateFormat
 import java.util.*
 
+import com.najmi.corvus.domain.model.CorvusCheckResult
+
 @Composable
-fun MethodologyCard(metadata: MethodologyMetadata?) {
-    if (metadata == null) return
+fun MethodologyCard(result: CorvusCheckResult.GeneralResult?) {
+    if (result == null) return
+    val metadata = result.methodology ?: return
     var expanded by remember { mutableStateOf(false) }
 
     Card(
@@ -70,6 +75,33 @@ fun MethodologyCard(metadata: MethodologyMetadata?) {
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    val fabrications = result.correctionsLog?.filter { it.startsWith("Algorithmic Reject") } ?: emptyList()
+                    if (fabrications.isNotEmpty()) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                            shape = CorvusShapes.small,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = "Fabrication Warning",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = "WARNING: ${fabrications.size} cited quotes could not be found in the source text and were stripped from the analysis.",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    }
+
                     // Pipeline steps
                     Text(
                         text = "Pipeline steps completed:",
@@ -131,6 +163,77 @@ fun MethodologyCard(metadata: MethodologyMetadata?) {
                         fontStyle = FontStyle.Italic,
                         lineHeight = 16.sp
                     )
+
+                    result.reasoningScratchpad?.let { scratchpad ->
+                        Spacer(Modifier.height(8.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        Spacer(Modifier.height(8.dp))
+
+                        var showReasoning by remember { mutableStateOf(false) }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showReasoning = !showReasoning }
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "FULL REASONING",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Icon(
+                                if (showReasoning) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = "Show reasoning",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        AnimatedVisibility(visible = showReasoning) {
+                            Text(
+                                text = scratchpad,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 6.dp),
+                                lineHeight = 18.sp
+                            )
+                        }
+                    }
+
+                    result.correctionsLog?.takeIf { it.isNotEmpty() }?.let { corrections ->
+                        Spacer(Modifier.height(8.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        Spacer(Modifier.height(8.dp))
+
+                        Text(
+                            "CRITIC CORRECTIONS",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(4.dp))
+
+                        corrections.forEach { correction ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Text(
+                                    "→",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Text(
+                                    correction,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(Modifier.height(2.dp))
+                        }
+                    }
                 }
             }
         }

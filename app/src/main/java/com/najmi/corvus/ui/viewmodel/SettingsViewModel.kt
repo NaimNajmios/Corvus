@@ -6,7 +6,7 @@ import com.najmi.corvus.data.local.UserPreferences
 import com.najmi.corvus.data.local.UserPreferencesRepository
 import com.najmi.corvus.ui.theme.ColorPalette
 import com.najmi.corvus.data.repository.HistoryRepository
-import com.najmi.corvus.data.repository.LlmProvider
+import com.najmi.corvus.domain.model.LlmProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

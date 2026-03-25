@@ -1,7 +1,7 @@
 package com.najmi.corvus.domain.router
 
 import android.util.Log
-import com.najmi.corvus.data.repository.LlmProvider
+import com.najmi.corvus.domain.model.LlmProvider
 import com.najmi.corvus.data.repository.LlmRepository
 import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.CorvusCheckResult

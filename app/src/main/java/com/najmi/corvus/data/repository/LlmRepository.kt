@@ -5,6 +5,7 @@ import com.najmi.corvus.data.remote.CerebrasClient
 import com.najmi.corvus.data.remote.GeminiClient
 import com.najmi.corvus.data.remote.GroqClient
 import com.najmi.corvus.data.remote.OpenRouterClient
+import com.najmi.corvus.data.remote.llm.SourceContextBuilder
 import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.domain.util.HarmPreScreener
 import kotlinx.coroutines.delay
@@ -14,12 +15,7 @@ import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
-enum class LlmProvider {
-    GEMINI,
-    GROQ,
-    CEREBRAS,
-    OPENROUTER
-}
+// Enum moved to com.najmi.corvus.domain.model.LlmProvider
 
 @Serializable
 data class LlmGroundedFact(
@@ -43,6 +39,7 @@ data class LlmMissingContext(
 
 @Serializable
 data class LlmAnalysisResponse(
+    @SerialName("evidentiary_analysis") val evidentiaryAnalysis: String? = null,
     val verdict: String,
     val confidence: Float,
     val explanation: String,
@@ -67,12 +64,12 @@ class LlmRepository @Inject constructor(
     private val groqClient: GroqClient,
     private val cerebrasClient: CerebrasClient,
     private val openRouterClient: OpenRouterClient,
-    private val json: Json
+    private val json: Json,
+    private val sourceContextBuilder: SourceContextBuilder
 ) {
     companion object {
         private const val TAG = "LlmRepository"
-        private const val MAX_SOURCES = 3
-        private const val MAX_SNIPPET_LENGTH = 150
+        private const val MAX_SOURCES = 10
         private const val MAX_RETRIES = 2
         private const val RETRY_DELAY_MS = 2000L
     }
@@ -84,9 +81,10 @@ class LlmRepository @Inject constructor(
         claimType: ClaimType = ClaimType.GENERAL
     ): CorvusCheckResult.GeneralResult {
         val limitedSources = sources.take(MAX_SOURCES)
-        val prompt = buildPrompt(claim, limitedSources, claimType)
+        val sourceContext = sourceContextBuilder.build(limitedSources, provider)
+        val prompt = buildPrompt(claim, sourceContext, claimType)
         
-        Log.d(TAG, "Analyzing with ${provider.name}, sources: ${limitedSources.size}, prompt length: ${prompt.length}")
+        Log.d(TAG, "Analyzing with ${provider.name}, sources length: ${sourceContext.length}, prompt length: ${prompt.length}")
         
         var lastError: Exception? = null
         
@@ -113,7 +111,7 @@ class LlmRepository @Inject constructor(
         throw lastError ?: Exception("LLM analysis failed")
     }
 
-    private fun buildPrompt(claim: String, sources: List<Source>, claimType: ClaimType): String {
+    private fun buildPrompt(claim: String, sourceContext: String, claimType: ClaimType): String {
         val typeContext = when (claimType) {
             ClaimType.STATISTICAL -> "This is a statistical claim. Focus on numerical accuracy and dates."
             ClaimType.SCIENTIFIC -> "This is a scientific claim. Focus on peer-reviewed evidence."
@@ -123,11 +121,6 @@ class LlmRepository @Inject constructor(
             else -> ""
         }
 
-        val sourcesList = sources.mapIndexed { index, source ->
-            val snippet = source.snippet?.take(MAX_SNIPPET_LENGTH) ?: "No preview"
-            "[$index] ${source.title}\nPublisher: ${source.publisher ?: "Unknown"}\nType: ${source.sourceType}\n${snippet}...\n"
-        }.joinToString("\n")
-
         val harmHint = HarmPreScreener.preScreen(claim)?.let {
             "\nHINT: This claim may contain ${it.name} harm signals. Evaluate carefully."
         } ?: ""
@@ -135,6 +128,31 @@ class LlmRepository @Inject constructor(
         return """
 Fact-check this claim using the sources below. $typeContext
 $harmHint
+
+OUTPUT SCHEMA RULES:
+You MUST output the JSON keys in the EXACT ORDER listed below.
+Do NOT reorder them. This order is deliberate:
+the verdict must be derived from your analysis, not the other way around.
+
+Step 1 — evidentiary_analysis:
+  Walk through each source methodically. For each source, note:
+  - What does it explicitly say about the claim?
+  - Does it support, contradict, or not address the claim?
+  - How credible is this source relative to the others?
+  Then synthesise what the combined evidence shows.
+  This field MUST be at least 3 sentences. Write your full reasoning here.
+
+Step 2 — key_facts (grounded citations)
+Step 3 — kernel_of_truth (if MISLEADING or PARTIALLY_TRUE)
+Step 4 — missing_context (if applicable)
+Step 5 — harm_assessment
+Step 6 — plausibility (if UNVERIFIABLE)
+Step 7 — confidence (0.0–1.0, based on evidence strength, not gut feeling)
+Step 8 — verdict (TRUE|FALSE|MISLEADING|PARTIALLY_TRUE|UNVERIFIABLE)
+Step 9 — explanation (A clean, reader-facing summary of your evidentiary_analysis)
+Step 10 — sources_used (indices)
+
+IMPORTANT: The verdict is the LAST reasoning step, not the first.
 
 EXPLANATION — EVIDENTIARY FRAMING:
 Write the explanation in an evidentiary, attribution-forward tone. 
@@ -148,25 +166,15 @@ For each key fact, you MUST identify which source it comes from.
 - If the fact is a verbatim quote, set is_direct_quote to true.
 - Maximum 5 key facts.
 
-KERNEL OF TRUTH (Complete ONLY if verdict is MISLEADING or PARTIALLY_TRUE):
-Explicitly categorize facts into true_parts (accurate elements) and false_parts (distorted/fabricated elements).
-Provide a twist_explanation (1-2 sentences) explaining how the true elements were manipulated.
-Apply same grounded citation rules as key_facts.
-
-MISSING CONTEXT (Complete if verdict is MISLEADING, PARTIALLY_TRUE, or OUT_OF_CONTEXT):
-Identify the critical context absent. Specify context_type: TEMPORAL, GEOGRAPHIC, ATTRIBUTION, STATISTICAL, SELECTIVE, or GENERAL.
-
 CLAIM: "$claim"
 TYPE: $claimType
 
 SOURCES:
-$sourcesList
+$sourceContext
 
-Respond ONLY with this exact JSON format:
+Respond ONLY with this exact JSON format in the exact key order:
 {
-  "verdict": "TRUE|FALSE|MISLEADING|PARTIALLY_TRUE|UNVERIFIABLE",
-  "confidence": 0.0-1.0,
-  "explanation": "evidentiary explanation",
+  "evidentiary_analysis": "Your step-by-step reasoning through the evidence.",
   "key_facts": [
     { "statement": "fact", "source_index": 0, "is_direct_quote": false }
   ],
@@ -179,7 +187,6 @@ Respond ONLY with this exact JSON format:
     "content": "absent context",
     "context_type": "TEMPORAL|GEOGRAPHIC|ATTRIBUTION|STATISTICAL|SELECTIVE|GENERAL"
   },
-  "sources_used": [0,1],
   "harm_assessment": {
     "level": "NONE|LOW|MODERATE|HIGH",
     "category": "NONE|HEALTH|SAFETY|RACIAL_ETHNIC|RELIGIOUS|POLITICAL|FINANCIAL",
@@ -189,7 +196,11 @@ Respond ONLY with this exact JSON format:
     "score": "IMPLAUSIBLE|UNLIKELY|NEUTRAL|PLAUSIBLE|PROBABLE",
     "reasoning": "reasoning",
     "closest_evidence": "hint"
-  }
+  },
+  "confidence": 0.0,
+  "verdict": "TRUE|FALSE|MISLEADING|PARTIALLY_TRUE|UNVERIFIABLE",
+  "explanation": "evidentiary explanation",
+  "sources_used": [0,1]
 }
         """.trimIndent()
     }
@@ -235,7 +246,8 @@ Respond ONLY with this exact JSON format:
                         content = mc.content,
                         contextType = runCatching { ContextType.valueOf(mc.contextType.uppercase()) }.getOrDefault(ContextType.GENERAL)
                     )
-                }
+                },
+                reasoningScratchpad = parsed.evidentiaryAnalysis
             )
         } catch (e: Exception) {
             Log.e(TAG, "Parse failed: ${e.message}")

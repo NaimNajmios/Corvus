@@ -65,6 +65,8 @@ class FactCheckWorker @AssistedInject constructor(
             PipelineStep.CHECKING_SUB_CLAIMS -> CheckingStatus.CHECKING_SUB_CLAIMS
             PipelineStep.RETRIEVING_SOURCES -> CheckingStatus.RETRIEVING_SOURCES
             PipelineStep.ANALYZING -> CheckingStatus.ANALYZING
+            PipelineStep.VERIFYING -> CheckingStatus.VERIFYING
+            PipelineStep.GROUNDING_CHECK -> CheckingStatus.GROUNDING_CHECK
             PipelineStep.DONE -> CheckingStatus.DONE
         }
     }

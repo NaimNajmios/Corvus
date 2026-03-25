@@ -12,7 +12,9 @@ data class CheckingStatus(
         val DISSECTING = CheckingStatus("Dissecting claim...", 45)
         val CHECKING_SUB_CLAIMS = CheckingStatus("Checking sub-claims...", 60)
         val RETRIEVING_SOURCES = CheckingStatus("Retrieving sources...", 75)
-        val ANALYZING = CheckingStatus("Analyzing sources...", 90)
+        val ANALYZING = CheckingStatus("Drafting analysis...", 60)
+        val VERIFYING = CheckingStatus("Verifying draft...", 75)
+        val GROUNDING_CHECK = CheckingStatus("Grounding check...", 90)
         val DONE = CheckingStatus("Analysis complete", 100, true)
 
         fun fromStep(step: String): CheckingStatus {
@@ -23,6 +25,8 @@ data class CheckingStatus(
                 "CHECKING_SUB_CLAIMS" -> CHECKING_SUB_CLAIMS
                 "RETRIEVING_SOURCES" -> RETRIEVING_SOURCES
                 "ANALYZING" -> ANALYZING
+                "VERIFYING" -> VERIFYING
+                "GROUNDING_CHECK" -> GROUNDING_CHECK
                 "DONE" -> DONE
                 else -> IDLE
             }
@@ -39,6 +43,8 @@ enum class PipelineStep {
     CHECKING_SUB_CLAIMS,
     RETRIEVING_SOURCES,
     ANALYZING,
+    VERIFYING,
+    GROUNDING_CHECK,
     DONE
 }
 
@@ -50,7 +56,9 @@ fun PipelineStep.displayLabel(): String = when (this) {
     PipelineStep.DISSECTING -> "Dissecting"
     PipelineStep.CHECKING_SUB_CLAIMS -> "Sub-Claims"
     PipelineStep.RETRIEVING_SOURCES -> "Retrieving Sources"
-    PipelineStep.ANALYZING -> "Analyzing"
+    PipelineStep.ANALYZING -> "Drafting Analysis"
+    PipelineStep.VERIFYING -> "Verifying Draft"
+    PipelineStep.GROUNDING_CHECK -> "Grounding Check"
     PipelineStep.DONE -> "Done"
 }
 

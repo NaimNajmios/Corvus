@@ -112,10 +112,7 @@ class CorvusFactCheckUseCase @Inject constructor(
             )
         }
 
-        onStepChange(PipelineStep.ANALYZING)
-        delay(300)
-
-        return generalPipeline.verify(classified).also {
+        return generalPipeline.verify(classified, onStepChange).also {
             onStepChange(PipelineStep.DONE)
         }
     }

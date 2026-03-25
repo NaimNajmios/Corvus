@@ -12,10 +12,11 @@ import com.najmi.corvus.domain.model.ClassifiedClaim
 import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.Source
 import com.najmi.corvus.domain.model.SourceType
-import com.najmi.corvus.domain.router.LlmRouter
+import com.najmi.corvus.data.local.UserPreferencesRepository
 import com.najmi.corvus.domain.model.MethodologyMetadata
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.domain.model.PipelineStepResult
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class GeneralFactCheckPipeline @Inject constructor(
@@ -23,16 +24,21 @@ class GeneralFactCheckPipeline @Inject constructor(
     private val wikidataClient: WikidataSparqlClient,
     private val googleFactCheckRepository: GoogleFactCheckRepository,
     private val tavilyRepository: TavilyRepository,
-    private val llmRouter: LlmRouter,
+    private val actorCriticPipeline: ActorCriticPipeline,
+    private val userPrefsRepo: UserPreferencesRepository,
     private val ratingRepo: OutletRatingRepository,
     private val plausibilityEnricher: PlausibilityEnricherUseCase,
-    private val ragVerifier: RagVerifierUseCase
+    private val ragVerifier: RagVerifierUseCase,
+    private val algorithmicVerifier: AlgorithmicGroundingVerifier
 ) {
     companion object {
         private const val TAG = "GeneralPipeline"
     }
 
-    suspend fun verify(classified: ClassifiedClaim): CorvusCheckResult.GeneralResult {
+    suspend fun verify(
+        classified: ClassifiedClaim,
+        onStepChange: suspend (PipelineStep) -> Unit = {}
+    ): CorvusCheckResult.GeneralResult {
         Log.d(TAG, "Starting general verification for type: ${classified.type}")
         
         val sources = mutableListOf<Source>()
@@ -109,8 +115,11 @@ class GeneralFactCheckPipeline @Inject constructor(
         }.sortedByDescending { it.outletRating?.credibility ?: 50 }
 
         // LLM Synthesis
-        val (initialResult, provider) = llmRouter.analyze(classified.raw, filteredSources, classified.type)
-        steps.add(PipelineStepResult(PipelineStep.ANALYZING, "Synthesized by ${provider.name}"))
+        onStepChange(PipelineStep.ANALYZING)
+        val prefs = userPrefsRepo.preferences.first()
+        val initialResult = actorCriticPipeline.analyze(classified.raw, classified, filteredSources, prefs, onStepChange)
+        val providerUsed = initialResult.criticProvider?.name ?: "Unknown"
+        steps.add(PipelineStepResult(PipelineStep.ANALYZING, "Synthesized by $providerUsed"))
 
         // Plausibility Enrichment
         val finalResult = if (initialResult.verdict == com.najmi.corvus.domain.model.Verdict.UNVERIFIABLE) {
@@ -135,33 +144,45 @@ class GeneralFactCheckPipeline @Inject constructor(
             claimTypeDetected = classified.type,
             sourcesRetrieved = enrichedSources.size,
             avgSourceCredibility = avgCredibility,
-            llmProviderUsed = provider.name,
+            llmProviderUsed = providerUsed,
             checkedAt = System.currentTimeMillis()
         )
 
+        // ── Algorithmic Grounding Verification ───────────────────────────
+        onStepChange(PipelineStep.GROUNDING_CHECK)
+        val algoResult = algorithmicVerifier.verify(finalResult.keyFacts, enrichedSources)
+        val penaltyLog = algoResult.fabricatedCitations.map {
+            "Algorithmic Reject: Removed fabricated attribution to Source [${it.claimedSourceIndex}] for quote: '${it.originalStatement}'"
+        }
+
         // ── RAG Verification pass ────────────────────────────────────────
-        val verifiedFacts = ragVerifier.verifyFacts(finalResult.keyFacts, enrichedSources)
+        val verifiedFacts = ragVerifier.verifyFacts(algoResult.verifiedFacts, enrichedSources)
         val explanationVerification = ragVerifier.verifyExplanation(
             finalResult.explanation,
             enrichedSources
         )
 
         // Escalate verdict confidence if explanation is poorly grounded
-        val adjustedConfidence = when (explanationVerification.overallConfidence) {
+        var adjustedConfidence = when (explanationVerification.overallConfidence) {
             com.najmi.corvus.domain.model.ExplanationConfidence.POORLY_GROUNDED     -> finalResult.confidence * 0.6f
             com.najmi.corvus.domain.model.ExplanationConfidence.PARTIALLY_GROUNDED  -> finalResult.confidence * 0.8f
             else                                      -> finalResult.confidence
         }
+        
+        // Apply Algorithmic fabrication penalty (subtractive)
+        adjustedConfidence = maxOf(0.05f, adjustedConfidence - algoResult.totalConfidencePenalty)
         // ────────────────────────────────────────────────────────────────
 
         return finalResult.copy(
             claim = classified.raw, 
-            providerUsed = provider.name,
+            claimType = classified.type,
+            providerUsed = providerUsed,
             sources = enrichedSources,
             methodology = methodology,
             keyFacts = verifiedFacts,
             confidence = adjustedConfidence,
-            explanationVerification = explanationVerification
+            explanationVerification = explanationVerification,
+            correctionsLog = (finalResult.correctionsLog ?: emptyList()) + penaltyLog
         )
     }
 }
