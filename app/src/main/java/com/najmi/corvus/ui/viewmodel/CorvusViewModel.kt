@@ -127,6 +127,23 @@ class CorvusViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = false) }
     }
 
+    fun analyzeInBackground(text: String, onStarted: () -> Unit = {}) {
+        val claim = text.trim()
+        if (claim.isEmpty() || claim.length < MIN_CLAIM_LENGTH) {
+            return
+        }
+
+        val workRequest = OneTimeWorkRequestBuilder<FactCheckWorker>()
+            .setInputData(workDataOf("inputText" to claim))
+            .build()
+        
+        currentWorkRequestId = workRequest.id
+        workManager.enqueue(workRequest)
+        
+        _uiState.update { it.copy(inputText = claim) }
+        onStarted()
+    }
+
     fun reset() {
         cancelAnalysis()
         _uiState.update { CorvusUiState() }

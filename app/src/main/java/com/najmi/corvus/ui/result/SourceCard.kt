@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -42,26 +43,31 @@ fun SourceCard(
     val hapticFeedback = LocalHapticFeedback.current
     
     var isExpanded by androidx.compose.runtime.mutableStateOf(false)
-
-    Column(
+    Card(
+        onClick = {
+            isExpanded = !isExpanded
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        },
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, CorvusShapes.medium)
-            .border(
-                width = 1.dp,
-                color = if (isExpanded) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) 
-                        else CorvusTheme.colors.sectionEvidence.copy(alpha = 0.2f),
-                shape = CorvusShapes.medium
-            )
-            .animateContentSize()
-            .clickable {
-                isExpanded = !isExpanded
-                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            }
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .animateContentSize(),
+        shape = CorvusShapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(
+            1.dp,
+            if (isExpanded) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) 
+            else CorvusTheme.colors.sectionEvidence.copy(alpha = 0.2f)
+        )
     ) {
-        // ── Header: [Index] Publisher & Basic Metrics ────────────────────
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // ── Header: [Index] Publisher & Basic Metrics ────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -161,6 +167,7 @@ fun SourceCard(
             }
         }
     }
+}
 }
 
 @Composable

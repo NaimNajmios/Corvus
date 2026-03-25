@@ -27,9 +27,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.data.local.UserPreferencesRepository
+import com.najmi.corvus.ui.components.ShareConfirmBottomSheet
 import com.najmi.corvus.ui.theme.CorvusTheme
 import com.najmi.corvus.ui.theme.ColorPalette
+import com.najmi.corvus.ui.viewmodel.CorvusViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -47,6 +50,7 @@ class MainActivity : ComponentActivity() {
     var instantAnalyze by mutableStateOf(false)
     var initialResultId by mutableStateOf<String?>(null)
     private var isReady by mutableStateOf(false)
+    var showShareConfirmSheet by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -68,12 +72,13 @@ class MainActivity : ComponentActivity() {
             val systemDark = isSystemInDarkTheme()
             val darkTheme = preferences?.darkMode ?: systemDark
             val colorPalette = preferences?.colorPalette ?: ColorPalette.MONOCHROME
+            val viewModel: CorvusViewModel = hiltViewModel()
 
             CorvusTheme(darkTheme = darkTheme, colorPalette = colorPalette) {
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission(),
                     onResult = { isGranted ->
-                        // Handle result if needed, but for now we just proceed
+                        // Handle result if needed
                     }
                 )
 
@@ -85,13 +90,39 @@ class MainActivity : ComponentActivity() {
 
                 Surface(modifier = Modifier.fillMaxSize()) {
                     CorvusApp(
-                        sharedText = sharedText,
-                        instantAnalyze = instantAnalyze,
+                        sharedText = if (showShareConfirmSheet) null else sharedText,
+                        instantAnalyze = if (showShareConfirmSheet) false else instantAnalyze,
                         initialResultId = initialResultId,
+                        viewModel = viewModel,
                         onSharedTextProcessed = { 
                             sharedText = null
                             instantAnalyze = false
                             initialResultId = null
+                            showShareConfirmSheet = false
+                        }
+                    )
+                }
+
+                if (showShareConfirmSheet && sharedText != null) {
+                    ShareConfirmBottomSheet(
+                        sharedText = sharedText ?: "",
+                        onConfirm = {
+                            val textToAnalyze = sharedText ?: return@ShareConfirmBottomSheet
+                            val truncatedText = if (textToAnalyze.length > 500) {
+                                textToAnalyze.take(500)
+                            } else {
+                                textToAnalyze
+                            }
+                            viewModel.updateInputText(truncatedText)
+                            viewModel.analyzeInBackground(truncatedText) {
+                                showShareConfirmSheet = false
+                            }
+                            sharedText = null
+                            instantAnalyze = false
+                        },
+                        onDismiss = {
+                            showShareConfirmSheet = false
+                            sharedText = null
                         }
                     )
                 }
@@ -108,14 +139,16 @@ class MainActivity : ComponentActivity() {
         when (intent?.action) {
             Intent.ACTION_SEND -> {
                 if (intent.type == "text/plain") {
-                    sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
-                    // Detect if started via FactCheckShareActivity alias
-                    instantAnalyze = intent.component?.className?.endsWith("FactCheckShareActivity") == true
+                    val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+                    if (!text.isNullOrBlank()) {
+                        sharedText = text
+                        instantAnalyze = false
+                        showShareConfirmSheet = true
+                    }
                 }
             }
         }
         
-        // Handle resultId from notification
         val resultId = intent?.getStringExtra("resultId")
         if (resultId != null) {
             initialResultId = resultId

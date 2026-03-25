@@ -10,12 +10,12 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.najmi.corvus.data.repository.HistoryRepository
 import com.najmi.corvus.domain.model.CorvusCheckResult
+import com.najmi.corvus.domain.model.CheckingStatus
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.domain.usecase.CompositeFactCheckPipeline
 import com.najmi.corvus.util.NotificationHelper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.runBlocking
 
 @HiltWorker
 class FactCheckWorker @AssistedInject constructor(
@@ -30,34 +30,46 @@ class FactCheckWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         val inputText = inputData.getString("inputText") ?: return Result.failure()
         
-        // Initial foreground info
-        setForeground(createForegroundInfo(PipelineStep.IDLE))
+        setForeground(createForegroundInfo(CheckingStatus.IDLE))
 
         return try {
             val checkResult = compositePipeline.check(inputText) { step ->
-                // Update progress for live notification
+                val status = convertToCheckingStatus(step)
                 val progress = workDataOf("step" to step.name)
                 setProgress(progress)
-                
-                // Update foreground notification
-                setForeground(createForegroundInfo(step))
+                setForeground(createForegroundInfo(status))
             }
 
             historyRepository.saveResult(checkResult)
 
-            // Show final result notification
+            notificationHelper.cancelProgressNotification()
+
             val title = "Fact Check Result: ${checkResult.verdictName}"
             val summary = checkResult.summary
             notificationHelper.showResultNotification(title, summary, checkResult.id)
 
             Result.success(workDataOf("resultId" to checkResult.id))
         } catch (e: Exception) {
+            notificationHelper.cancelProgressNotification()
             Result.failure(workDataOf("error" to e.message))
         }
     }
 
-    private fun createForegroundInfo(step: PipelineStep): ForegroundInfo {
-        val builder = notificationHelper.getProgressNotificationBuilder(step)
+    private fun convertToCheckingStatus(step: PipelineStep): CheckingStatus {
+        return when (step) {
+            PipelineStep.IDLE -> CheckingStatus.IDLE
+            PipelineStep.CHECKING_VIRAL_DATABASE -> CheckingStatus.CHECKING_VIRAL_DATABASE
+            PipelineStep.CHECKING_KNOWN_FACTS -> CheckingStatus.CHECKING_KNOWN_FACTS
+            PipelineStep.DISSECTING -> CheckingStatus.DISSECTING
+            PipelineStep.CHECKING_SUB_CLAIMS -> CheckingStatus.CHECKING_SUB_CLAIMS
+            PipelineStep.RETRIEVING_SOURCES -> CheckingStatus.RETRIEVING_SOURCES
+            PipelineStep.ANALYZING -> CheckingStatus.ANALYZING
+            PipelineStep.DONE -> CheckingStatus.DONE
+        }
+    }
+
+    private fun createForegroundInfo(status: CheckingStatus): ForegroundInfo {
+        val builder = notificationHelper.getProgressNotificationBuilder(status)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ForegroundInfo(
                 NotificationHelper.PROGRESS_NOTIFICATION_ID,
@@ -74,7 +86,6 @@ class FactCheckWorker @AssistedInject constructor(
     }
 }
 
-// Extension to get verdict name easily
 private val CorvusCheckResult.verdictName: String
     get() = when (this) {
         is CorvusCheckResult.GeneralResult -> verdict.name
