@@ -12,13 +12,15 @@ import io.ktor.http.contentType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
 
 @Serializable
 data class CerebrasRequest(
-    val model: String = "llama-3.3-70b",
+    val model: String = "llama3.3-70b",
     val messages: List<CerebrasMessage>,
     val temperature: Float = 0.3f,
     @SerialName("max_tokens") val maxTokens: Int = 1024
@@ -67,7 +69,7 @@ class CerebrasClient @Inject constructor(
         private const val TAG = "CerebrasClient"
     }
 
-    suspend fun chat(prompt: String): String {
+    suspend fun chat(prompt: String): String = withContext(Dispatchers.IO) {
         Log.d(TAG, "API Key (first 10 chars): ${apiKey.take(10)}...")
         
         val response = httpClient.post("https://api.cerebras.ai/v1/chat/completions") {
@@ -103,7 +105,7 @@ class CerebrasClient @Inject constructor(
             throw Exception("Invalid response from Cerebras: ${e.message}")
         }
         
-        return cerebrasResponse.choices.firstOrNull()?.message?.content
+        cerebrasResponse.choices.firstOrNull()?.message?.content
             ?: throw Exception("Empty response from Cerebras")
     }
 }

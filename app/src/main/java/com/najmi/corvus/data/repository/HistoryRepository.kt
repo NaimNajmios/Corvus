@@ -8,7 +8,9 @@ import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.Source
 import com.najmi.corvus.domain.model.Verdict
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -27,19 +29,19 @@ class HistoryRepository @Inject constructor(
     fun getAllHistory(): Flow<List<CorvusCheckResult>> {
         return historyDao.getAllHistory().map { entities ->
             entities.mapNotNull { it.toCorvusResult() }
-        }
+        }.flowOn(Dispatchers.Default)
     }
 
     fun searchHistory(query: String): Flow<List<CorvusCheckResult>> {
         return historyDao.searchHistory(query).map { entities ->
             entities.mapNotNull { it.toCorvusResult() }
-        }
+        }.flowOn(Dispatchers.Default)
     }
 
     fun filterByVerdict(verdict: String): Flow<List<CorvusCheckResult>> {
         return historyDao.filterByVerdict(verdict).map { entities ->
             entities.mapNotNull { it.toCorvusResult() }
-        }
+        }.flowOn(Dispatchers.Default)
     }
 
     suspend fun getResultById(id: String): CorvusCheckResult? {

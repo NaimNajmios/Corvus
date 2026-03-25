@@ -9,6 +9,8 @@ import com.najmi.corvus.data.remote.OpenRouterClient
 import com.najmi.corvus.data.remote.llm.SourceContextBuilder
 import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.domain.router.LlmProviderHealthTracker
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import javax.inject.Inject
 
@@ -59,9 +61,11 @@ class ActorCriticPipeline @Inject constructor(
         prefs: UserPreferences,
         onStepChange: suspend (PipelineStep) -> Unit = {}
     ): CorvusCheckResult.GeneralResult {
+        // Limit sources to prevent context overflow (matching LlmRepository)
+        val limitedSources = sources.take(10)
+        
         val providers = selectActorCriticProviders(healthTracker, prefs)
-        val actorContext = contextBuilder.build(sources, providers.actor)
-        val criticContext = contextBuilder.build(sources, providers.critic)
+        val actorContext = contextBuilder.build(limitedSources, providers.actor)
 
         Log.d(TAG, "Actor pass starting: ${providers.actor}")
 
@@ -75,14 +79,51 @@ class ActorCriticPipeline @Inject constructor(
 
         // ── Pass 2: Critic ──
         onStepChange(PipelineStep.VERIFYING)
-        val criticPrompt = buildCriticPrompt(claim, criticContext, actorDraft)
-        val criticRaw = completePrompt(providers.critic, criticPrompt)
-        val finalResult = parseCriticOutput(criticRaw, sources)
+        
+        // REVISE CONTEXT: Only send sources used by actor + top 2 unused credible sources to the critic
+        val actorUsedIndices = actorDraft.sourcesUsed.toSet()
+        val criticSources = limitedSources.filterIndexed { index, _ -> 
+            actorUsedIndices.contains(index) 
+        }.toMutableList()
+        
+        // Add top 2 unused sources as fallback for the critic to check for missed evidence
+        val unusedSources = limitedSources.filterIndexed { index, _ -> !actorUsedIndices.contains(index) }
+            .take(2)
+        criticSources.addAll(unusedSources)
+        
+        val condensedCriticContext = contextBuilder.build(criticSources, providers.critic)
+        
+        val criticPrompt = buildCriticPrompt(claim, condensedCriticContext, actorDraft)
+        
+        var criticRaw: String
+        var finalCriticProvider = providers.critic
+        
+        try {
+            criticRaw = completePrompt(providers.critic, criticPrompt)
+        } catch (e: Exception) {
+            Log.e(TAG, "Primary Critic (${providers.critic}) failed: ${e.message}")
+            
+            // Fallback: If primary critic fails (429/timeout), try Gemini (if it wasn't already the critic/actor)
+            if (isRetryableError(e) && providers.critic != LlmProvider.GEMINI && providers.actor != LlmProvider.GEMINI) {
+                Log.d(TAG, "Attempting fallback Critic: GEMINI")
+                try {
+                    criticRaw = completePrompt(LlmProvider.GEMINI, criticPrompt)
+                    finalCriticProvider = LlmProvider.GEMINI
+                } catch (fallbackEx: Exception) {
+                    Log.e(TAG, "Fallback Critic (GEMINI) also failed. Reraising original error.")
+                    throw e
+                }
+            } else {
+                throw e
+            }
+        }
+        
+        val finalResult = parseCriticOutput(criticRaw, limitedSources)
 
         // Attach metadata
         return finalResult.copy(
             actorProvider = providers.actor,
-            criticProvider = providers.critic,
+            criticProvider = finalCriticProvider,
             correctionsLog = actorDraft.unsupportedAssumptions + (finalResult.correctionsLog ?: emptyList())
         )
     }
@@ -101,9 +142,19 @@ class ActorCriticPipeline @Inject constructor(
         }
     }
 
-    private fun parseActorDraft(raw: String): ActorDraft {
+    private fun isRetryableError(e: Exception): Boolean {
+        val message = e.message ?: return false
+        return message.contains("429", ignoreCase = true) ||
+               message.contains("rate", ignoreCase = true) ||
+               message.contains("quota", ignoreCase = true) ||
+               message.contains("timeout", ignoreCase = true) ||
+               message.contains("503", ignoreCase = true) ||
+               message.contains("unavailable", ignoreCase = true)
+    }
+
+    private suspend fun parseActorDraft(raw: String): ActorDraft = withContext(Dispatchers.Default) {
         val cleaned = raw.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
-        return try {
+        try {
             json.decodeFromString<ActorDraft>(cleaned)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse ActorDraft: ${e.message}")
@@ -115,7 +166,7 @@ class ActorCriticPipeline @Inject constructor(
         }
     }
 
-    private fun parseCriticOutput(raw: String, allSources: List<Source>): CorvusCheckResult.GeneralResult {
+    private suspend fun parseCriticOutput(raw: String, allSources: List<Source>): CorvusCheckResult.GeneralResult = withContext(Dispatchers.Default) {
         val cleaned = raw.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
         val parsed = json.decodeFromString<JsonObject>(cleaned)
 
@@ -155,7 +206,7 @@ class ActorCriticPipeline @Inject constructor(
 
         val correctionsLog = parsed["corrections_made"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
 
-        return CorvusCheckResult.GeneralResult(
+        CorvusCheckResult.GeneralResult(
             verdict = verdict,
             confidence = confidence,
             explanation = explanation,

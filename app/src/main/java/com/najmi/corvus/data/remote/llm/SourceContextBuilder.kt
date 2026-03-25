@@ -16,9 +16,9 @@ class SourceContextBuilder @Inject constructor() {
     // Max total source context (all sources combined) to prevent prompt overflow
     private val MAX_TOTAL_CONTEXT_BY_PROVIDER = mapOf(
         LlmProvider.GEMINI     to 15_000,
-        LlmProvider.GROQ       to 12_000,
-        LlmProvider.CEREBRAS   to 4_000,
-        LlmProvider.OPENROUTER to 8_000
+        LlmProvider.GROQ       to 6_000,
+        LlmProvider.CEREBRAS   to 2_000,
+        LlmProvider.OPENROUTER to 5_000
     )
 
     fun build(
