@@ -17,7 +17,11 @@ class NotificationHelper(private val context: Context) {
     companion object {
         const val CHANNEL_ID = "fact_check_channel"
         private const val CHANNEL_NAME = "Fact Check Analysis"
-        private const val CHANNEL_DESCRIPTION = "Displays progress and results for claim analysis"
+        private const val CHANNEL_DESCRIPTION = "Displays progress for claim analysis"
+
+        const val RESULT_CHANNEL_ID = "fact_check_result_channel"
+        private const val RESULT_CHANNEL_NAME = "Fact Check Results"
+        private const val RESULT_CHANNEL_DESCRIPTION = "Displays completed fact check results"
         
         const val PROGRESS_NOTIFICATION_ID = 1001
         const val RESULT_NOTIFICATION_ID = 1002
@@ -32,13 +36,19 @@ class NotificationHelper(private val context: Context) {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = NotificationManager.IMPORTANCE_LOW
-            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
-                description = CHANNEL_DESCRIPTION
-            }
             val notificationManager: NotificationManager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+
+            val progressChannel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW).apply {
+                description = CHANNEL_DESCRIPTION
+            }
+            notificationManager.createNotificationChannel(progressChannel)
+
+            val resultChannel = NotificationChannel(RESULT_CHANNEL_ID, RESULT_CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).apply {
+                description = RESULT_CHANNEL_DESCRIPTION
+                enableVibration(true)
+            }
+            notificationManager.createNotificationChannel(resultChannel)
         }
     }
 
@@ -59,6 +69,7 @@ class NotificationHelper(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(pendingIntent)
             .setProgress(100, status.progress, false)
     }
@@ -80,7 +91,7 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, RESULT_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(summary)

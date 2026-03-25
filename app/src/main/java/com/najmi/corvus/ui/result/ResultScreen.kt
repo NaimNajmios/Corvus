@@ -471,6 +471,17 @@ fun ResultScreen(
                     Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Scroll to top")
                 }
             }
+        } else if (uiState.isLoading) {
+            // Loading state
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
         } else {
             // Empty state fallback
             Column(

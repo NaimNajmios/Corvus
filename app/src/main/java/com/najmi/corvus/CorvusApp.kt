@@ -138,7 +138,6 @@ fun CorvusApp(
     LaunchedEffect(initialResultId) {
         initialResultId?.let {
             viewModel.loadResultById(it)
-            navController.navigate(Routes.RESULT)
             onSharedTextProcessed()
         }
     }
@@ -195,9 +194,10 @@ fun CorvusApp(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            val startDestination = remember { if (initialResultId != null) Routes.RESULT else Routes.INPUT }
             NavHost(
                 navController = navController,
-                startDestination = Routes.INPUT
+                startDestination = startDestination
             ) {
                 composable(Routes.INPUT) {
                     InputScreen(
