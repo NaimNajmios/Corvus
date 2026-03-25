@@ -2,7 +2,7 @@
 
 *See through the noise. Verify the truth.*
 
-Corvus is a high-fidelity fact-checking Android application that orchestrates multi-stage verification pipelines to combat misinformation. It decomposes complex claims into verifiable components and routes them through specialized analysis engines for unparalleled precision.
+Corvus is a high-fidelity fact-checking Android application that orchestrates multi-stage verification pipelines to combat misinformation. It decomposes complex claims into verifiable components, utilizing an **Actor-Critic LLM architecture** and **deterministic grounding verification** for unparalleled precision.
 
 ---
 
@@ -21,9 +21,10 @@ Corvus moves beyond simple database lookups. It treats fact-checking as an inves
 ## ✨ Core Features
 
 - **🧩 Claim Decomposition** - Automatically breaks compound or "slanted" statements into atomic units for individual multi-pipeline testing.
+- **🧠 Actor-Critic Reasoning** - A robust two-pass analysis where an *Actor* drafts a preliminary fact-check and a *Critic* rigorously audits it for citations and accuracy.
+- **⚖️ Deterministic Grounding** - Algorithmic quote verification that matches LLM claims against raw source text, penalizing confidence for fabricated citations.
 - **👁️ Vision Extraction** - Intelligent OCR and image context analysis powered by PaliGemma and Gemini Nano for on-device multi-modal checks.
-- **⏳ Confidence Timeline** - A visual journey of verification certainty, showing how confidence shifts as evidence is retrieved.
-- **🧠 Multi-Provider LLM** - Seamlessly switch between Cerebras, Groq, Gemini, and OpenRouter to balance speed and reasoning depth.
+- **⏳ Confidence Timeline** - A visual journey of verification certainty, showing how confidence shifts as evidence is retrieved and verified.
 - **🛡️ Privacy-First ML** - Leverages the LiteRT Engine (formerly TFLite) for local vision and language tasks, keeping your data on-device.
 
 ---
@@ -33,8 +34,10 @@ Corvus moves beyond simple database lookups. It treats fact-checking as an inves
 Corvus is built with a custom **Monochromatic Precise** design system, now expanded with dynamic palettes to match your style:
 
 - **Dynamic Color Palettes** - Choose from `Monochrome`, `Ocean`, `Forest`, `Sunset`, or `Lavender` themes.
-- ** autoridad Typography** - Uses *DM Serif Display* for authoritative headings and *IBM Plex Mono* for information-dense results.
+- **autorité Typography** - Uses *DM Serif Display* for authoritative headings and *IBM Plex Mono* for information-dense results.
 - **Interactive Results** - Rich, expandable cards with micro-animations, glassmorphism, and smooth transitions.
+- **Resilient Backgrounding** - Advanced WorkManager integration allows fact-checks to run in the background with persistent status notifications.
+- **Share Utility** - A context-aware share bottom sheet (`ShareBottomSheetActivity`) for seamless integration with other apps.
 - **Thread-Safe Architecture** - Fully asynchronous orchestration using Kotlin Coroutines and Ktor, ensuring zero UI jank during heavy analysis.
 
 ---
@@ -45,7 +48,8 @@ Corvus is built with a custom **Monochromatic Precise** design system, now expan
 - **Dependency Injection**: Hilt (Dagger) for scalable architecture.
 - **Networking**: Ktor for concurrent, high-performance API orchestration.
 - **Database**: Room for persistent audit logs, history, and analytical insights.
-- **Background Tasks**: WorkManager for robust, backgrounded analysis and notifications.
+- **Background Tasks**: WorkManager and Foreground Services for robust, backgrounded analysis and persistent status notifications.
+- **Analytics**: Custom dashboard for visualizing fact-check distribution and trends over time.
 
 ---
 
