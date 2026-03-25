@@ -16,6 +16,7 @@ import com.najmi.corvus.domain.usecase.CompositeFactCheckPipeline
 import com.najmi.corvus.util.NotificationHelper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.util.Locale
 
 @HiltWorker
 class FactCheckWorker @AssistedInject constructor(
@@ -92,6 +93,10 @@ private val CorvusCheckResult.verdictName: String
         is CorvusCheckResult.QuoteResult -> quoteVerdict.name
         is CorvusCheckResult.CompositeResult -> compositeVerdict.name
         is CorvusCheckResult.ViralHoaxResult -> "FALSE"
+    }.split("_").joinToString(" ") { word ->
+        word.lowercase(Locale.getDefault()).replaceFirstChar { char ->
+            if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString()
+        }
     }
 
 private val CorvusCheckResult.summary: String
