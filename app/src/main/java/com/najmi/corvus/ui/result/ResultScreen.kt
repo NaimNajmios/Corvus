@@ -242,6 +242,12 @@ fun ResultScreen(
                     }
                 }
 
+                if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.temporalMismatch?.hasSignificantMismatch == true) {
+                    item(key = "temporal_warning") {
+                        ZombieClaimWarningBanner(corvusResult.temporalMismatch)
+                    }
+                }
+
                 item(key = "verdict_card") {
                     VerdictCard(
                         result = corvusResult,

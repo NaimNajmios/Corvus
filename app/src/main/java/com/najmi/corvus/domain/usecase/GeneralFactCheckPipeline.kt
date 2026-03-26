@@ -6,22 +6,17 @@ import com.najmi.corvus.data.remote.WikipediaClient
 import com.najmi.corvus.data.repository.GoogleFactCheckRepository
 import com.najmi.corvus.data.repository.TavilyRepository
 import com.najmi.corvus.data.repository.OutletRatingRepository
-import com.najmi.corvus.domain.model.ClaimType
-import com.najmi.corvus.domain.model.ClassifiedClaim
-import com.najmi.corvus.domain.model.CorvusCheckResult
-import com.najmi.corvus.domain.model.ContextType
-import com.najmi.corvus.domain.model.MissingContextInfo
-import com.najmi.corvus.domain.model.RetrievalMetadata
-import com.najmi.corvus.domain.model.Source
-import com.najmi.corvus.domain.model.SourceType
-import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.data.local.UserPreferencesRepository
-import com.najmi.corvus.domain.model.MethodologyMetadata
-import com.najmi.corvus.domain.model.PipelineStep
-import com.najmi.corvus.domain.model.PipelineStepResult
+import com.najmi.corvus.data.repository.*
+import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.domain.remote.llm.TemporalPromptInjector
+import com.najmi.corvus.domain.usecase.*
+import com.najmi.corvus.domain.util.TokenCollector
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import javax.inject.Inject
+
 
 class GeneralFactCheckPipeline @Inject constructor(
     private val wikipediaClient: WikipediaClient,
@@ -37,7 +32,9 @@ class GeneralFactCheckPipeline @Inject constructor(
     private val ragVerifier: RagVerifierUseCase,
     private val algorithmicVerifier: AlgorithmicGroundingVerifier,
     private val temporalAnalyser: TemporalClaimAnalyser,
-    private val temporalMismatchDetector: SourceTemporalMismatchDetector
+    private val temporalMismatchDetector: SourceTemporalMismatchDetector,
+    private val tokenCollector: TokenCollector,
+    private val tokenUsageRepo: TokenUsageRepository
 ) {
     companion object {
         private const val TAG = "GeneralPipeline"
@@ -48,6 +45,7 @@ class GeneralFactCheckPipeline @Inject constructor(
         onStepChange: suspend (PipelineStep) -> Unit = {}
     ): CorvusCheckResult.GeneralResult {
         Log.d(TAG, "Starting general verification for type: ${classified.type}")
+        tokenCollector.clear()
         
         val sources = mutableListOf<Source>()
         val steps = mutableListOf<PipelineStepResult>()
@@ -128,7 +126,6 @@ class GeneralFactCheckPipeline @Inject constructor(
 
         // LLM Synthesis with Temporal Context
         onStepChange(PipelineStep.ANALYZING)
-        val prefs = userPrefsRepo.preferences.first()
         
         val temporalContext = TemporalPromptInjector.buildTemporalContext(
             profile = temporalProfile,
@@ -140,7 +137,6 @@ class GeneralFactCheckPipeline @Inject constructor(
             claim = rewrittenQuery.coreQuestion,
             classified = classified,
             sources = filteredSources,
-            prefs = prefs,
             temporalContext = temporalContext,
             onStepChange = onStepChange
         )
@@ -170,6 +166,8 @@ class GeneralFactCheckPipeline @Inject constructor(
             enrichedSources.map { it.outletRating?.credibility ?: 50 }.average().toInt()
         } else 0
 
+        val tokenReport = tokenCollector.generateReport()
+        
         val methodology = MethodologyMetadata(
             pipelineStepsCompleted = steps,
             claimTypeDetected = classified.type,
@@ -177,8 +175,19 @@ class GeneralFactCheckPipeline @Inject constructor(
             avgSourceCredibility = avgCredibility,
             llmProviderUsed = providerUsed,
             checkedAt = System.currentTimeMillis(),
-            routingRationale = routingRationale
+            routingRationale = routingRationale,
+            tokens = tokenReport
         )
+
+        // Persist token usage asynchronously
+        coroutineScope {
+            launch {
+                tokenUsageRepo.saveReport(
+                    checkId = classified.raw.hashCode().toString(), // Simple ID for now
+                    report = tokenReport
+                )
+            }
+        }
 
         // Algorithmic Grounding Verification
         onStepChange(PipelineStep.GROUNDING_CHECK)
@@ -221,7 +230,8 @@ class GeneralFactCheckPipeline @Inject constructor(
                 totalRawSources = sourceSet.totalRawResults,
                 dedupedSources = sourceSet.deduplicatedCount,
                 finalSources = sourceSet.sources.size
-            )
+            ),
+            temporalMismatch = temporalMismatch
         )
     }
 

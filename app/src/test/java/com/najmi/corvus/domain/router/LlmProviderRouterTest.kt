@@ -37,7 +37,7 @@ class LlmProviderRouterTest {
 
             val result = router.execute("test prompt", LlmProvider.GROQ)
 
-            assertEquals("Groq result", result)
+            assertEquals("Groq result", result.text)
             verify(groqClient).chat("test prompt")
             verify(geminiClient, never()).chat(any())
         }
@@ -57,7 +57,7 @@ class LlmProviderRouterTest {
 
             val result = router.execute("test prompt", LlmProvider.GROQ)
 
-            assertEquals("Gemini fallback result", result)
+            assertEquals("Gemini fallback result", result.text)
             verify(healthTracker).reportError(LlmProvider.GROQ.name)
             verify(geminiClient).chat("test prompt")
         }
@@ -72,7 +72,7 @@ class LlmProviderRouterTest {
 
             val result = router.execute("test prompt", LlmProvider.GROQ)
 
-            assertEquals("Gemini result", result)
+            assertEquals("Gemini result", result.text)
             verify(groqClient, never()).chat(any())
             verify(geminiClient).chat("test prompt")
         }

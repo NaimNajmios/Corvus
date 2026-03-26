@@ -1,6 +1,7 @@
 package com.najmi.corvus.domain.usecase
 
 import android.util.Log
+import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.router.LlmProviderRouter
 import com.najmi.corvus.domain.model.ClassifiedClaim
 import com.najmi.corvus.domain.model.RewrittenQuery
@@ -10,10 +11,14 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.najmi.corvus.domain.util.TokenCollector
+import com.najmi.corvus.domain.model.TokenStep
+
 
 @Singleton
 class QueryRewriterUseCase @Inject constructor(
-    private val router: LlmProviderRouter
+    private val router: LlmProviderRouter,
+    private val tokenCollector: TokenCollector
 ) {
     companion object {
         private const val TAG = "QueryRewriter"
@@ -27,8 +32,13 @@ class QueryRewriterUseCase @Inject constructor(
         val prompt = buildPrompt(classified)
 
         return try {
-            val raw = router.execute(prompt)
-            parseRewrittenQuery(raw, classified.raw)
+            val response = router.execute(prompt)
+            tokenCollector.collect(response.usage.copy(
+                step = TokenStep.QUERY_REWRITING,
+                provider = "LlmProviderRouter",
+                model = "Routed"
+            ))
+            parseRewrittenQuery(response.text, classified.raw)
         } catch (e: Exception) {
             Log.w(TAG, "Query rewriting failed: ${e.message}, using fallback")
             buildFallbackQuery(classified.raw)

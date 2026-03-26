@@ -33,7 +33,16 @@ data class OpenRouterMessage(
 
 @Serializable
 data class OpenRouterResponse(
-    val choices: List<OpenRouterChoice>
+    val choices: List<OpenRouterChoice>,
+    val usage: OpenRouterUsage? = null,
+    val model: String? = null
+)
+
+@Serializable
+data class OpenRouterUsage(
+    @SerialName("prompt_tokens") val promptTokens: Int = 0,
+    @SerialName("completion_tokens") val completionTokens: Int = 0,
+    @SerialName("total_tokens") val totalTokens: Int = 0
 )
 
 @Serializable
@@ -69,7 +78,7 @@ class OpenRouterClient @Inject constructor(
     }
 
     override suspend fun chat(prompt: String): String {
-        Log.d(TAG, "API Key (first 10 chars): ${apiKey.take(10)}...")
+        Log.d(TAG, "Sending request to OpenRouter, prompt length: ${prompt.length}")
         
         val response = httpClient.post("https://openrouter.ai/api/v1/chat/completions") {
             headers.append("Authorization", "Bearer $apiKey")
@@ -106,7 +115,18 @@ class OpenRouterClient @Inject constructor(
             throw Exception("Invalid response from OpenRouter: ${e.message}")
         }
         
-        return openRouterResponse.choices.firstOrNull()?.message?.content
+        val text = openRouterResponse.choices.firstOrNull()?.message?.content
             ?: throw Exception("Empty response from OpenRouter")
+
+        val usage = com.najmi.corvus.domain.model.TokenUsage(
+            promptTokens = openRouterResponse.usage?.promptTokens ?: 0,
+            completionTokens = openRouterResponse.usage?.completionTokens ?: 0,
+            totalTokens = openRouterResponse.usage?.totalTokens ?: 0,
+            provider = "OPENROUTER",
+            model = openRouterResponse.model
+        )
+
+        Log.d(TAG, "Received response, tokens: ${usage.totalTokens}")
+        return text
     }
 }

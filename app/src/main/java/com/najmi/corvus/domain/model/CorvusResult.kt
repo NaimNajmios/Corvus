@@ -57,7 +57,8 @@ sealed class CorvusCheckResult {
         val criticProvider: LlmProvider? = null,
         val correctionsLog: List<String>? = null,
         val reasoningScratchpad: String? = null,
-        val retrievalMetadata: RetrievalMetadata? = null
+        val retrievalMetadata: RetrievalMetadata? = null,
+        val temporalMismatch: TemporalMismatchReport? = null
     ) : CorvusCheckResult()
 
     @Serializable
@@ -252,7 +253,8 @@ data class MethodologyMetadata(
     val avgSourceCredibility: Int,
     val llmProviderUsed: String,
     val checkedAt: Long,
-    val routingRationale: String = ""
+    val routingRationale: String = "",
+    val tokens: CheckTokenReport? = null
 )
 
 @Serializable

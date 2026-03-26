@@ -2,7 +2,8 @@ package com.najmi.corvus.data.repository
 
 import android.util.Log
 import com.najmi.corvus.domain.router.LlmProviderRouter
-import com.najmi.corvus.data.remote.llm.SourceContextBuilder
+import com.najmi.corvus.data.remote.SourceContextBuilder
+import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.domain.util.HarmPreScreener
 import kotlinx.coroutines.delay
@@ -85,10 +86,10 @@ class LlmRepository @Inject constructor(
         repeat(MAX_RETRIES + 1) { attempt ->
             try {
                 // ... (existing try-catch logic remains same)
-                val responseText = router.execute(prompt, provider)
+                val response = router.execute(prompt, provider)
                 
                 Log.d(TAG, "Got response, parsing...")
-                return parseResponse(responseText, limitedSources, claimType)
+                return parseResponse(response.text, limitedSources, claimType)
                 
             } catch (e: Exception) {
                 // ... (existing error handling remains same)

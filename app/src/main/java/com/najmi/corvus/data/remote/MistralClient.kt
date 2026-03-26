@@ -88,9 +88,9 @@ class MistralClient @Inject constructor(
     }
 
     override suspend fun chat(prompt: String): String = chat(prompt, MistralModels.SMALL)
-
+ 
     suspend fun chat(prompt: String, model: String = MistralModels.SMALL): String {
-        Log.d(TAG, "API Key (first 10 chars): ${apiKey.take(10)}...")
+        Log.d(TAG, "Sending request to Mistral ($model), prompt length: ${prompt.length}")
 
         val response = httpClient.post(BASE_URL) {
             headers.append("Authorization", "Bearer $apiKey")
@@ -126,11 +126,22 @@ class MistralClient @Inject constructor(
             throw Exception("Invalid response from Mistral: ${e.message}")
         }
 
-        return mistralResponse.choices.firstOrNull()?.message?.content
+        val text = mistralResponse.choices.firstOrNull()?.message?.content
             ?: throw Exception("Empty response from Mistral")
+
+        val usage = com.najmi.corvus.domain.model.TokenUsage(
+            promptTokens = mistralResponse.usage?.promptTokens ?: 0,
+            completionTokens = mistralResponse.usage?.completionTokens ?: 0,
+            totalTokens = mistralResponse.usage?.totalTokens ?: 0,
+            provider = "MISTRAL",
+            model = model
+        )
+
+        Log.d(TAG, "Received response, tokens: ${usage.totalTokens}")
+        return text
     }
-
+ 
     suspend fun chatSaba(prompt: String): String = chat(prompt, MistralModels.SABA)
-
+ 
     suspend fun chatSmall(prompt: String): String = chat(prompt, MistralModels.SMALL)
 }

@@ -1,4 +1,4 @@
-package com.najmi.corvus.data.remote.llm
+package com.najmi.corvus.data.remote
 
 import com.najmi.corvus.domain.model.LlmProvider
 import com.najmi.corvus.domain.model.Source

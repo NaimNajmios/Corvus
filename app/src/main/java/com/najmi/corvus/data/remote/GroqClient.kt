@@ -33,7 +33,16 @@ data class GroqMessage(
 
 @Serializable
 data class GroqResponse(
-    val choices: List<GroqChoice>
+    val choices: List<GroqChoice>,
+    val usage: GroqUsage? = null,
+    val model: String? = null
+)
+
+@Serializable
+data class GroqUsage(
+    @SerialName("prompt_tokens") val promptTokens: Int = 0,
+    @SerialName("completion_tokens") val completionTokens: Int = 0,
+    @SerialName("total_tokens") val totalTokens: Int = 0
 )
 
 @Serializable
@@ -69,7 +78,7 @@ class GroqClient @Inject constructor(
     }
 
     override suspend fun chat(prompt: String): String {
-        Log.d(TAG, "API Key (first 10 chars): ${apiKey.take(10)}...")
+        Log.d(TAG, "Sending request to Groq, prompt length: ${prompt.length}")
         
         val response = httpClient.post("https://api.groq.com/openai/v1/chat/completions") {
             headers.append("Authorization", "Bearer $apiKey")
@@ -104,7 +113,18 @@ class GroqClient @Inject constructor(
             throw Exception("Invalid response from Groq: ${e.message}")
         }
         
-        return groqResponse.choices.firstOrNull()?.message?.content
+        val text = groqResponse.choices.firstOrNull()?.message?.content
             ?: throw Exception("Empty response from Groq")
+
+        val usage = com.najmi.corvus.domain.model.TokenUsage(
+            promptTokens = groqResponse.usage?.promptTokens ?: 0,
+            completionTokens = groqResponse.usage?.completionTokens ?: 0,
+            totalTokens = groqResponse.usage?.totalTokens ?: 0,
+            provider = "GROQ",
+            model = groqResponse.model
+        )
+
+        Log.d(TAG, "Received response, tokens: ${usage.totalTokens}")
+        return text
     }
 }

@@ -35,7 +35,16 @@ data class CerebrasMessage(
 
 @Serializable
 data class CerebrasResponse(
-    val choices: List<CerebrasChoice>
+    val choices: List<CerebrasChoice>,
+    val usage: CerebrasUsage? = null,
+    val model: String? = null
+)
+
+@Serializable
+data class CerebrasUsage(
+    @SerialName("prompt_tokens") val promptTokens: Int = 0,
+    @SerialName("completion_tokens") val completionTokens: Int = 0,
+    @SerialName("total_tokens") val totalTokens: Int = 0
 )
 
 @Serializable
@@ -71,7 +80,7 @@ class CerebrasClient @Inject constructor(
     }
 
     override suspend fun chat(prompt: String): String = withContext(Dispatchers.IO) {
-        Log.d(TAG, "API Key (first 10 chars): ${apiKey.take(10)}...")
+        Log.d(TAG, "Sending request to Cerebras, prompt length: ${prompt.length}")
         
         val response = httpClient.post("https://api.cerebras.ai/v1/chat/completions") {
             headers.append("Authorization", "Bearer $apiKey")
@@ -106,7 +115,18 @@ class CerebrasClient @Inject constructor(
             throw Exception("Invalid response from Cerebras: ${e.message}")
         }
         
-        cerebrasResponse.choices.firstOrNull()?.message?.content
+        val text = cerebrasResponse.choices.firstOrNull()?.message?.content
             ?: throw Exception("Empty response from Cerebras")
+
+        val usage = com.najmi.corvus.domain.model.TokenUsage(
+            promptTokens = cerebrasResponse.usage?.promptTokens ?: 0,
+            completionTokens = cerebrasResponse.usage?.completionTokens ?: 0,
+            totalTokens = cerebrasResponse.usage?.totalTokens ?: 0,
+            provider = "CEREBRAS",
+            model = cerebrasResponse.model
+        )
+
+        Log.d(TAG, "Received response, tokens: ${usage.totalTokens}")
+        text
     }
 }

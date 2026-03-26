@@ -1,11 +1,14 @@
 package com.najmi.corvus.domain.usecase
 
 import android.util.Log
+import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.router.LlmProviderRouter
 import com.najmi.corvus.domain.model.SubClaim
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import com.najmi.corvus.domain.util.TokenCollector
+import com.najmi.corvus.domain.model.TokenStep
 
 @Serializable
 data class DecomposerJson(
@@ -18,9 +21,11 @@ sealed class DecompositionResult {
     data class Compound(val original: String, val subClaims: List<SubClaim>) : DecompositionResult()
 }
 
+
 class ClaimDecomposerUseCase @Inject constructor(
     private val router: LlmProviderRouter,
-    private val json: Json
+    private val json: Json,
+    private val tokenCollector: TokenCollector
 ) {
     companion object {
         private const val TAG = "ClaimDecomposer"
@@ -54,7 +59,12 @@ class ClaimDecomposerUseCase @Inject constructor(
 
         return try {
             val response = router.execute(prompt)
-            val jsonString = extractJson(response)
+            tokenCollector.collect(response.usage.copy(
+                step = TokenStep.DECOMPOSITION,
+                provider = "LlmProviderRouter",
+                model = "Routed"
+            ))
+            val jsonString = extractJson(response.text)
             val parsed = json.decodeFromString<DecomposerJson>(jsonString)
 
             if (parsed.is_compound && parsed.sub_claims.size >= 2) {

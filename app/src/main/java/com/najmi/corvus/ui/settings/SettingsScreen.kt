@@ -73,12 +73,17 @@ import com.najmi.corvus.ui.theme.Palettes
 import com.najmi.corvus.ui.viewmodel.CohereQuotaInfo
 import com.najmi.corvus.ui.viewmodel.SettingsViewModel
 
+import com.najmi.corvus.ui.viewmodel.TokenUsageViewModel
+import com.najmi.corvus.ui.components.TokenUsageDashboard
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
+    tokenViewModel: TokenUsageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val tokenUsageState by tokenViewModel.uiState.collectAsState()
     val hapticFeedback = LocalHapticFeedback.current
     var showClearHistoryDialog by remember { mutableStateOf(false) }
     var showProviderMenu by remember { mutableStateOf(false) }
@@ -153,6 +158,13 @@ fun SettingsScreen(
             SettingsSection(title = "Cohere Quota") {
                 CohereQuotaCard(
                     quota = uiState.cohereQuota,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
+            SettingsSection(title = "Usage Analytics") {
+                TokenUsageDashboard(
+                    uiState = tokenUsageState,
                     modifier = Modifier.padding(16.dp)
                 )
             }

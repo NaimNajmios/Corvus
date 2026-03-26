@@ -2,6 +2,7 @@ package com.najmi.corvus.data.remote.cohere
 
 import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
+import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.model.LlmProvider
 import com.najmi.corvus.domain.usecase.CohereQuotaGuard
 import io.ktor.client.HttpClient
@@ -81,7 +82,15 @@ class CohereClient @Inject constructor(
         }
 
         quotaGuard.recordCall(model)
-
+        
+        val usage = com.najmi.corvus.domain.model.TokenUsage(
+            promptTokens = cohereResponse.meta?.tokens?.inputTokens ?: cohereResponse.meta?.billedUnits?.inputTokens ?: 0,
+            completionTokens = cohereResponse.meta?.tokens?.outputTokens ?: cohereResponse.meta?.billedUnits?.outputTokens ?: 0,
+            totalTokens = (cohereResponse.meta?.tokens?.inputTokens ?: 0) + (cohereResponse.meta?.tokens?.outputTokens ?: 0),
+            provider = "COHERE",
+            model = model
+        )
+        
         return cohereResponse.text
     }
 

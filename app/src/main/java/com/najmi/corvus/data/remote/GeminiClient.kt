@@ -2,6 +2,7 @@ package com.najmi.corvus.data.remote
 
 import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
+import com.najmi.corvus.domain.model.TokenUsage
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpRequestTimeoutException
@@ -36,7 +37,15 @@ data class GeminiPart(
 @Serializable
 data class GeminiResponse(
     val candidates: List<GeminiCandidate> = emptyList(),
-    @SerialName("promptFeedback") val promptFeedback: PromptFeedback? = null
+    @SerialName("promptFeedback") val promptFeedback: PromptFeedback? = null,
+    val usageMetadata: GeminiUsageMetadata? = null
+)
+
+@Serializable
+data class GeminiUsageMetadata(
+    val promptTokenCount: Int = 0,
+    val candidatesTokenCount: Int = 0,
+    val totalTokenCount: Int = 0
 )
 
 @Serializable
@@ -133,7 +142,15 @@ class GeminiClient @Inject constructor(
             throw Exception("Empty response from Gemini")
         }
 
-        Log.d(TAG, "Received response, length: ${text.length}")
+        val usage = com.najmi.corvus.domain.model.TokenUsage(
+            promptTokens = geminiResponse.usageMetadata?.promptTokenCount ?: 0,
+            completionTokens = geminiResponse.usageMetadata?.candidatesTokenCount ?: 0,
+            totalTokens = geminiResponse.usageMetadata?.totalTokenCount ?: 0,
+            provider = "GEMINI",
+            model = "gemini-2.0-flash"
+        )
+
+        Log.d(TAG, "Received response, length: ${text.length}, tokens: ${usage.totalTokens}")
         return text
     }
 }

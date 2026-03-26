@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.najmi.corvus.data.local.CorvusDatabase
 import com.najmi.corvus.data.local.HistoryDao
+import com.najmi.corvus.data.local.TokenReportDao
 import com.najmi.corvus.data.local.ViralHoaxDao
 import dagger.Module
 import dagger.Provides
@@ -23,7 +24,7 @@ object DatabaseModule {
             context,
             CorvusDatabase::class.java,
             CorvusDatabase.DATABASE_NAME
-        ).addMigrations(CorvusDatabase.MIGRATION_4_5)
+        ).addMigrations(*CorvusDatabase.MIGRATIONS)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -38,5 +39,11 @@ object DatabaseModule {
     @Singleton
     fun provideViralHoaxDao(database: CorvusDatabase): ViralHoaxDao {
         return database.viralHoaxDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTokenReportDao(database: CorvusDatabase): TokenReportDao {
+        return database.tokenReportDao()
     }
 }

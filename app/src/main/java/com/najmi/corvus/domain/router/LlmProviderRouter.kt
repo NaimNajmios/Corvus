@@ -2,10 +2,10 @@ package com.najmi.corvus.domain.router
 
 import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
+import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.model.LlmProvider
 import javax.inject.Inject
 import javax.inject.Singleton
-
 @Singleton
 class LlmProviderRouter @Inject constructor(
     private val clients: Map<LlmProvider, @JvmSuppressWildcards LlmClient>,
@@ -15,58 +15,59 @@ class LlmProviderRouter @Inject constructor(
         private const val TAG = "LlmProviderRouter"
     }
 
-    /**
-     * Executes a prompt using the preferred provider, with automatic fallback to
-     * healthy alternatives if the preferred one fails or is unhealthy.
-     */
     suspend fun execute(
         prompt: String,
         preferredProvider: LlmProvider = LlmProvider.GROQ
-    ): String {
+    ): LlmResponse {
         // 1. Try preferred provider if healthy
-        if (healthTracker.isAvailable(preferredProvider)) {
+        val primaryClient = clients[preferredProvider]
+        if (primaryClient != null && healthTracker.isAvailable(preferredProvider)) {
             try {
-                return executeWithProvider(preferredProvider, prompt)
+                return LlmResponse(primaryClient.chat(prompt), com.najmi.corvus.domain.model.TokenUsage.EMPTY)
             } catch (e: Exception) {
-                Log.w(TAG, "Preferred provider ${preferredProvider.name} failed: ${e.message}")
+                Log.e(TAG, "Primary provider ($preferredProvider) failed: ${e.message}")
                 healthTracker.reportError(preferredProvider.name)
                 // Continue to fallback
             }
         } else {
-            Log.w(TAG, "Preferred provider ${preferredProvider.name} is unhealthy, skipping to fallback")
+            Log.w(TAG, "Preferred provider ${preferredProvider.name} is unhealthy or missing, skipping to fallback")
         }
 
         // 2. Fallback to Gemini (typically highest quota/reliability)
-        if (preferredProvider != LlmProvider.GEMINI && healthTracker.isAvailable(LlmProvider.GEMINI)) {
-            try {
-                Log.i(TAG, "Falling back to GEMINI for prompt resilience")
-                return executeWithProvider(LlmProvider.GEMINI, prompt)
-            } catch (e: Exception) {
-                Log.w(TAG, "Fallback GEMINI failed: ${e.message}")
-                healthTracker.reportError(LlmProvider.GEMINI.name)
+        if (preferredProvider != LlmProvider.GEMINI) {
+            val geminiClient = clients[LlmProvider.GEMINI]
+            if (geminiClient != null && healthTracker.isAvailable(LlmProvider.GEMINI)) {
+                try {
+                    Log.i(TAG, "Falling back to GEMINI for prompt resilience")
+                    return LlmResponse(geminiClient.chat(prompt), com.najmi.corvus.domain.model.TokenUsage.EMPTY)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Fallback GEMINI failed: ${e.message}")
+                    healthTracker.reportError(LlmProvider.GEMINI.name)
+                }
+            } else {
+                Log.w(TAG, "Fallback provider GEMINI is unhealthy or missing, skipping to next fallback")
             }
         }
 
         // 3. Iterate through all other healthy providers as last resort
-        val fallbackChain = LlmProvider.values()
+        val fallbacks = LlmProvider.values()
             .filter { it != preferredProvider && it != LlmProvider.GEMINI }
-            .filter { healthTracker.isAvailable(it) }
 
-        for (provider in fallbackChain) {
-            try {
-                Log.i(TAG, "Trying last-resort fallback: ${provider.name}")
-                return executeWithProvider(provider, prompt)
-            } catch (e: Exception) {
-                Log.w(TAG, "Last-resort fallback ${provider.name} failed: ${e.message}")
-                healthTracker.reportError(provider.name)
+        for (provider in fallbacks) {
+            val client = clients[provider]
+            if (client != null && healthTracker.isAvailable(provider)) {
+                try {
+                    Log.i(TAG, "Trying last-resort fallback: ${provider.name}")
+                    return LlmResponse(client.chat(prompt), com.najmi.corvus.domain.model.TokenUsage.EMPTY)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Last-resort fallback ${provider.name} failed: ${e.message}")
+                    healthTracker.reportError(provider.name)
+                }
+            } else {
+                Log.w(TAG, "Last-resort fallback provider ${provider.name} is unhealthy or missing, skipping")
             }
         }
 
         throw Exception("All LLM providers failed or are unhealthy. Pipeline stalled.")
-    }
-
-    private suspend fun executeWithProvider(provider: LlmProvider, prompt: String): String {
-        val client = clients[provider] ?: throw Exception("No client implementation found for ${provider.name}")
-        return client.chat(prompt)
     }
 }

@@ -4,24 +4,28 @@ import android.util.Log
 import com.najmi.corvus.data.local.UserPreferences
 import com.najmi.corvus.domain.router.LlmProviderRouter
 import com.najmi.corvus.domain.router.LlmProviderHealthTracker
-import com.najmi.corvus.data.remote.llm.SourceContextBuilder
+import com.najmi.corvus.data.remote.SourceContextBuilder
+import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import javax.inject.Inject
+import com.najmi.corvus.domain.util.TokenCollector
 
 data class ActorCriticResult(
     val generalResult: CorvusCheckResult.GeneralResult,
     val routingRationale: String
 )
 
+
 class ActorCriticPipeline @Inject constructor(
     private val router: LlmProviderRouter,
     private val contextBuilder: SourceContextBuilder,
     private val providerSelector: ActorCriticProviderSelector,
     private val json: Json,
-    private val healthTracker: LlmProviderHealthTracker
+    private val healthTracker: LlmProviderHealthTracker,
+    private val tokenCollector: TokenCollector
 ) {
     companion object {
         private const val TAG = "ActorCriticPipeline"
@@ -31,7 +35,6 @@ class ActorCriticPipeline @Inject constructor(
         claim: String,
         classified: ClassifiedClaim,
         sources: List<Source>,
-        prefs: UserPreferences,
         onStepChange: suspend (PipelineStep) -> Unit = {}
     ): ActorCriticResult {
         val limitedSources = sources.take(10)
@@ -45,8 +48,13 @@ class ActorCriticPipeline @Inject constructor(
 
         onStepChange(PipelineStep.ANALYZING)
         val actorPrompt = buildActorPrompt(claim, classified, actorContext)
-        val actorRaw = router.execute(actorPrompt, assignment.actor)
-        val actorDraft = parseActorDraft(actorRaw)
+        val actorResponse = router.execute(actorPrompt, assignment.actor)
+        tokenCollector.collect(actorResponse.usage.copy(
+            step = TokenStep.ACTOR_PASS,
+            provider = assignment.actor.name,
+            model = "Routed"
+        ))
+        val actorDraft = parseActorDraft(actorResponse.text)
 
         Log.d(TAG, "Critic pass starting: ${assignment.critic}")
 
@@ -65,7 +73,12 @@ class ActorCriticPipeline @Inject constructor(
         
         val criticPrompt = buildCriticPrompt(claim, condensedCriticContext, actorDraft)
         
-        val criticRaw = router.execute(criticPrompt, assignment.critic)
+        val criticResponse = router.execute(criticPrompt, assignment.critic)
+        tokenCollector.collect(criticResponse.usage.copy(
+            step = TokenStep.CRITIC_PASS,
+            provider = assignment.critic.name,
+            model = "Routed"
+        ))
         
         // The router handles fallback, but we want to know which one was actually used if possible.
         // For simplicity in this refactor, we'll assume the router worked.
@@ -73,7 +86,7 @@ class ActorCriticPipeline @Inject constructor(
         // For now, we'll use the preferred one or fallback to GEMINI in metadata if it's unhealthy.
         val finalCriticProvider = if (healthTracker.isHealthy(assignment.critic.name)) assignment.critic else LlmProvider.GEMINI
         
-        val finalResult = parseCriticOutput(criticRaw, limitedSources)
+        val finalResult = parseCriticOutput(criticResponse.text, limitedSources)
 
         return ActorCriticResult(
             generalResult = finalResult.copy(
@@ -159,7 +172,6 @@ class ActorCriticPipeline @Inject constructor(
         claim: String,
         classified: ClassifiedClaim,
         sources: List<Source>,
-        prefs: UserPreferences,
         temporalContext: String,
         onStepChange: suspend (PipelineStep) -> Unit = {}
     ): ActorCriticResult {
@@ -173,8 +185,13 @@ class ActorCriticPipeline @Inject constructor(
 
         onStepChange(PipelineStep.ANALYZING)
         val actorPrompt = buildActorPromptWithTemporal(claim, classified, actorContext, temporalContext)
-        val actorRaw = router.execute(actorPrompt, assignment.actor)
-        val actorDraft = parseActorDraft(actorRaw)
+        val actorResponse = router.execute(actorPrompt, assignment.actor)
+        tokenCollector.collect(actorResponse.usage.copy(
+            step = TokenStep.ACTOR_PASS,
+            provider = assignment.actor.name,
+            model = "Routed"
+        ))
+        val actorDraft = parseActorDraft(actorResponse.text)
 
         Log.d(TAG, "Critic pass starting: ${assignment.critic}")
 
@@ -193,10 +210,15 @@ class ActorCriticPipeline @Inject constructor(
         
         val criticPrompt = buildCriticPromptWithTemporal(claim, condensedCriticContext, actorDraft, temporalContext)
         
-        val criticRaw = router.execute(criticPrompt, assignment.critic)
+        val criticResponse = router.execute(criticPrompt, assignment.critic)
+        tokenCollector.collect(criticResponse.usage.copy(
+            step = TokenStep.CRITIC_PASS,
+            provider = assignment.critic.name,
+            model = "Routed"
+        ))
         val finalCriticProvider = if (healthTracker.isHealthy(assignment.critic.name)) assignment.critic else LlmProvider.GEMINI
         
-        val finalResult = parseCriticOutput(criticRaw, limitedSources)
+        val finalResult = parseCriticOutput(criticResponse.text, limitedSources)
 
         return ActorCriticResult(
             generalResult = finalResult.copy(
