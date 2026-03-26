@@ -1,7 +1,9 @@
 package com.najmi.corvus.domain.router
 
 import com.najmi.corvus.data.remote.LlmClient
+import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.model.LlmProvider
+import com.najmi.corvus.domain.model.TokenUsage
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -33,7 +35,7 @@ class LlmProviderRouterTest {
     fun executeUsesPreferredProviderWhenHealthy() {
         runBlocking {
             whenever(healthTracker.isAvailable(LlmProvider.GROQ)).thenReturn(true)
-            whenever(groqClient.chat(any())).thenReturn("Groq result")
+            whenever(groqClient.chat(any())).thenReturn(LlmResponse("Groq result", TokenUsage.EMPTY))
 
             val result = router.execute("test prompt", LlmProvider.GROQ)
 
@@ -53,7 +55,7 @@ class LlmProviderRouterTest {
             doAnswer { throw RuntimeException("429 Too Many Requests") }
                 .whenever(groqClient).chat(any())
                 
-            whenever(geminiClient.chat(any())).thenReturn("Gemini fallback result")
+            whenever(geminiClient.chat(any())).thenReturn(LlmResponse("Gemini fallback result", TokenUsage.EMPTY))
 
             val result = router.execute("test prompt", LlmProvider.GROQ)
 
@@ -68,7 +70,7 @@ class LlmProviderRouterTest {
         runBlocking {
             whenever(healthTracker.isAvailable(LlmProvider.GROQ)).thenReturn(false)
             whenever(healthTracker.isAvailable(LlmProvider.GEMINI)).thenReturn(true)
-            whenever(geminiClient.chat(any())).thenReturn("Gemini result")
+            whenever(geminiClient.chat(any())).thenReturn(LlmResponse("Gemini result", TokenUsage.EMPTY))
 
             val result = router.execute("test prompt", LlmProvider.GROQ)
 
