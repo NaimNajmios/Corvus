@@ -100,6 +100,8 @@ fun SourceCard(
 
             source.publishedDate?.let { date ->
                 DateBadge(date)
+            } ?: source.publicationDate?.let { pubDate ->
+                PublicationDateBadge(pubDate)
             }
 
             source.outletRating?.let { rating ->
@@ -265,6 +267,46 @@ private fun SourceRatingBreakdown(rating: com.najmi.corvus.domain.model.OutletRa
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
             color = CorvusTextTertiary
         )
+    }
+}
+
+@Composable
+private fun PublicationDateBadge(publicationDate: PublicationDate) {
+    val dateColor = when (publicationDate.confidence) {
+        DateConfidence.EXACT -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+        DateConfidence.MONTH_YEAR -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+        DateConfidence.YEAR_ONLY -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        DateConfidence.ESTIMATED -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        DateConfidence.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CorvusShapes.extraSmall)
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.History,
+            contentDescription = null,
+            modifier = Modifier.size(10.dp),
+            tint = dateColor
+        )
+        Text(
+            text = publicationDate.formattedDisplay,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            color = dateColor,
+            fontWeight = FontWeight.Bold
+        )
+        if (publicationDate.confidence == DateConfidence.ESTIMATED || publicationDate.confidence == DateConfidence.YEAR_ONLY) {
+            Text(
+                text = "(est)",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                fontStyle = FontStyle.Italic
+            )
+        }
     }
 }
 

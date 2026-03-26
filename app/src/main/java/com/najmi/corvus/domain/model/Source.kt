@@ -9,6 +9,7 @@ data class Source(
     val publisher: String? = null,
     val snippet: String? = null,
     val publishedDate: String? = null,
+    val publicationDate: PublicationDate? = null,
     val isLocalSource: Boolean = false,
     val sourceType: SourceType = SourceType.WEB_SEARCH,
     val credibilityTier: CredibilityTier = CredibilityTier.GENERAL,
@@ -16,6 +17,23 @@ data class Source(
     val rawContent: String? = null,
     val id: String = java.util.UUID.randomUUID().toString()
 )
+
+@Serializable
+data class PublicationDate(
+    val raw: String,
+    val epochDay: Long? = null,
+    val confidence: DateConfidence = DateConfidence.UNKNOWN,
+    val formattedDisplay: String
+)
+
+@Serializable
+enum class DateConfidence {
+    EXACT,
+    MONTH_YEAR,
+    YEAR_ONLY,
+    ESTIMATED,
+    UNKNOWN
+}
 
 @Serializable
 enum class SourceType {

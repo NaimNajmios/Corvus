@@ -6,16 +6,20 @@ import com.najmi.corvus.data.remote.WikipediaClient
 import com.najmi.corvus.data.repository.GoogleFactCheckRepository
 import com.najmi.corvus.data.repository.TavilyRepository
 import com.najmi.corvus.data.repository.OutletRatingRepository
-import com.najmi.corvus.domain.model.ClaimLanguage
 import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.ClassifiedClaim
 import com.najmi.corvus.domain.model.CorvusCheckResult
+import com.najmi.corvus.domain.model.ContextType
+import com.najmi.corvus.domain.model.MissingContextInfo
+import com.najmi.corvus.domain.model.RetrievalMetadata
 import com.najmi.corvus.domain.model.Source
 import com.najmi.corvus.domain.model.SourceType
+import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.data.local.UserPreferencesRepository
 import com.najmi.corvus.domain.model.MethodologyMetadata
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.domain.model.PipelineStepResult
+import com.najmi.corvus.domain.remote.llm.TemporalPromptInjector
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
@@ -24,12 +28,16 @@ class GeneralFactCheckPipeline @Inject constructor(
     private val wikidataClient: WikidataSparqlClient,
     private val googleFactCheckRepository: GoogleFactCheckRepository,
     private val tavilyRepository: TavilyRepository,
+    private val queryRewriter: QueryRewriterUseCase,
+    private val multiQueryRetriever: MultiQueryRetriever,
     private val actorCriticPipeline: ActorCriticPipeline,
     private val userPrefsRepo: UserPreferencesRepository,
     private val ratingRepo: OutletRatingRepository,
     private val plausibilityEnricher: PlausibilityEnricherUseCase,
     private val ragVerifier: RagVerifierUseCase,
-    private val algorithmicVerifier: AlgorithmicGroundingVerifier
+    private val algorithmicVerifier: AlgorithmicGroundingVerifier,
+    private val temporalAnalyser: TemporalClaimAnalyser,
+    private val temporalMismatchDetector: SourceTemporalMismatchDetector
 ) {
     companion object {
         private const val TAG = "GeneralPipeline"
@@ -43,6 +51,15 @@ class GeneralFactCheckPipeline @Inject constructor(
         
         val sources = mutableListOf<Source>()
         val steps = mutableListOf<PipelineStepResult>()
+        
+        // Phase 1: Query Rewriting (NEW)
+        val rewrittenQuery = queryRewriter.rewrite(classified)
+        steps.add(PipelineStepResult(PipelineStep.RETRIEVING_SOURCES, "Query rewritten to ${rewrittenQuery.searchQueries.size} search queries"))
+        
+        // Phase 2: Multi-Query Retrieval (NEW)
+        val sourceSet = multiQueryRetriever.retrieve(rewrittenQuery, classified)
+        sources.addAll(sourceSet.sources)
+        steps.add(PipelineStepResult(PipelineStep.RETRIEVING_SOURCES, "Retrieved ${sourceSet.totalRawResults} raw sources, ${sourceSet.deduplicatedCount} after dedup"))
         
         // Layer 1: Knowledge Bases (Wikipedia/Wikidata)
         var kbFound = false
@@ -90,19 +107,6 @@ class GeneralFactCheckPipeline @Inject constructor(
             Log.e(TAG, "GFC failed: ${e.message}")
         }
 
-        // Layer 3: Web Search Fallback
-        if (sources.size < 2) {
-            try {
-                steps.add(PipelineStepResult(PipelineStep.RETRIEVING_SOURCES, "Performing Tavily web search"))
-                val webResults = tavilyRepository.search(classified.raw, maxResults = 3)
-                sources.addAll(webResults)
-            } catch (e: Exception) {
-                Log.e(TAG, "Tavily failed: ${e.message}")
-            }
-        } else {
-            steps.add(PipelineStepResult(PipelineStep.RETRIEVING_SOURCES, "Skipped search (sufficient KB evidence)"))
-        }
-
         // Enrich with Bias/Credibility Ratings
         val enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url)) }
 
@@ -114,25 +118,51 @@ class GeneralFactCheckPipeline @Inject constructor(
             (it.outletRating?.credibility ?: 50) >= 40 
         }.sortedByDescending { it.outletRating?.credibility ?: 50 }
 
-        // LLM Synthesis
+        // Temporal Analysis (NEW)
+        val temporalProfile = temporalAnalyser.analyze(classified.raw)
+        val temporalMismatch = temporalMismatchDetector.detect(filteredSources, temporalProfile)
+        
+        if (temporalMismatch.hasSignificantMismatch) {
+            steps.add(PipelineStepResult(PipelineStep.ANALYZING, "TEMPORAL MISMATCH: ${temporalMismatch.mismatchDetails.size} old sources detected"))
+        }
+
+        // LLM Synthesis with Temporal Context
         onStepChange(PipelineStep.ANALYZING)
         val prefs = userPrefsRepo.preferences.first()
-        val initialResult = actorCriticPipeline.analyze(classified.raw, classified, filteredSources, prefs, onStepChange)
+        
+        val temporalContext = TemporalPromptInjector.buildTemporalContext(
+            profile = temporalProfile,
+            mismatchReport = temporalMismatch,
+            sources = filteredSources
+        )
+        
+        val initialResult = actorCriticPipeline.analyzeWithTemporalContext(
+            claim = rewrittenQuery.coreQuestion,
+            classified = classified,
+            sources = filteredSources,
+            prefs = prefs,
+            temporalContext = temporalContext,
+            onStepChange = onStepChange
+        )
+        
         val providerUsed = initialResult.criticProvider?.name ?: "Unknown"
         steps.add(PipelineStepResult(PipelineStep.ANALYZING, "Synthesized by $providerUsed"))
 
+        // Apply Temporal Override if needed
+        val afterTemporalOverride = applyTemporalOverride(initialResult, temporalMismatch, temporalProfile)
+        
         // Plausibility Enrichment
-        val finalResult = if (initialResult.verdict == com.najmi.corvus.domain.model.Verdict.UNVERIFIABLE) {
+        val finalResult = if (afterTemporalOverride.verdict == Verdict.UNVERIFIABLE) {
             steps.add(PipelineStepResult(PipelineStep.DONE, "Enriched with plausibility analysis"))
             val enrichedPlausibility = plausibilityEnricher.enrich(
                 classified.raw,
                 filteredSources,
-                initialResult.plausibility
+                afterTemporalOverride.plausibility
             )
-            initialResult.copy(plausibility = enrichedPlausibility)
+            afterTemporalOverride.copy(plausibility = enrichedPlausibility)
         } else {
             steps.add(PipelineStepResult(PipelineStep.DONE, "Analysis complete"))
-            initialResult
+            afterTemporalOverride
         }
 
         val avgCredibility = if (enrichedSources.isNotEmpty()) {
@@ -148,14 +178,14 @@ class GeneralFactCheckPipeline @Inject constructor(
             checkedAt = System.currentTimeMillis()
         )
 
-        // ── Algorithmic Grounding Verification ───────────────────────────
+        // Algorithmic Grounding Verification
         onStepChange(PipelineStep.GROUNDING_CHECK)
         val algoResult = algorithmicVerifier.verify(finalResult.keyFacts, enrichedSources)
         val penaltyLog = algoResult.fabricatedCitations.map {
             "Algorithmic Reject: Removed fabricated attribution to Source [${it.claimedSourceIndex}] for quote: '${it.originalStatement}'"
         }
 
-        // ── RAG Verification pass ────────────────────────────────────────
+        // RAG Verification pass
         val verifiedFacts = ragVerifier.verifyFacts(algoResult.verifiedFacts, enrichedSources)
         val explanationVerification = ragVerifier.verifyExplanation(
             finalResult.explanation,
@@ -169,9 +199,8 @@ class GeneralFactCheckPipeline @Inject constructor(
             else                                      -> finalResult.confidence
         }
         
-        // Apply Algorithmic fabrication penalty (subtractive)
+        // Apply Algorithmic fabrication penalty
         adjustedConfidence = maxOf(0.05f, adjustedConfidence - algoResult.totalConfidencePenalty)
-        // ────────────────────────────────────────────────────────────────
 
         return finalResult.copy(
             claim = classified.raw, 
@@ -182,7 +211,42 @@ class GeneralFactCheckPipeline @Inject constructor(
             keyFacts = verifiedFacts,
             confidence = adjustedConfidence,
             explanationVerification = explanationVerification,
-            correctionsLog = (finalResult.correctionsLog ?: emptyList()) + penaltyLog
+            correctionsLog = (finalResult.correctionsLog ?: emptyList()) + penaltyLog,
+            retrievalMetadata = RetrievalMetadata(
+                originalClaim = classified.raw,
+                rewrittenQueries = rewrittenQuery.searchQueries,
+                coreQuestion = rewrittenQuery.coreQuestion,
+                totalRawSources = sourceSet.totalRawResults,
+                dedupedSources = sourceSet.deduplicatedCount,
+                finalSources = sourceSet.sources.size
+            )
+        )
+    }
+
+    private fun applyTemporalOverride(
+        llmResult: CorvusCheckResult.GeneralResult,
+        mismatchReport: com.najmi.corvus.domain.model.TemporalMismatchReport,
+        profile: com.najmi.corvus.domain.model.TemporalClaimProfile
+    ): CorvusCheckResult.GeneralResult {
+        val shouldOverride = mismatchReport.hasSignificantMismatch &&
+            mismatchReport.suggestedVerdict == Verdict.MISLEADING &&
+            profile.temporalUrgency == com.najmi.corvus.domain.model.TemporalUrgency.HIGH &&
+            llmResult.verdict != Verdict.MISLEADING &&
+            llmResult.verdict != Verdict.UNVERIFIABLE
+
+        if (!shouldOverride) return llmResult
+
+        val oldestSourceAge = mismatchReport.oldestSourceAge ?: 0
+        val overrideNote = "TEMPORAL OVERRIDE: Sources are $oldestSourceAge days old. Claim implies current event. Verdict adjusted from ${llmResult.verdict.name} to MISLEADING."
+
+        return llmResult.copy(
+            verdict = Verdict.MISLEADING,
+            confidence = (llmResult.confidence * 0.75f).coerceAtLeast(0.3f),
+            missingContext = llmResult.missingContext ?: MissingContextInfo(
+                content = "The sources describing this event are ${oldestSourceAge / 30} months old. The claim implies this is a current event, but the evidence dates to an earlier period.",
+                contextType = ContextType.TEMPORAL
+            ),
+            correctionsLog = (llmResult.correctionsLog ?: emptyList()) + listOf(overrideNote)
         )
     }
 }

@@ -56,7 +56,8 @@ sealed class CorvusCheckResult {
         val actorProvider: LlmProvider? = null,
         val criticProvider: LlmProvider? = null,
         val correctionsLog: List<String>? = null,
-        val reasoningScratchpad: String? = null
+        val reasoningScratchpad: String? = null,
+        val retrievalMetadata: RetrievalMetadata? = null
     ) : CorvusCheckResult()
 
     @Serializable

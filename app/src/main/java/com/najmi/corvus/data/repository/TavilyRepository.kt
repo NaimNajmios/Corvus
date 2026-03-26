@@ -3,6 +3,7 @@ package com.najmi.corvus.data.repository
 import android.util.Log
 import com.najmi.corvus.data.remote.TavilyClient
 import com.najmi.corvus.domain.model.Source
+import com.najmi.corvus.domain.util.PublicationDateExtractor
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,12 +20,16 @@ class TavilyRepository @Inject constructor(
             Log.d(TAG, "Searching Tavily for: $query")
             val response = client.search(query, maxResults)
             val sources = response.results.map { result ->
+                val extractedDate = PublicationDateExtractor.extract(result.publishedDate)
+                    ?: PublicationDateExtractor.extractFromContent(result.rawContent ?: result.content ?: "")
+
                 Source(
                     title = result.title,
                     url = result.url,
                     publisher = result.publisher,
                     snippet = result.content?.take(200),
                     publishedDate = result.publishedDate,
+                    publicationDate = extractedDate,
                     rawContent = result.rawContent
                 )
             }

@@ -201,6 +201,128 @@ class ActorCriticPipeline @Inject constructor(
         )
     }
 
+    suspend fun analyzeWithTemporalContext(
+        claim: String,
+        classified: ClassifiedClaim,
+        sources: List<Source>,
+        prefs: UserPreferences,
+        temporalContext: String,
+        onStepChange: suspend (PipelineStep) -> Unit = {}
+    ): CorvusCheckResult.GeneralResult {
+        val limitedSources = sources.take(10)
+        
+        val assignment = providerSelector.select(classified)
+        val actorContext = contextBuilder.build(limitedSources, assignment.actor)
+        val criticContext = contextBuilder.build(limitedSources, assignment.critic)
+
+        Log.d(TAG, "Actor pass starting: ${assignment.actor}")
+
+        onStepChange(PipelineStep.ANALYZING)
+        val actorPrompt = buildActorPromptWithTemporal(claim, classified, actorContext, temporalContext)
+        val actorRaw = completePrompt(assignment.actor, actorPrompt)
+        val actorDraft = parseActorDraft(actorRaw)
+
+        Log.d(TAG, "Critic pass starting: ${assignment.critic}")
+
+        onStepChange(PipelineStep.VERIFYING)
+        
+        val actorUsedIndices = actorDraft.sourcesUsed.toSet()
+        val criticSources = limitedSources.filterIndexed { index, _ -> 
+            actorUsedIndices.contains(index) 
+        }.toMutableList()
+        
+        val unusedSources = limitedSources.filterIndexed { index, _ -> !actorUsedIndices.contains(index) }
+            .take(2)
+        criticSources.addAll(unusedSources)
+        
+        val condensedCriticContext = contextBuilder.build(criticSources, assignment.critic)
+        
+        val criticPrompt = buildCriticPromptWithTemporal(claim, condensedCriticContext, actorDraft, temporalContext)
+        
+        var criticRaw: String
+        var finalCriticProvider = assignment.critic
+        
+        try {
+            criticRaw = completePrompt(assignment.critic, criticPrompt)
+        } catch (e: CohereQuotaExceededException) {
+            Log.w(TAG, "Cohere quota exceeded: ${e.message}. Falling back to standard Critic.")
+            criticRaw = completePrompt(LlmProvider.GEMINI, criticPrompt)
+            finalCriticProvider = LlmProvider.GEMINI
+        } catch (e: Exception) {
+            Log.e(TAG, "Primary Critic (${assignment.critic}) failed: ${e.message}")
+            
+            if (isRetryableError(e) && assignment.critic != LlmProvider.GEMINI && assignment.actor != LlmProvider.GEMINI) {
+                Log.d(TAG, "Attempting fallback Critic: GEMINI")
+                try {
+                    criticRaw = completePrompt(LlmProvider.GEMINI, criticPrompt)
+                    finalCriticProvider = LlmProvider.GEMINI
+                } catch (fallbackEx: Exception) {
+                    Log.e(TAG, "Fallback Critic (GEMINI) also failed. Reraising original error.")
+                    throw e
+                }
+            } else {
+                throw e
+            }
+        }
+        
+        val finalResult = parseCriticOutput(criticRaw, limitedSources)
+
+        return finalResult.copy(
+            actorProvider = assignment.actor,
+            criticProvider = finalCriticProvider,
+            correctionsLog = actorDraft.unsupportedAssumptions + (finalResult.correctionsLog ?: emptyList())
+        )
+    }
+
+    private fun buildActorPromptWithTemporal(
+        claim: String,
+        classified: ClassifiedClaim,
+        sourceContext: String,
+        temporalContext: String
+    ): String = """
+You are a fact-checking analyst. Your job is to draft a preliminary fact-check
+of the following claim based solely on the provided sources.
+
+CLAIM: "$claim"
+CLAIM TYPE: ${classified.type.name}
+
+$temporalContext
+
+SOURCES:
+$sourceContext
+
+YOUR TASK:
+1. Read all sources carefully.
+2. Identify which sources (if any) directly support or contradict the claim.
+3. Draft a preliminary verdict and explanation.
+
+IMPORTANT RULES:
+- Base your analysis EXCLUSIVELY on the provided sources.
+- Do not use internal training knowledge to fill gaps.
+- If sources are insufficient, draft verdict as UNVERIFIABLE.
+- For each key fact, note the specific source index it comes from.
+- This is a DRAFT — it will be reviewed and corrected.
+- PAY ATTENTION TO TEMPORAL CONTEXT: Check if sources are recent enough to support the claim's implied timeline.
+
+OUTPUT FORMAT — Respond ONLY with valid JSON in EXACT order below:
+{
+  "evidentiary_analysis": "Step-by-step walkthrough of what each source says and how it relates to the claim",
+  "draft_key_facts": [
+    {
+      "statement": "...",
+      "source_index": 0,
+      "is_direct_quote": false,
+      "source_text_evidence": "The exact text from the source that supports this fact"
+    }
+  ],
+  "unsupported_assumptions": ["List any claims in the explanation not directly backed by sources"],
+  "sources_used": [0, 1],
+  "draft_confidence": 0.0,
+  "draft_verdict": "TRUE|FALSE|MISLEADING|PARTIALLY_TRUE|UNVERIFIABLE",
+  "draft_explanation": "Evidentiary explanation attributed to sources"
+}
+""".trimIndent()
+
     private fun buildActorPrompt(
         claim: String,
         classified: ClassifiedClaim,
@@ -283,6 +405,75 @@ YOUR REVIEW TASKS — for each item, verify then correct:
 3. CONFIDENCE AUDIT: Is the confidence score appropriate for the evidence quality?
 4. EXPLANATION AUDIT: Rewrite any sentence that asserts something not explicitly
    stated in the provided sources.
+5. TEMPORAL AUDIT: Check if sources are recent enough for the claim's implied timeline.
+
+OUTPUT FORMAT — Respond ONLY with valid JSON in EXACT order below:
+{
+  "evidentiary_analysis": "Your step-by-step audit of the analyst's draft",
+  "key_facts": [
+    {
+      "statement": "...",
+      "source_index": 0,
+      "is_direct_quote": false
+    }
+  ],
+  "harm_assessment": {
+    "level": "NONE|LOW|MODERATE|HIGH",
+    "category": "NONE|HEALTH|SAFETY|RACIAL_ETHNIC|RELIGIOUS|POLITICAL|FINANCIAL",
+    "reason": ""
+  },
+  "corrections_made": [
+    "List of specific corrections made to the analyst's draft"
+  ],
+  "sources_used": [0],
+  "confidence": 0.0,
+  "verdict": "TRUE|FALSE|MISLEADING|PARTIALLY_TRUE|UNVERIFIABLE",
+  "explanation": "Corrected, evidence-attributed explanation"
+}
+""".trimIndent()
+
+    private fun buildCriticPromptWithTemporal(
+        claim: String,
+        sourceContext: String,
+        actorDraft: ActorDraft,
+        temporalContext: String
+    ): String = """
+You are a senior fact-checking editor. A junior analyst has produced a preliminary
+fact-check. Your job is to rigorously verify it against the source evidence and
+correct any errors.
+
+ORIGINAL CLAIM: "$claim"
+
+$temporalContext
+
+SOURCES (same sources the analyst had access to):
+$sourceContext
+
+ANALYST'S DRAFT:
+Verdict    : ${actorDraft.draftVerdict}
+Confidence : ${actorDraft.draftConfidence}
+Explanation: ${actorDraft.draftExplanation}
+
+Key facts drafted:
+${actorDraft.draftKeyFacts.mapIndexed { i, f ->
+    "  [$i] \"${f.statement}\" — attributed to Source [${f.sourceIndex}]\n" +
+    "      Analyst's evidence: ${f.sourceTextEvidence ?: "None provided"}"
+}.joinToString("\n")}
+
+Unsupported assumptions flagged by analyst:
+${actorDraft.unsupportedAssumptions.joinToString("\n") { "  - $it" }}
+
+YOUR REVIEW TASKS — for each item, verify then correct:
+1. CITATION AUDIT: For each key fact, check whether the quoted
+   source_text_evidence actually appears in the assigned source.
+   If it does not, either find the correct source index or strip the citation.
+2. VERDICT AUDIT: Does the evidence actually support the drafted verdict?
+   If the analyst has been sycophantic, correct the verdict.
+3. CONFIDENCE AUDIT: Is the confidence score appropriate for the evidence quality?
+4. EXPLANATION AUDIT: Rewrite any sentence that asserts something not explicitly
+   stated in the provided sources.
+5. TEMPORAL AUDIT: Check if sources are recent enough for the claim's implied timeline.
+   If sources are old but claim implies a current event, change verdict to MISLEADING.
 
 OUTPUT FORMAT — Respond ONLY with valid JSON in EXACT order below:
 {

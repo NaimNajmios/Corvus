@@ -139,6 +139,67 @@ fun MethodologyCard(result: CorvusCheckResult.GeneralResult?) {
                     // Summary stats
                     MethodologyStatRow("Claim type", metadata.claimTypeDetected.displayLabel())
                     
+                    // Retrieval Metadata (Query Rewriting)
+                    result.retrievalMetadata?.let { retrieval ->
+                        if (retrieval.rewrittenQueries.isNotEmpty()) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            Spacer(Modifier.height(8.dp))
+                            
+                            Text(
+                                "RETRIEVAL",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(4.dp))
+
+                            if (retrieval.coreQuestion != retrieval.originalClaim) {
+                                Column {
+                                    Text(
+                                        "Core question:",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        retrieval.coreQuestion,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        fontStyle = FontStyle.Italic
+                                    )
+                                }
+                                Spacer(Modifier.height(4.dp))
+                            }
+
+                            Text(
+                                "Search queries (${retrieval.rewrittenQueries.size}):",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            retrieval.rewrittenQueries.forEach { query ->
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.padding(top = 2.dp)
+                                ) {
+                                    Text(
+                                        "›",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        "\"$query\"",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onBackground
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(6.dp))
+                            MethodologyStatRow(
+                                "Sources",
+                                "${retrieval.totalRawSources} raw → ${retrieval.dedupedSources} unique → ${retrieval.finalSources} used"
+                            )
+                        }
+                    }
+
                     if (metadata.sourcesRetrieved > 0) {
                         MethodologyStatRow("Sources retrieved", "${metadata.sourcesRetrieved}")
                     }

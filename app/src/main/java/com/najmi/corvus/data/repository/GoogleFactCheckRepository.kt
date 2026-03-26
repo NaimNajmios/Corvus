@@ -5,6 +5,7 @@ import com.najmi.corvus.data.remote.GoogleFactCheckClient
 import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.Source
 import com.najmi.corvus.domain.model.Verdict
+import com.najmi.corvus.domain.util.PublicationDateExtractor
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,6 +22,7 @@ class GoogleFactCheckRepository @Inject constructor(
                 ?: return null
 
             parseVerdict(firstReview)?.let { verdict ->
+                val extractedDate = PublicationDateExtractor.extract(firstReview.reviewDate)
                 CorvusCheckResult.GeneralResult(
                     verdict = verdict,
                     confidence = 0.85f,
@@ -31,7 +33,8 @@ class GoogleFactCheckRepository @Inject constructor(
                             title = firstReview.title,
                             url = firstReview.url,
                             publisher = firstReview.publisher.name,
-                            publishedDate = firstReview.reviewDate
+                            publishedDate = firstReview.reviewDate,
+                            publicationDate = extractedDate
                         )
                     )
                 )
