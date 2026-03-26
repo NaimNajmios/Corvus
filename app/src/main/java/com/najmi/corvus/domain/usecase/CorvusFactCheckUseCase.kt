@@ -64,7 +64,24 @@ class CorvusFactCheckUseCase @Inject constructor(
                     keyFacts = knownCheck.keyFacts,
                     sources = knownCheck.sources,
                     isFromKnownFactCheck = true,
-                    claimType = classified.type
+                    claimType = classified.type,
+                    methodology = com.najmi.corvus.domain.model.MethodologyMetadata(
+                        pipelineStepsCompleted = listOf(
+                            com.najmi.corvus.domain.model.PipelineStepResult(
+                                com.najmi.corvus.domain.model.PipelineStep.CHECKING_KNOWN_FACTS, 
+                                "Found match in Google Fact Check Explorer database"
+                            ),
+                            com.najmi.corvus.domain.model.PipelineStepResult(
+                                com.najmi.corvus.domain.model.PipelineStep.DONE, 
+                                "Verification complete (cached match)"
+                            )
+                        ),
+                        claimTypeDetected = classified.type,
+                        sourcesRetrieved = knownCheck.sources.size,
+                        avgSourceCredibility = 100,
+                        llmProviderUsed = "Google Fact Check Database",
+                        checkedAt = System.currentTimeMillis()
+                    )
                 )
             }
         } catch (e: Exception) {
@@ -108,7 +125,20 @@ class CorvusFactCheckUseCase @Inject constructor(
                 confidence = 0.3f,
                 explanation = "Unable to find reliable sources. Check your Tavily API key and internet connection.",
                 keyFacts = emptyList(),
-                sources = emptyList()
+                sources = emptyList(),
+                methodology = com.najmi.corvus.domain.model.MethodologyMetadata(
+                    pipelineStepsCompleted = listOf(
+                        com.najmi.corvus.domain.model.PipelineStepResult(
+                            com.najmi.corvus.domain.model.PipelineStep.RETRIEVING_SOURCES, 
+                            "No reliable evidence found in index"
+                        )
+                    ),
+                    claimTypeDetected = classified.type,
+                    sourcesRetrieved = 0,
+                    avgSourceCredibility = 0,
+                    llmProviderUsed = "Search Engine Indexer",
+                    checkedAt = System.currentTimeMillis()
+                )
             )
         }
 

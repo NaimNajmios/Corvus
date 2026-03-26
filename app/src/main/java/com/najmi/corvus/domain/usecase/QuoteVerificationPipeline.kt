@@ -32,10 +32,12 @@ class QuoteVerificationPipeline @Inject constructor(
         Log.d(TAG, "Starting quote verification for: ${classified.speaker}")
         
         val sources = mutableListOf<Source>()
+        val steps = mutableListOf<com.najmi.corvus.domain.model.PipelineStepResult>()
         var foundInWikiquote = false
         var wikiquoteText: String? = null
-
+        
         // Layer 1: Wikiquote
+        steps.add(com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.CHECKING_KNOWN_FACTS, "Searching Wikiquote for attribution"))
         classified.speaker?.let { speaker ->
             val summary = wikiquoteClient.getSummary(speaker)
             summary?.extract?.let { extract ->
@@ -48,6 +50,7 @@ class QuoteVerificationPipeline @Inject constructor(
         }
 
         // Layer 2: Google Fact Check (Sebenarnya lookup usually ends up here)
+        steps.add(com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.CHECKING_KNOWN_FACTS, "Checking Google Fact Check database"))
         try {
             val factCheck = googleFactCheckRepository.search(classified.raw)
             factCheck?.let { sources.addAll(it.sources) }
@@ -57,6 +60,7 @@ class QuoteVerificationPipeline @Inject constructor(
 
         // Layer 3: Hansard (Tavily proxy)
         if (classified.speaker != null) {
+            steps.add(com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.RETRIEVING_SOURCES, "Searching Parliamentary Hansard for ${classified.speaker}"))
             try {
                 val hansardResults = hansardClient.searchHansard(classified.speaker, classified.quotedText ?: classified.raw)
                 sources.addAll(hansardResults)
@@ -67,6 +71,7 @@ class QuoteVerificationPipeline @Inject constructor(
 
         // Layer 4: Targeted Web Search
         try {
+            steps.add(com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.RETRIEVING_SOURCES, "Performing targeted web verification search"))
             val query = "\"${classified.quotedText ?: classified.raw}\" ${classified.speaker ?: ""} verify"
             val webResults = tavilyRepository.search(query, maxResults = 5)
             sources.addAll(webResults)
@@ -75,14 +80,16 @@ class QuoteVerificationPipeline @Inject constructor(
         }
 
         // Final Layer: LLM Synthesis
-        return synthesizeResult(classified, sources, foundInWikiquote, wikiquoteText)
+        steps.add(com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.ANALYZING, "Synthesizing cross-source verification evidence"))
+        return synthesizeResult(classified, sources, foundInWikiquote, wikiquoteText, steps)
     }
 
     private suspend fun synthesizeResult(
         classified: ClassifiedClaim,
         sources: List<Source>,
         foundInWikiquote: Boolean,
-        wikiquoteText: String?
+        wikiquoteText: String?,
+        steps: List<com.najmi.corvus.domain.model.PipelineStepResult>
     ): CorvusCheckResult.QuoteResult {
         // Enrich with Bias/Credibility Ratings
         val enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url)) }
@@ -107,6 +114,15 @@ class QuoteVerificationPipeline @Inject constructor(
             generalResult.plausibility
         }
 
+        val methodology = com.najmi.corvus.domain.model.MethodologyMetadata(
+            pipelineStepsCompleted = steps + com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.DONE, "Quote verification complete"),
+            claimTypeDetected = com.najmi.corvus.domain.model.ClaimType.QUOTE,
+            sourcesRetrieved = enrichedSources.size,
+            avgSourceCredibility = if (enrichedSources.isNotEmpty()) enrichedSources.map { it.outletRating?.credibility ?: 50 }.average().toInt() else 0,
+            llmProviderUsed = provider.name,
+            checkedAt = System.currentTimeMillis()
+        )
+
         return CorvusCheckResult.QuoteResult(
             claim = classified.raw,
             quoteVerdict = mapToQuoteVerdict(generalResult.verdict),
@@ -123,7 +139,8 @@ class QuoteVerificationPipeline @Inject constructor(
             providerUsed = provider.name,
             harmAssessment = generalResult.harmAssessment,
             plausibility = finalPlausibility,
-            keyFacts = generalResult.keyFacts
+            keyFacts = generalResult.keyFacts,
+            methodology = methodology
         )
     }
 

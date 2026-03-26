@@ -33,7 +33,7 @@ import java.util.*
 import com.najmi.corvus.domain.model.CorvusCheckResult
 
 @Composable
-fun MethodologyCard(result: CorvusCheckResult.GeneralResult?) {
+fun MethodologyCard(result: CorvusCheckResult?) {
     if (result == null) return
     val metadata = result.methodology ?: return
     var expanded by remember { mutableStateOf(false) }
@@ -75,7 +75,8 @@ fun MethodologyCard(result: CorvusCheckResult.GeneralResult?) {
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    val fabrications = result.correctionsLog?.filter { it.startsWith("Algorithmic Reject") } ?: emptyList()
+                    val correctionsLog = (result as? CorvusCheckResult.GeneralResult)?.correctionsLog
+                    val fabrications = correctionsLog?.filter { it.startsWith("Algorithmic Reject") } ?: emptyList()
                     if (fabrications.isNotEmpty()) {
                         Card(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -140,7 +141,7 @@ fun MethodologyCard(result: CorvusCheckResult.GeneralResult?) {
                     MethodologyStatRow("Claim type", metadata.claimTypeDetected.displayLabel())
                     
                     // Retrieval Metadata (Query Rewriting)
-                    result.retrievalMetadata?.let { retrieval ->
+                    (result as? CorvusCheckResult.GeneralResult)?.retrievalMetadata?.let { retrieval ->
                         if (retrieval.rewrittenQueries.isNotEmpty()) {
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             Spacer(Modifier.height(8.dp))
@@ -241,7 +242,7 @@ fun MethodologyCard(result: CorvusCheckResult.GeneralResult?) {
                         lineHeight = 16.sp
                     )
 
-                    result.reasoningScratchpad?.let { scratchpad ->
+                    (result as? CorvusCheckResult.GeneralResult)?.reasoningScratchpad?.let { scratchpad ->
                         Spacer(Modifier.height(8.dp))
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         Spacer(Modifier.height(8.dp))
@@ -280,7 +281,7 @@ fun MethodologyCard(result: CorvusCheckResult.GeneralResult?) {
                         }
                     }
 
-                    result.correctionsLog?.takeIf { it.isNotEmpty() }?.let { corrections ->
+                    (result as? CorvusCheckResult.GeneralResult)?.correctionsLog?.takeIf { it.isNotEmpty() }?.let { corrections ->
                         Spacer(Modifier.height(8.dp))
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         Spacer(Modifier.height(8.dp))

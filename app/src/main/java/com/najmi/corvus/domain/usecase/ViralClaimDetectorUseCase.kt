@@ -84,7 +84,20 @@ class ViralClaimDetectorUseCase @Inject constructor(
             summary = hoax.summary,
             debunkUrls = hoax.debunkUrls.split(",").filter { it.isNotBlank() },
             confidence = similarity,
-            firstSeen = hoax.firstSeen
+            firstSeen = hoax.firstSeen,
+            methodology = com.najmi.corvus.domain.model.MethodologyMetadata(
+                pipelineStepsCompleted = listOf(
+                    com.najmi.corvus.domain.model.PipelineStepResult(
+                        com.najmi.corvus.domain.model.PipelineStep.CHECKING_VIRAL_DATABASE, 
+                        "Matched known misinformation pattern (${(similarity * 100).toInt()}% match)"
+                    )
+                ),
+                claimTypeDetected = com.najmi.corvus.domain.model.ClaimType.GENERAL,
+                sourcesRetrieved = hoax.debunkUrls.split(",").filter { it.isNotBlank() }.size,
+                avgSourceCredibility = 100,
+                llmProviderUsed = "Deterministic Matcher",
+                checkedAt = System.currentTimeMillis()
+            )
         )
     }
 }

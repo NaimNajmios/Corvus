@@ -105,7 +105,22 @@ class CompositeFactCheckPipeline @Inject constructor(
             compositeVerdict = deriveCompositeVerdict(updatedSubClaims),
             confidence = updatedSubClaims.map { it.result?.confidence ?: 0f }.average().toFloat(),
             compositeSummary = buildCompositeSummary(updatedSubClaims),
-            sources = updatedSubClaims.flatMap { it.result?.sources ?: emptyList() }.distinctBy { it.url }
+            sources = updatedSubClaims.flatMap { it.result?.sources ?: emptyList() }.distinctBy { it.url },
+            methodology = com.najmi.corvus.domain.model.MethodologyMetadata(
+                pipelineStepsCompleted = listOf(
+                    com.najmi.corvus.domain.model.PipelineStepResult(
+                        com.najmi.corvus.domain.model.PipelineStep.CHECKING_SUB_CLAIMS, 
+                        "Claim decomposed into ${updatedSubClaims.size} sub-claims"
+                    )
+                ),
+                claimTypeDetected = com.najmi.corvus.domain.model.ClaimType.GENERAL,
+                sourcesRetrieved = updatedSubClaims.flatMap { it.result?.sources ?: emptyList() }.distinctBy { it.url }.size,
+                avgSourceCredibility = if (updatedSubClaims.isNotEmpty()) {
+                    updatedSubClaims.mapNotNull { it.result?.methodology?.avgSourceCredibility }.average().toInt().takeIf { it > 0 } ?: 50
+                } else 50,
+                llmProviderUsed = "Corvus Aggregator",
+                checkedAt = System.currentTimeMillis()
+            )
         )
     }
 

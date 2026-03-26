@@ -448,8 +448,8 @@ fun ResultScreen(
                 }
 
                 item(key = "methodology") {
-                    if (corvusResult is CorvusCheckResult.GeneralResult) {
-                        MethodologyCard(corvusResult)
+                    corvusResult?.let { result ->
+                        MethodologyCard(result)
                     }
                 }
 

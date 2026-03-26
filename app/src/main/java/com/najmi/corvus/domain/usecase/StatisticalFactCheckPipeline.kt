@@ -31,8 +31,10 @@ class StatisticalFactCheckPipeline @Inject constructor(
         Log.d(TAG, "Starting statistical verification for: ${classified.raw}")
         
         val sources = mutableListOf<Source>()
-
+        val steps = mutableListOf<com.najmi.corvus.domain.model.PipelineStepResult>()
+        
         // Layer 1: DOSM (Malaysian Government Data)
+        steps.add(com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.CHECKING_KNOWN_FACTS, "Searching DOSM data catalogues"))
         try {
             val dosmResults = dosmClient.search(classified.raw)
             dosmResults.take(3).forEach {
@@ -51,6 +53,7 @@ class StatisticalFactCheckPipeline @Inject constructor(
 
         // Layer 2: Web Search Fallback
         if (sources.size < 2) {
+            steps.add(com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.RETRIEVING_SOURCES, "Performing fallback web search for statistical confirmation"))
             try {
                 val searchQuery = "${classified.raw} statistics Malaysia official"
                 val webResults = tavilyRepository.search(searchQuery, maxResults = 3)
@@ -69,6 +72,7 @@ class StatisticalFactCheckPipeline @Inject constructor(
         }.sortedByDescending { it.outletRating?.credibility ?: 50 }
 
         // LLM Synthesis
+        steps.add(com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.ANALYZING, "Analyzing statistical data coherence"))
         val (initialResult, provider) = llmRouter.analyze(classified.raw, filteredSources, ClaimType.STATISTICAL)
 
         // Plausibility Enrichment for UNVERIFIABLE
@@ -83,10 +87,20 @@ class StatisticalFactCheckPipeline @Inject constructor(
             initialResult
         }
 
+        val methodology = com.najmi.corvus.domain.model.MethodologyMetadata(
+            pipelineStepsCompleted = steps + com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.DONE, "Statistical verification complete"),
+            claimTypeDetected = com.najmi.corvus.domain.model.ClaimType.STATISTICAL,
+            sourcesRetrieved = enrichedSources.size,
+            avgSourceCredibility = if (enrichedSources.isNotEmpty()) enrichedSources.map { it.outletRating?.credibility ?: 50 }.average().toInt() else 0,
+            llmProviderUsed = provider.name,
+            checkedAt = System.currentTimeMillis()
+        )
+
         return result.copy(
             claim = classified.raw, 
             providerUsed = provider.name,
-            sources = enrichedSources // UI shows all
+            sources = enrichedSources, // UI shows all
+            methodology = methodology
         )
     }
 }

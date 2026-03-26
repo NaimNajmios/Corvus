@@ -29,8 +29,10 @@ class ScientificFactCheckPipeline @Inject constructor(
         Log.d(TAG, "Starting scientific verification for: ${classified.raw}")
         
         val sources = mutableListOf<Source>()
-
+        val steps = mutableListOf<com.najmi.corvus.domain.model.PipelineStepResult>()
+        
         // Layer 1: PubMed
+        steps.add(com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.CHECKING_KNOWN_FACTS, "Searching PubMed academic databases"))
         try {
             val pmids = pubMedClient.search(classified.raw)
             for (pmid in pmids.take(2)) {
@@ -52,6 +54,7 @@ class ScientificFactCheckPipeline @Inject constructor(
 
         // Layer 2: Web Search Fallback
         if (sources.size < 2) {
+            steps.add(com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.RETRIEVING_SOURCES, "Performing fallback academic web search"))
             try {
                 val searchQuery = "${classified.raw} peer reviewed scientific study"
                 val webResults = tavilyRepository.search(searchQuery, maxResults = 3)
@@ -70,6 +73,7 @@ class ScientificFactCheckPipeline @Inject constructor(
         }.sortedByDescending { it.outletRating?.credibility ?: 50 }
 
         // LLM Synthesis
+        steps.add(com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.ANALYZING, "Synthesizing scientific evidence from abstracts"))
         val (initialResult, provider) = llmRouter.analyze(classified.raw, filteredSources, ClaimType.SCIENTIFIC)
 
         // Plausibility Enrichment for UNVERIFIABLE
@@ -84,10 +88,20 @@ class ScientificFactCheckPipeline @Inject constructor(
             initialResult
         }
 
+        val methodology = com.najmi.corvus.domain.model.MethodologyMetadata(
+            pipelineStepsCompleted = steps + com.najmi.corvus.domain.model.PipelineStepResult(com.najmi.corvus.domain.model.PipelineStep.DONE, "Scientific verification complete"),
+            claimTypeDetected = com.najmi.corvus.domain.model.ClaimType.SCIENTIFIC,
+            sourcesRetrieved = enrichedSources.size,
+            avgSourceCredibility = if (enrichedSources.isNotEmpty()) enrichedSources.map { it.outletRating?.credibility ?: 50 }.average().toInt() else 0,
+            llmProviderUsed = provider.name,
+            checkedAt = System.currentTimeMillis()
+        )
+
         return result.copy(
             claim = classified.raw, 
             providerUsed = provider.name,
-            sources = enrichedSources // UI shows all
+            sources = enrichedSources, // UI shows all
+            methodology = methodology
         )
     }
 }

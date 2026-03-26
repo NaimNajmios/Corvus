@@ -21,6 +21,7 @@ sealed class CorvusCheckResult {
     abstract val providerUsed: String
     abstract val checkedAt: Long
     abstract val entityContext: EntityContext?
+    abstract val methodology: MethodologyMetadata?
 
     fun withEntityContext(context: EntityContext?): CorvusCheckResult {
         return when (this) {
@@ -51,7 +52,7 @@ sealed class CorvusCheckResult {
         val plausibility: PlausibilityAssessment? = null,
         val kernelOfTruth: KernelOfTruth? = null,
         val missingContext: MissingContextInfo? = null,
-        val methodology: MethodologyMetadata? = null,
+        override val methodology: MethodologyMetadata? = null,
         val explanationVerification: ExplanationVerification? = null,
         val actorProvider: LlmProvider? = null,
         val criticProvider: LlmProvider? = null,
@@ -80,6 +81,7 @@ sealed class CorvusCheckResult {
         override val checkedAt: Long = System.currentTimeMillis(),
         val confidenceTimeline: List<ConfidencePoint> = emptyList(),
         override val entityContext: EntityContext? = null,
+        override val methodology: MethodologyMetadata? = null,
         val harmAssessment: HarmAssessment = HarmAssessment(),
         val plausibility: PlausibilityAssessment? = null,
         val keyFacts: List<GroundedFact> = emptyList()
@@ -97,7 +99,8 @@ sealed class CorvusCheckResult {
         override val providerUsed: String = "Corvus Aggregator",
         override val checkedAt: Long = System.currentTimeMillis(),
         val confidenceTimeline: List<ConfidencePoint> = emptyList(),
-        override val entityContext: EntityContext? = null
+        override val entityContext: EntityContext? = null,
+        override val methodology: MethodologyMetadata? = null
     ) : CorvusCheckResult()
 
     @Serializable
@@ -113,7 +116,8 @@ sealed class CorvusCheckResult {
         override val providerUsed: String = "Viral Detector",
         override val checkedAt: Long = 0,
         val confidenceTimeline: List<ConfidencePoint> = emptyList(),
-        override val entityContext: EntityContext? = null
+        override val entityContext: EntityContext? = null,
+        override val methodology: MethodologyMetadata? = null
     ) : CorvusCheckResult()
 }
 
