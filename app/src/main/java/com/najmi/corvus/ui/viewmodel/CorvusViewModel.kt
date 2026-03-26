@@ -108,9 +108,9 @@ class CorvusViewModel @Inject constructor(
 
     private fun loadLastResult() {
         viewModelScope.launch {
-            val history = historyRepository.getAllHistory().first()
-            if (history.isNotEmpty()) {
-                _uiState.update { it.copy(result = history.first()) }
+            val result = historyRepository.getLatestResult()
+            if (result != null) {
+                _uiState.update { it.copy(result = result) }
             }
         }
     }

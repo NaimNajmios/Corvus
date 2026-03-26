@@ -3,6 +3,7 @@ package com.najmi.corvus.data.repository
 import android.util.Log
 import com.najmi.corvus.data.local.CorvusHistoryEntity
 import com.najmi.corvus.data.local.HistoryDao
+import com.najmi.corvus.data.local.HistorySummaryProjection
 import com.najmi.corvus.domain.model.ClaimLanguage
 import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.CorvusCheckResult
@@ -66,6 +67,42 @@ class HistoryRepository @Inject constructor(
 
     suspend fun getCount(): Int {
         return historyDao.getCount()
+    }
+
+    fun getAllHistorySummaries(): Flow<List<com.najmi.corvus.domain.model.HistorySummary>> {
+        return historyDao.getAllHistorySummaries().map { entities ->
+            entities.map { it.toHistorySummary() }
+        }.flowOn(Dispatchers.Default)
+    }
+
+    fun searchHistorySummaries(query: String): Flow<List<com.najmi.corvus.domain.model.HistorySummary>> {
+        return historyDao.searchHistorySummaries(query).map { entities ->
+            entities.map { it.toHistorySummary() }
+        }.flowOn(Dispatchers.Default)
+    }
+
+    fun filterByVerdictSummaries(verdict: String): Flow<List<com.najmi.corvus.domain.model.HistorySummary>> {
+        return historyDao.filterByVerdictSummaries(verdict).map { entities ->
+            entities.map { it.toHistorySummary() }
+        }.flowOn(Dispatchers.Default)
+    }
+
+    suspend fun getLatestResult(): CorvusCheckResult? {
+        return historyDao.getLatestResultFull()?.toCorvusResult()
+    }
+
+    private fun HistorySummaryProjection.toHistorySummary(): com.najmi.corvus.domain.model.HistorySummary {
+        return com.najmi.corvus.domain.model.HistorySummary(
+            id = id,
+            claim = claim,
+            resultType = resultType,
+            verdict = verdict,
+            confidence = confidence,
+            checkedAt = checkedAt,
+            harmLevel = harmLevel,
+            harmCategory = harmCategory,
+            plausibilityScore = plausibilityScore
+        )
     }
 
     private fun CorvusHistoryEntity.toCorvusResult(): CorvusCheckResult? {

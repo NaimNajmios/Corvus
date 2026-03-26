@@ -3,6 +3,7 @@ package com.najmi.corvus.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.data.repository.CompareRepository
+import com.najmi.corvus.data.repository.HistoryRepository
 import com.najmi.corvus.domain.model.CorvusCheckResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,8 @@ data class CompareUiState(
 
 @HiltViewModel
 class CompareViewModel @Inject constructor(
-    private val compareRepository: CompareRepository
+    private val compareRepository: CompareRepository,
+    private val historyRepository: HistoryRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(CompareUiState())
@@ -44,8 +46,13 @@ class CompareViewModel @Inject constructor(
         return compareRepository.isSelected(claimId)
     }
     
-    fun toggleSelection(claim: CorvusCheckResult) {
-        compareRepository.toggleSelection(claim)
+    fun toggleSelection(summary: com.najmi.corvus.domain.model.HistorySummary) {
+        viewModelScope.launch {
+            val fullResult = historyRepository.getResultById(summary.id)
+            if (fullResult != null) {
+                compareRepository.toggleSelection(fullResult)
+            }
+        }
     }
     
     fun removeClaim(claimId: String) {

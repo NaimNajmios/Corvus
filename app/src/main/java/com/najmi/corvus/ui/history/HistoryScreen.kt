@@ -46,7 +46,7 @@ import java.util.Locale
 fun HistoryScreen(
     historyViewModel: HistoryViewModel = hiltViewModel(),
     compareViewModel: CompareViewModel = hiltViewModel(),
-    onItemClick: (CorvusCheckResult) -> Unit,
+    onItemClick: (com.najmi.corvus.domain.model.HistorySummary) -> Unit,
     onCompare: () -> Unit = {}
 ) {
     val uiState by historyViewModel.uiState.collectAsState()
@@ -55,7 +55,7 @@ fun HistoryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    var pendingDeleteItem by remember { mutableStateOf<CorvusCheckResult?>(null) }
+    var pendingDeleteItem by remember { mutableStateOf<com.najmi.corvus.domain.model.HistorySummary?>(null) }
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showOptionsMenu by remember { mutableStateOf(false) }
@@ -408,7 +408,7 @@ fun HistoryScreen(
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun HistoryItem(
-    result: CorvusCheckResult,
+    result: com.najmi.corvus.domain.model.HistorySummary,
     isSelected: Boolean = false,
     isCompareMode: Boolean = false,
     onClick: () -> Unit,
@@ -471,19 +471,18 @@ fun HistoryItem(
             }
             
             Box(contentAlignment = Alignment.BottomEnd) {
-                when (result) {
-                    is CorvusCheckResult.GeneralResult -> VerdictBadgeLarge(verdict = result.verdict)
-                    is CorvusCheckResult.QuoteResult -> QuoteVerdictBadgeLarge(verdict = result.quoteVerdict)
-                    is CorvusCheckResult.CompositeResult -> VerdictBadgeLarge(verdict = result.compositeVerdict)
-                    is CorvusCheckResult.ViralHoaxResult -> VerdictBadgeLarge(verdict = Verdict.FALSE)
+                val verdict = try { Verdict.valueOf(result.verdict) } catch (e: Exception) { Verdict.UNVERIFIABLE }
+                val quoteVerdict = try { QuoteVerdict.valueOf(result.verdict) } catch (e: Exception) { QuoteVerdict.UNVERIFIABLE }
+                
+                when (result.resultType) {
+                    "GENERAL" -> VerdictBadgeLarge(verdict = verdict)
+                    "QUOTE" -> QuoteVerdictBadgeLarge(verdict = quoteVerdict)
+                    "COMPOSITE" -> VerdictBadgeLarge(verdict = verdict)
+                    "VIRAL" -> VerdictBadgeLarge(verdict = Verdict.FALSE)
                 }
                 
                 // Harm Indicator Overlay
-                val harmLevel = when (result) {
-                    is CorvusCheckResult.GeneralResult -> result.harmAssessment.level
-                    is CorvusCheckResult.QuoteResult -> result.harmAssessment.level
-                    else -> com.najmi.corvus.domain.model.HarmLevel.NONE
-                }
+                val harmLevel = try { com.najmi.corvus.domain.model.HarmLevel.valueOf(result.harmLevel) } catch (e: Exception) { com.najmi.corvus.domain.model.HarmLevel.NONE }
                 
                 if (harmLevel == com.najmi.corvus.domain.model.HarmLevel.HIGH) {
                     Icon(
@@ -526,15 +525,11 @@ fun HistoryItem(
                     )
                     
                     // Plausibility Indicator
-                    val plausibility = when (result) {
-                        is CorvusCheckResult.GeneralResult -> if (result.verdict == Verdict.UNVERIFIABLE) result.plausibility?.score else null
-                        is CorvusCheckResult.QuoteResult -> if (result.quoteVerdict == QuoteVerdict.UNVERIFIABLE) result.plausibility?.score else null
-                        else -> null
-                    }
+                    val plausibility = result.plausibilityScore
                     
                     if (plausibility != null) {
                         Text(
-                            text = " • ${plausibility.name}",
+                            text = " • $plausibility",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                             fontWeight = FontWeight.Bold

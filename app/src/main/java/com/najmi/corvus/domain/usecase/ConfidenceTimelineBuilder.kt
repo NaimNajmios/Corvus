@@ -22,7 +22,7 @@ class ConfidenceTimelineBuilder @Inject constructor(
         // Simple word-based match for historical context
         val words = claim.lowercase().split(Regex("\\W+")).filter { it.length > 3 }
         
-        val history = historyRepository.getAllHistory().first()
+        val history = historyRepository.getAllHistorySummaries().first()
         val related = history.filter { past ->
             val pastWords = past.claim.lowercase().split(Regex("\\W+"))
             words.any { it in pastWords }

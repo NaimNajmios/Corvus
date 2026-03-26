@@ -3,7 +3,6 @@ package com.najmi.corvus.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.data.repository.HistoryRepository
-import com.najmi.corvus.domain.model.CorvusCheckResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -15,7 +14,7 @@ enum class HistorySort {
 }
 
 data class HistoryUiState(
-    val history: List<CorvusCheckResult> = emptyList(),
+    val history: List<com.najmi.corvus.domain.model.HistorySummary> = emptyList(),
     val isLoading: Boolean = false,
     val searchQuery: String = "",
     val selectedVerdictFilter: String? = null,
@@ -38,7 +37,7 @@ class HistoryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HistoryUiState())
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 
-    private var pendingDeleteItem: CorvusCheckResult? = null
+    private var pendingDeleteItem: com.najmi.corvus.domain.model.HistorySummary? = null
 
     init {
         observeHistory()
@@ -64,9 +63,9 @@ class HistoryViewModel @Inject constructor(
                 ) }
                 
                 val flow = when {
-                    params.query.isNotBlank() -> historyRepository.searchHistory(params.query)
-                    params.filter != null -> historyRepository.filterByVerdict(params.filter)
-                    else -> historyRepository.getAllHistory()
+                    params.query.isNotBlank() -> historyRepository.searchHistorySummaries(params.query)
+                    params.filter != null -> historyRepository.filterByVerdictSummaries(params.filter)
+                    else -> historyRepository.getAllHistorySummaries()
                 }
                 
                 flow.map { items -> 
@@ -94,24 +93,13 @@ class HistoryViewModel @Inject constructor(
         val analyticsVisible: Boolean
     )
 
-    private fun CorvusCheckResult.harmScore(): Int = when (this) {
-        is CorvusCheckResult.GeneralResult -> harmAssessment.level.ordinal
-        is CorvusCheckResult.QuoteResult -> harmAssessment.level.ordinal
-        is CorvusCheckResult.CompositeResult -> 0
-        is CorvusCheckResult.ViralHoaxResult -> 3
-    }
+    private fun com.najmi.corvus.domain.model.HistorySummary.harmScore(): Int = 
+        com.najmi.corvus.domain.model.HarmLevel.valueOf(harmLevel).ordinal
 
-    private fun calculateStats(items: List<CorvusCheckResult>): Map<String, Float> {
+    private fun calculateStats(items: List<com.najmi.corvus.domain.model.HistorySummary>): Map<String, Float> {
         if (items.isEmpty()) return emptyMap()
         val total = items.size.toFloat()
-        return items.groupBy { 
-            when (it) {
-                is CorvusCheckResult.GeneralResult -> it.verdict.name
-                is CorvusCheckResult.QuoteResult -> it.quoteVerdict.name
-                is CorvusCheckResult.CompositeResult -> it.compositeVerdict.name
-                is CorvusCheckResult.ViralHoaxResult -> "FALSE"
-            }
-        }.mapValues { it.value.size / total }
+        return items.groupBy { it.verdict }.mapValues { it.value.size / total }
     }
 
     fun search(query: String) {
@@ -130,7 +118,7 @@ class HistoryViewModel @Inject constructor(
         _currentSort.value = sort
     }
 
-    fun prepareDelete(item: CorvusCheckResult) {
+    fun prepareDelete(item: com.najmi.corvus.domain.model.HistorySummary) {
         pendingDeleteItem = item
     }
 
