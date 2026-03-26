@@ -240,12 +240,17 @@ fun CorvusApp(
                     ResultScreen(
                         viewModel = viewModel,
                         onAnalyzeAnother = {
+                            viewModel.reset()
                             navController.navigate(Routes.INPUT) {
                                 popUpTo(Routes.INPUT) { inclusive = true }
                             }
                         },
                         onBack = {
-                            navController.popBackStack()
+                            if (navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            } else {
+                                (context as? Activity)?.finish()
+                            }
                         }
                     )
                 }
@@ -299,10 +304,12 @@ fun CorvusApp(
                     }
                 }
                 uiState.error != null && !uiState.isLoading -> {
-                    navController.popBackStack()
+                    // Stay on loading screen to show error, don't pop until user clicks retry/cancel
                 }
             }
-        } else if (uiState.isLoading && route != Routes.LOADING) {
+        } else if (uiState.isLoading && route == Routes.INPUT) {
+            // Only auto-navigate to LOADING if we are currently on the INPUT screen
+            // This prevents jumping to LOADING if we are already on RESULT or other screens
             navController.navigate(Routes.LOADING) {
                 launchSingleTop = true
             }

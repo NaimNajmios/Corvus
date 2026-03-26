@@ -13,6 +13,7 @@ import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.CheckingStatus
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.domain.usecase.CompositeFactCheckPipeline
+import com.najmi.corvus.util.ErrorMapper
 import com.najmi.corvus.util.NotificationHelper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -52,7 +53,8 @@ class FactCheckWorker @AssistedInject constructor(
             Result.success(workDataOf("resultId" to checkResult.id))
         } catch (e: Exception) {
             notificationHelper.cancelProgressNotification()
-            Result.failure(workDataOf("error" to e.message))
+            val readableError = ErrorMapper.map(e)
+            Result.failure(workDataOf("error" to readableError))
         }
     }
 
