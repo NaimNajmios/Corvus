@@ -1,12 +1,7 @@
 package com.najmi.corvus.data.repository
 
 import android.util.Log
-import com.najmi.corvus.data.remote.CerebrasClient
-import com.najmi.corvus.data.remote.GeminiClient
-import com.najmi.corvus.data.remote.GroqClient
-import com.najmi.corvus.data.remote.MistralClient
-import com.najmi.corvus.data.remote.OpenRouterClient
-import com.najmi.corvus.data.remote.cohere.CohereClient
+import com.najmi.corvus.domain.router.LlmProviderRouter
 import com.najmi.corvus.data.remote.llm.SourceContextBuilder
 import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.domain.util.HarmPreScreener
@@ -62,12 +57,7 @@ data class PlausibilityResponse(
 
 @Singleton
 class LlmRepository @Inject constructor(
-    private val geminiClient: GeminiClient,
-    private val groqClient: GroqClient,
-    private val cerebrasClient: CerebrasClient,
-    private val openRouterClient: OpenRouterClient,
-    private val mistralClient: MistralClient,
-    private val cohereClient: CohereClient,
+    private val router: LlmProviderRouter,
     private val json: Json,
     private val sourceContextBuilder: SourceContextBuilder
 ) {
@@ -95,16 +85,7 @@ class LlmRepository @Inject constructor(
         repeat(MAX_RETRIES + 1) { attempt ->
             try {
                 // ... (existing try-catch logic remains same)
-                val responseText = when (provider) {
-                    LlmProvider.GEMINI -> geminiClient.generateContent(prompt)
-                    LlmProvider.GROQ -> groqClient.chat(prompt)
-                    LlmProvider.CEREBRAS -> cerebrasClient.chat(prompt)
-                    LlmProvider.OPENROUTER -> openRouterClient.chat(prompt)
-                    LlmProvider.MISTRAL_SABA -> mistralClient.chatSaba(prompt)
-                    LlmProvider.MISTRAL_SMALL -> mistralClient.chatSmall(prompt)
-                    LlmProvider.COHERE_R -> cohereClient.chatR(prompt)
-                    LlmProvider.COHERE_R_PLUS -> cohereClient.chatRPlus(prompt)
-                }
+                val responseText = router.execute(prompt, provider)
                 
                 Log.d(TAG, "Got response, parsing...")
                 return parseResponse(responseText, limitedSources, claimType)

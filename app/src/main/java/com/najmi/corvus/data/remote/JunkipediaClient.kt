@@ -9,6 +9,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,13 +35,11 @@ class JunkipediaClient @Inject constructor(
 ) {
     companion object {
         private const val TAG = "JunkipediaClient"
-        private const val BASE_URL = "https://api.junkipedia.org/v1/search" // Example endpoint
+        private const val BASE_URL = "https://api.junkipedia.org/v1/search"
     }
 
     suspend fun search(query: String): List<JunkipediaResult> {
         return try {
-            // Placeholder: Junkipedia may require specific headers or use a different public endpoint
-            // For now, implementing as a standard search GET request
             val response = httpClient.get(BASE_URL) {
                 parameter("q", query)
                 parameter("limit", 5)
@@ -54,6 +53,9 @@ class JunkipediaClient @Inject constructor(
                 Log.e(TAG, "Search failed with status: ${response.status}")
                 emptyList()
             }
+        } catch (e: UnknownHostException) {
+            Log.w(TAG, "DNS failed for Junkipedia. Could be offline or blocked by AdBlocker. Skipping.")
+            emptyList()
         } catch (e: Exception) {
             Log.e(TAG, "Error searching Junkipedia: ${e.message}")
             emptyList()

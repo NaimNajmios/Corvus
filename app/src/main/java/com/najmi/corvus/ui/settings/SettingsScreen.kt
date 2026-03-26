@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -36,6 +37,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Surface
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -68,6 +70,7 @@ import com.najmi.corvus.ui.theme.CorvusVoid
 import com.najmi.corvus.ui.theme.CorvusVoidLight
 import com.najmi.corvus.ui.theme.ColorPalette
 import com.najmi.corvus.ui.theme.Palettes
+import com.najmi.corvus.ui.viewmodel.CohereQuotaInfo
 import com.najmi.corvus.ui.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -145,6 +148,13 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     ApiKeyStatusRow("Cohere", BuildConfig.COHERE_API_KEY.isNotBlank())
                 }
+            }
+
+            SettingsSection(title = "Cohere Quota") {
+                CohereQuotaCard(
+                    quota = uiState.cohereQuota,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
 
             SettingsSection(title = "Language") {
@@ -688,5 +698,109 @@ fun SettingsToggleItem(
                 uncheckedTrackColor = MaterialTheme.colorScheme.outline
             )
         )
+    }
+}
+
+@Composable
+fun CohereQuotaCard(
+    quota: CohereQuotaInfo,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Command-R",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            QuotaProgressBar(
+                used = quota.dailyCallsR,
+                limit = quota.dailyLimitR
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Command-R+",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            QuotaProgressBar(
+                used = quota.dailyCallsRPlus,
+                limit = quota.dailyLimitRPlus
+            )
+        }
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Monthly Total",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            QuotaProgressBar(
+                used = quota.monthlyCalls,
+                limit = quota.monthlyLimit
+            )
+        }
+
+        Text(
+            text = "Resets daily at midnight and monthly on the 1st",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
+fun QuotaProgressBar(
+    used: Int,
+    limit: Int,
+    modifier: Modifier = Modifier
+) {
+    val progress = (used.toFloat() / limit.toFloat()).coerceIn(0f, 1f)
+    val color = when {
+        progress >= 0.9f -> Color(0xFFEF4444)
+        progress >= 0.7f -> Color(0xFFF59E0B)
+        else -> Color(0xFF10B981)
+    }
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "$used/$limit",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Box(
+            modifier = modifier
+                .width(60.dp)
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(progress)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(color)
+            )
+        }
     }
 }

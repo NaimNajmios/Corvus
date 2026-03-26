@@ -1,6 +1,7 @@
 package com.najmi.corvus.data.remote
 
 import android.util.Log
+import com.najmi.corvus.data.remote.LlmClient
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -64,12 +65,12 @@ class CerebrasClient @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
     @Named("cerebras") private val apiKey: String
-) {
+) : LlmClient {
     companion object {
         private const val TAG = "CerebrasClient"
     }
 
-    suspend fun chat(prompt: String): String = withContext(Dispatchers.IO) {
+    override suspend fun chat(prompt: String): String = withContext(Dispatchers.IO) {
         Log.d(TAG, "API Key (first 10 chars): ${apiKey.take(10)}...")
         
         val response = httpClient.post("https://api.cerebras.ai/v1/chat/completions") {

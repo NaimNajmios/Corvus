@@ -212,6 +212,22 @@ fun MethodologyCard(result: CorvusCheckResult.GeneralResult?) {
                         MethodologyStatRow("Analysis provider", metadata.llmProviderUsed)
                     }
                     
+                    if (metadata.routingRationale.isNotBlank()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "ROUTING",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            metadata.routingRationale,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontStyle = FontStyle.Italic
+                        )
+                    }
+                    
                     MethodologyStatRow("Checked at", metadata.checkedAt.toFormattedDate())
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

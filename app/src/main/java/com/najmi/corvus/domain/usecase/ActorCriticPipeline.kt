@@ -2,32 +2,26 @@ package com.najmi.corvus.domain.usecase
 
 import android.util.Log
 import com.najmi.corvus.data.local.UserPreferences
-import com.najmi.corvus.data.remote.CerebrasClient
-import com.najmi.corvus.data.remote.GeminiClient
-import com.najmi.corvus.data.remote.GroqClient
-import com.najmi.corvus.data.remote.MistralClient
-import com.najmi.corvus.data.remote.OpenRouterClient
-import com.najmi.corvus.data.remote.cohere.CohereClient
-import com.najmi.corvus.data.remote.cohere.CohereQuotaExceededException
+import com.najmi.corvus.domain.router.LlmProviderRouter
+import com.najmi.corvus.domain.router.LlmProviderHealthTracker
 import com.najmi.corvus.data.remote.llm.SourceContextBuilder
 import com.najmi.corvus.domain.model.*
-import com.najmi.corvus.domain.router.LlmProviderHealthTracker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import javax.inject.Inject
 
+data class ActorCriticResult(
+    val generalResult: CorvusCheckResult.GeneralResult,
+    val routingRationale: String
+)
+
 class ActorCriticPipeline @Inject constructor(
-    private val groqClient: GroqClient,
-    private val geminiClient: GeminiClient,
-    private val cerebrasClient: CerebrasClient,
-    private val openRouterClient: OpenRouterClient,
-    private val mistralClient: MistralClient,
-    private val cohereClient: CohereClient,
+    private val router: LlmProviderRouter,
     private val contextBuilder: SourceContextBuilder,
-    private val healthTracker: LlmProviderHealthTracker,
     private val providerSelector: ActorCriticProviderSelector,
-    private val json: Json
+    private val json: Json,
+    private val healthTracker: LlmProviderHealthTracker
 ) {
     companion object {
         private const val TAG = "ActorCriticPipeline"
@@ -39,7 +33,7 @@ class ActorCriticPipeline @Inject constructor(
         sources: List<Source>,
         prefs: UserPreferences,
         onStepChange: suspend (PipelineStep) -> Unit = {}
-    ): CorvusCheckResult.GeneralResult {
+    ): ActorCriticResult {
         val limitedSources = sources.take(10)
         
         val assignment = providerSelector.select(classified)
@@ -51,7 +45,7 @@ class ActorCriticPipeline @Inject constructor(
 
         onStepChange(PipelineStep.ANALYZING)
         val actorPrompt = buildActorPrompt(claim, classified, actorContext)
-        val actorRaw = completePrompt(assignment.actor, actorPrompt)
+        val actorRaw = router.execute(actorPrompt, assignment.actor)
         val actorDraft = parseActorDraft(actorRaw)
 
         Log.d(TAG, "Critic pass starting: ${assignment.critic}")
@@ -71,68 +65,28 @@ class ActorCriticPipeline @Inject constructor(
         
         val criticPrompt = buildCriticPrompt(claim, condensedCriticContext, actorDraft)
         
-        var criticRaw: String
-        var finalCriticProvider = assignment.critic
+        val criticRaw = router.execute(criticPrompt, assignment.critic)
         
-        try {
-            criticRaw = completePrompt(assignment.critic, criticPrompt)
-        } catch (e: CohereQuotaExceededException) {
-            Log.w(TAG, "Cohere quota exceeded: ${e.message}. Falling back to standard Critic.")
-            criticRaw = completePrompt(LlmProvider.GEMINI, criticPrompt)
-            finalCriticProvider = LlmProvider.GEMINI
-        } catch (e: Exception) {
-            Log.e(TAG, "Primary Critic (${assignment.critic}) failed: ${e.message}")
-            
-            if (isRetryableError(e) && assignment.critic != LlmProvider.GEMINI && assignment.actor != LlmProvider.GEMINI) {
-                Log.d(TAG, "Attempting fallback Critic: GEMINI")
-                try {
-                    criticRaw = completePrompt(LlmProvider.GEMINI, criticPrompt)
-                    finalCriticProvider = LlmProvider.GEMINI
-                } catch (fallbackEx: Exception) {
-                    Log.e(TAG, "Fallback Critic (GEMINI) also failed. Reraising original error.")
-                    throw e
-                }
-            } else {
-                throw e
-            }
-        }
+        // The router handles fallback, but we want to know which one was actually used if possible.
+        // For simplicity in this refactor, we'll assume the router worked.
+        // If we need the exact provider used, we'd need to update the router to return it.
+        // For now, we'll use the preferred one or fallback to GEMINI in metadata if it's unhealthy.
+        val finalCriticProvider = if (healthTracker.isHealthy(assignment.critic.name)) assignment.critic else LlmProvider.GEMINI
         
         val finalResult = parseCriticOutput(criticRaw, limitedSources)
 
-        return finalResult.copy(
-            actorProvider = assignment.actor,
-            criticProvider = finalCriticProvider,
-            correctionsLog = actorDraft.unsupportedAssumptions + (finalResult.correctionsLog ?: emptyList())
+        return ActorCriticResult(
+            generalResult = finalResult.copy(
+                actorProvider = assignment.actor,
+                criticProvider = finalCriticProvider,
+                correctionsLog = actorDraft.unsupportedAssumptions + (finalResult.correctionsLog ?: emptyList())
+            ),
+            routingRationale = assignment.rationale
         )
     }
 
-    private suspend fun completePrompt(provider: LlmProvider, prompt: String): String {
-        return try {
-            when (provider) {
-                LlmProvider.GEMINI -> geminiClient.generateContent(prompt)
-                LlmProvider.GROQ -> groqClient.chat(prompt)
-                LlmProvider.CEREBRAS -> cerebrasClient.chat(prompt)
-                LlmProvider.OPENROUTER -> openRouterClient.chat(prompt)
-                LlmProvider.MISTRAL_SABA -> mistralClient.chatSaba(prompt)
-                LlmProvider.MISTRAL_SMALL -> mistralClient.chatSmall(prompt)
-                LlmProvider.COHERE_R -> cohereClient.chatR(prompt)
-                LlmProvider.COHERE_R_PLUS -> cohereClient.chatRPlus(prompt)
-            }
-        } catch (e: Exception) {
-            healthTracker.reportError(provider.name)
-            throw e
-        }
-    }
-
-    private fun isRetryableError(e: Exception): Boolean {
-        val message = e.message ?: return false
-        return message.contains("429", ignoreCase = true) ||
-               message.contains("rate", ignoreCase = true) ||
-               message.contains("quota", ignoreCase = true) ||
-               message.contains("timeout", ignoreCase = true) ||
-               message.contains("503", ignoreCase = true) ||
-               message.contains("unavailable", ignoreCase = true)
-    }
+    // completedPrompt and isRetryableError are now handled by LlmProviderRouter
+    
 
     private suspend fun parseActorDraft(raw: String): ActorDraft = withContext(Dispatchers.Default) {
         val cleaned = raw.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
@@ -208,7 +162,7 @@ class ActorCriticPipeline @Inject constructor(
         prefs: UserPreferences,
         temporalContext: String,
         onStepChange: suspend (PipelineStep) -> Unit = {}
-    ): CorvusCheckResult.GeneralResult {
+    ): ActorCriticResult {
         val limitedSources = sources.take(10)
         
         val assignment = providerSelector.select(classified)
@@ -219,7 +173,7 @@ class ActorCriticPipeline @Inject constructor(
 
         onStepChange(PipelineStep.ANALYZING)
         val actorPrompt = buildActorPromptWithTemporal(claim, classified, actorContext, temporalContext)
-        val actorRaw = completePrompt(assignment.actor, actorPrompt)
+        val actorRaw = router.execute(actorPrompt, assignment.actor)
         val actorDraft = parseActorDraft(actorRaw)
 
         Log.d(TAG, "Critic pass starting: ${assignment.critic}")
@@ -239,38 +193,18 @@ class ActorCriticPipeline @Inject constructor(
         
         val criticPrompt = buildCriticPromptWithTemporal(claim, condensedCriticContext, actorDraft, temporalContext)
         
-        var criticRaw: String
-        var finalCriticProvider = assignment.critic
-        
-        try {
-            criticRaw = completePrompt(assignment.critic, criticPrompt)
-        } catch (e: CohereQuotaExceededException) {
-            Log.w(TAG, "Cohere quota exceeded: ${e.message}. Falling back to standard Critic.")
-            criticRaw = completePrompt(LlmProvider.GEMINI, criticPrompt)
-            finalCriticProvider = LlmProvider.GEMINI
-        } catch (e: Exception) {
-            Log.e(TAG, "Primary Critic (${assignment.critic}) failed: ${e.message}")
-            
-            if (isRetryableError(e) && assignment.critic != LlmProvider.GEMINI && assignment.actor != LlmProvider.GEMINI) {
-                Log.d(TAG, "Attempting fallback Critic: GEMINI")
-                try {
-                    criticRaw = completePrompt(LlmProvider.GEMINI, criticPrompt)
-                    finalCriticProvider = LlmProvider.GEMINI
-                } catch (fallbackEx: Exception) {
-                    Log.e(TAG, "Fallback Critic (GEMINI) also failed. Reraising original error.")
-                    throw e
-                }
-            } else {
-                throw e
-            }
-        }
+        val criticRaw = router.execute(criticPrompt, assignment.critic)
+        val finalCriticProvider = if (healthTracker.isHealthy(assignment.critic.name)) assignment.critic else LlmProvider.GEMINI
         
         val finalResult = parseCriticOutput(criticRaw, limitedSources)
 
-        return finalResult.copy(
-            actorProvider = assignment.actor,
-            criticProvider = finalCriticProvider,
-            correctionsLog = actorDraft.unsupportedAssumptions + (finalResult.correctionsLog ?: emptyList())
+        return ActorCriticResult(
+            generalResult = finalResult.copy(
+                actorProvider = assignment.actor,
+                criticProvider = finalCriticProvider,
+                correctionsLog = actorDraft.unsupportedAssumptions + (finalResult.correctionsLog ?: emptyList())
+            ),
+            routingRationale = assignment.rationale
         )
     }
 

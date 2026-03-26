@@ -1,6 +1,7 @@
 package com.najmi.corvus.data.remote
 
 import android.util.Log
+import com.najmi.corvus.data.remote.LlmClient
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpRequestTimeoutException
@@ -75,12 +76,12 @@ data class GeminiError(
 class GeminiClient @Inject constructor(
     private val httpClient: HttpClient,
     @Named("gemini") private val apiKey: String
-) {
+) : LlmClient {
     companion object {
         private const val TAG = "GeminiClient"
     }
 
-    suspend fun generateContent(prompt: String): String {
+    override suspend fun chat(prompt: String): String {
         Log.d(TAG, "Sending request to Gemini, prompt length: ${prompt.length}")
         
         val response = httpClient.post(

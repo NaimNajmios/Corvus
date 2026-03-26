@@ -1,6 +1,7 @@
 package com.najmi.corvus.data.remote
 
 import android.util.Log
+import com.najmi.corvus.data.remote.LlmClient
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -62,12 +63,12 @@ class OpenRouterClient @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
     @Named("openrouter") private val apiKey: String
-) {
+) : LlmClient {
     companion object {
         private const val TAG = "OpenRouterClient"
     }
 
-    suspend fun chat(prompt: String): String {
+    override suspend fun chat(prompt: String): String {
         Log.d(TAG, "API Key (first 10 chars): ${apiKey.take(10)}...")
         
         val response = httpClient.post("https://openrouter.ai/api/v1/chat/completions") {

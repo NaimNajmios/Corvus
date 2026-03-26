@@ -1,6 +1,7 @@
 package com.najmi.corvus.data.remote
 
 import android.util.Log
+import com.najmi.corvus.data.remote.LlmClient
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -80,11 +81,13 @@ class MistralClient @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
     @Named("mistral") private val apiKey: String
-) {
+) : LlmClient {
     companion object {
         private const val TAG = "MistralClient"
         private const val BASE_URL = "https://api.mistral.ai/v1/chat/completions"
     }
+
+    override suspend fun chat(prompt: String): String = chat(prompt, MistralModels.SMALL)
 
     suspend fun chat(prompt: String, model: String = MistralModels.SMALL): String {
         Log.d(TAG, "API Key (first 10 chars): ${apiKey.take(10)}...")

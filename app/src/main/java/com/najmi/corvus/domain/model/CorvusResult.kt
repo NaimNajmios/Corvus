@@ -251,7 +251,8 @@ data class MethodologyMetadata(
     val sourcesRetrieved: Int,
     val avgSourceCredibility: Int,
     val llmProviderUsed: String,
-    val checkedAt: Long
+    val checkedAt: Long,
+    val routingRationale: String = ""
 )
 
 @Serializable

@@ -1,6 +1,7 @@
 package com.najmi.corvus.data.remote.cohere
 
 import android.util.Log
+import com.najmi.corvus.data.remote.LlmClient
 import com.najmi.corvus.domain.model.LlmProvider
 import com.najmi.corvus.domain.usecase.CohereQuotaGuard
 import io.ktor.client.HttpClient
@@ -27,7 +28,9 @@ class CohereClient @Inject constructor(
     private val json: Json,
     @Named("cohere") private val apiKey: String,
     private val quotaGuard: CohereQuotaGuard
-) {
+) : LlmClient {
+    
+    override suspend fun chat(prompt: String): String = chatR(prompt)
     companion object {
         private const val TAG = "CohereClient"
         private const val CHAT_URL = "https://api.cohere.com/v2/chat"

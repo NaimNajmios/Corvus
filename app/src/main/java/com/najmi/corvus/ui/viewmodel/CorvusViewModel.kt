@@ -16,6 +16,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import androidx.work.ExistingWorkPolicy
@@ -107,10 +108,9 @@ class CorvusViewModel @Inject constructor(
 
     private fun loadLastResult() {
         viewModelScope.launch {
-            historyRepository.getAllHistory().collect { history ->
-                if (history.isNotEmpty()) {
-                    _uiState.update { it.copy(result = history.first()) }
-                }
+            val history = historyRepository.getAllHistory().first()
+            if (history.isNotEmpty()) {
+                _uiState.update { it.copy(result = history.first()) }
             }
         }
     }

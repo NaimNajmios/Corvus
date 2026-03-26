@@ -7,6 +7,7 @@ import com.najmi.corvus.data.local.UserPreferencesRepository
 import com.najmi.corvus.ui.theme.ColorPalette
 import com.najmi.corvus.data.repository.HistoryRepository
 import com.najmi.corvus.domain.model.LlmProvider
+import com.najmi.corvus.domain.usecase.CohereQuotaGuard
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,16 +16,27 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class CohereQuotaInfo(
+    val dailyCallsR: Int = 0,
+    val dailyCallsRPlus: Int = 0,
+    val monthlyCalls: Int = 0,
+    val dailyLimitR: Int = 28,
+    val dailyLimitRPlus: Int = 8,
+    val monthlyLimit: Int = 950
+)
+
 data class SettingsUiState(
     val preferences: UserPreferences = UserPreferences(),
     val historyCount: Int = 0,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val cohereQuota: CohereQuotaInfo = CohereQuotaInfo()
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val historyRepository: HistoryRepository
+    private val historyRepository: HistoryRepository,
+    private val cohereQuotaGuard: CohereQuotaGuard
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -33,6 +45,7 @@ class SettingsViewModel @Inject constructor(
     init {
         loadPreferences()
         loadHistoryCount()
+        loadCohereQuota()
     }
 
     private fun loadPreferences() {
@@ -47,6 +60,23 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val count = historyRepository.getCount()
             _uiState.update { it.copy(historyCount = count) }
+        }
+    }
+
+    private fun loadCohereQuota() {
+        viewModelScope.launch {
+            val dailyR = cohereQuotaGuard.dailyCallsR()
+            val dailyRPlus = cohereQuotaGuard.dailyCallsRPlus()
+            val monthly = cohereQuotaGuard.monthlyCallsUsed()
+            _uiState.update {
+                it.copy(
+                    cohereQuota = CohereQuotaInfo(
+                        dailyCallsR = dailyR,
+                        dailyCallsRPlus = dailyRPlus,
+                        monthlyCalls = monthly
+                    )
+                )
+            }
         }
     }
 

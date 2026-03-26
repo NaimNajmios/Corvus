@@ -3,6 +3,7 @@ package com.najmi.corvus.worker
 import android.content.Context
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -13,6 +14,7 @@ import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.CheckingStatus
 import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.domain.usecase.CompositeFactCheckPipeline
+import com.najmi.corvus.domain.usecase.RateLimitException
 import com.najmi.corvus.util.ErrorMapper
 import com.najmi.corvus.util.NotificationHelper
 import dagger.assisted.Assisted
@@ -51,10 +53,21 @@ class FactCheckWorker @AssistedInject constructor(
             notificationHelper.showResultNotification(title, summary, checkResult.id)
 
             Result.success(workDataOf("resultId" to checkResult.id))
-        } catch (e: Exception) {
+        } catch (e: RateLimitException) {
+            Log.w(TAG, "Rate limit hit (429). Telling WorkManager to back off and retry.")
             notificationHelper.cancelProgressNotification()
-            val readableError = ErrorMapper.map(e)
-            Result.failure(workDataOf("error" to readableError))
+            Result.retry()
+        } catch (e: Exception) {
+            val errorMessage = e.message ?: "Unknown error"
+            if (errorMessage.contains("429", ignoreCase = true)) {
+                Log.w(TAG, "Rate limit hit (429). Telling WorkManager to back off and retry.")
+                notificationHelper.cancelProgressNotification()
+                Result.retry()
+            } else {
+                notificationHelper.cancelProgressNotification()
+                val readableError = ErrorMapper.map(e)
+                Result.failure(workDataOf("error" to readableError))
+            }
         }
     }
 
@@ -88,6 +101,10 @@ class FactCheckWorker @AssistedInject constructor(
         } else {
             ForegroundInfo(NotificationHelper.PROGRESS_NOTIFICATION_ID, builder.build())
         }
+    }
+
+    companion object {
+        private const val TAG = "FactCheckWorker"
     }
 }
 

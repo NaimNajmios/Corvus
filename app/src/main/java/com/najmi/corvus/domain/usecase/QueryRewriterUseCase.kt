@@ -1,7 +1,7 @@
 package com.najmi.corvus.domain.usecase
 
 import android.util.Log
-import com.najmi.corvus.data.remote.GroqClient
+import com.najmi.corvus.domain.router.LlmProviderRouter
 import com.najmi.corvus.domain.model.ClassifiedClaim
 import com.najmi.corvus.domain.model.RewrittenQuery
 import kotlinx.serialization.json.Json
@@ -13,7 +13,7 @@ import javax.inject.Singleton
 
 @Singleton
 class QueryRewriterUseCase @Inject constructor(
-    private val groqClient: GroqClient
+    private val router: LlmProviderRouter
 ) {
     companion object {
         private const val TAG = "QueryRewriter"
@@ -27,7 +27,7 @@ class QueryRewriterUseCase @Inject constructor(
         val prompt = buildPrompt(classified)
 
         return try {
-            val raw = groqClient.chat(prompt)
+            val raw = router.execute(prompt)
             parseRewrittenQuery(raw, classified.raw)
         } catch (e: Exception) {
             Log.w(TAG, "Query rewriting failed: ${e.message}, using fallback")

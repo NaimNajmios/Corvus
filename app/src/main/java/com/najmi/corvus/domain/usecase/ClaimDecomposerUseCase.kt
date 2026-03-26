@@ -1,7 +1,7 @@
 package com.najmi.corvus.domain.usecase
 
 import android.util.Log
-import com.najmi.corvus.data.remote.GroqClient
+import com.najmi.corvus.domain.router.LlmProviderRouter
 import com.najmi.corvus.domain.model.SubClaim
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -19,7 +19,7 @@ sealed class DecompositionResult {
 }
 
 class ClaimDecomposerUseCase @Inject constructor(
-    private val groqClient: GroqClient,
+    private val router: LlmProviderRouter,
     private val json: Json
 ) {
     companion object {
@@ -53,7 +53,7 @@ class ClaimDecomposerUseCase @Inject constructor(
         """.trimIndent()
 
         return try {
-            val response = groqClient.chat(prompt)
+            val response = router.execute(prompt)
             val jsonString = extractJson(response)
             val parsed = json.decodeFromString<DecomposerJson>(jsonString)
 

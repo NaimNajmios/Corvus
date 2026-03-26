@@ -145,11 +145,12 @@ class GeneralFactCheckPipeline @Inject constructor(
             onStepChange = onStepChange
         )
         
-        val providerUsed = initialResult.criticProvider?.name ?: "Unknown"
+        val providerUsed = initialResult.generalResult.criticProvider?.name ?: "Unknown"
+        val routingRationale = initialResult.routingRationale
         steps.add(PipelineStepResult(PipelineStep.ANALYZING, "Synthesized by $providerUsed"))
 
         // Apply Temporal Override if needed
-        val afterTemporalOverride = applyTemporalOverride(initialResult, temporalMismatch, temporalProfile)
+        val afterTemporalOverride = applyTemporalOverride(initialResult.generalResult, temporalMismatch, temporalProfile)
         
         // Plausibility Enrichment
         val finalResult = if (afterTemporalOverride.verdict == Verdict.UNVERIFIABLE) {
@@ -175,7 +176,8 @@ class GeneralFactCheckPipeline @Inject constructor(
             sourcesRetrieved = enrichedSources.size,
             avgSourceCredibility = avgCredibility,
             llmProviderUsed = providerUsed,
-            checkedAt = System.currentTimeMillis()
+            checkedAt = System.currentTimeMillis(),
+            routingRationale = routingRationale
         )
 
         // Algorithmic Grounding Verification

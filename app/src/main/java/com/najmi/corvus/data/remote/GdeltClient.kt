@@ -2,9 +2,12 @@ package com.najmi.corvus.data.remote
 
 import android.util.Log
 import io.ktor.client.HttpClient
+import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.isSuccess
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -35,13 +38,24 @@ class GdeltClient @Inject constructor(
     suspend fun search(query: String): List<GdeltArticle> {
         return try {
             Log.d(TAG, "Searching GDELT for: $query")
-            val response = httpClient.get(BASE_URL) {
+            val response: HttpResponse = httpClient.get(BASE_URL) {
                 parameter("query", query)
                 parameter("mode", "artlist")
                 parameter("maxrecords", 10)
                 parameter("format", "json")
-            }.body<GdeltResponse>()
-            response.articles
+            }
+
+            if (response.status.isSuccess()) {
+                val articles = response.body<GdeltResponse>().articles
+                Log.d(TAG, "GDELT returned ${articles.size} articles")
+                articles
+            } else {
+                Log.e(TAG, "GDELT returned error code: ${response.status}")
+                emptyList()
+            }
+        } catch (e: NoTransformationFoundException) {
+            Log.e(TAG, "GDELT returned HTML instead of JSON (likely rate-limited or down): ${e.message}")
+            emptyList()
         } catch (e: Exception) {
             Log.e(TAG, "GDELT search failed: ${e.message}")
             emptyList()

@@ -1,7 +1,7 @@
 package com.najmi.corvus.domain.usecase
 
 import android.util.Log
-import com.najmi.corvus.data.remote.GroqClient
+import com.najmi.corvus.domain.router.LlmProviderRouter
 import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.ClassifiedClaim
 import kotlinx.serialization.Serializable
@@ -18,7 +18,7 @@ private data class ClassifierResponse(
 )
 
 class ClaimClassifierUseCase @Inject constructor(
-    private val groqClient: GroqClient,
+    private val router: LlmProviderRouter,
     private val json: Json
 ) {
     companion object {
@@ -42,7 +42,7 @@ class ClaimClassifierUseCase @Inject constructor(
         """.trimIndent()
 
         return try {
-            val response = groqClient.chat(prompt)
+            val response = router.execute(prompt)
             parseClassifierResponse(raw, response)
         } catch (e: Exception) {
             Log.e(TAG, "Classification failed: ${e.message}")
