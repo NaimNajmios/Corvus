@@ -7,18 +7,25 @@ import javax.inject.Inject
 class SourceContextBuilder @Inject constructor() {
 
     private val SNIPPET_LENGTH_BY_PROVIDER = mapOf(
-        LlmProvider.GEMINI     to 3000,
-        LlmProvider.GROQ       to 2500,
-        LlmProvider.CEREBRAS   to 800,
-        LlmProvider.OPENROUTER to 2000
+        LlmProvider.GEMINI        to 3000,
+        LlmProvider.GROQ          to 2500,
+        LlmProvider.CEREBRAS      to 800,
+        LlmProvider.OPENROUTER    to 2000,
+        LlmProvider.MISTRAL_SABA  to 1200,
+        LlmProvider.MISTRAL_SMALL to 2500,
+        LlmProvider.COHERE_R      to 2500,
+        LlmProvider.COHERE_R_PLUS to 2500
     )
 
-    // Max total source context (all sources combined) to prevent prompt overflow
     private val MAX_TOTAL_CONTEXT_BY_PROVIDER = mapOf(
-        LlmProvider.GEMINI     to 15_000,
-        LlmProvider.GROQ       to 6_000,
-        LlmProvider.CEREBRAS   to 2_000,
-        LlmProvider.OPENROUTER to 5_000
+        LlmProvider.GEMINI        to 15_000,
+        LlmProvider.GROQ          to 12_000,
+        LlmProvider.CEREBRAS      to 4_000,
+        LlmProvider.OPENROUTER    to 8_000,
+        LlmProvider.MISTRAL_SABA  to 6_000,
+        LlmProvider.MISTRAL_SMALL to 12_000,
+        LlmProvider.COHERE_R      to 12_000,
+        LlmProvider.COHERE_R_PLUS to 12_000
     )
 
     fun build(

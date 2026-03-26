@@ -5,7 +5,10 @@ import com.najmi.corvus.data.local.UserPreferences
 import com.najmi.corvus.data.remote.CerebrasClient
 import com.najmi.corvus.data.remote.GeminiClient
 import com.najmi.corvus.data.remote.GroqClient
+import com.najmi.corvus.data.remote.MistralClient
 import com.najmi.corvus.data.remote.OpenRouterClient
+import com.najmi.corvus.data.remote.cohere.CohereClient
+import com.najmi.corvus.data.remote.cohere.CohereQuotaExceededException
 import com.najmi.corvus.data.remote.llm.SourceContextBuilder
 import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.domain.router.LlmProviderHealthTracker
@@ -14,44 +17,20 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import javax.inject.Inject
 
-data class ActorCriticProviders(
-    val actor: LlmProvider,
-    val critic: LlmProvider
-)
-
 class ActorCriticPipeline @Inject constructor(
     private val groqClient: GroqClient,
     private val geminiClient: GeminiClient,
     private val cerebrasClient: CerebrasClient,
     private val openRouterClient: OpenRouterClient,
+    private val mistralClient: MistralClient,
+    private val cohereClient: CohereClient,
     private val contextBuilder: SourceContextBuilder,
     private val healthTracker: LlmProviderHealthTracker,
+    private val providerSelector: ActorCriticProviderSelector,
     private val json: Json
 ) {
     companion object {
         private const val TAG = "ActorCriticPipeline"
-    }
-
-    private fun selectActorCriticProviders(
-        healthTracker: LlmProviderHealthTracker,
-        prefs: UserPreferences
-    ): ActorCriticProviders {
-        // Actor: fastest available
-        val actor = when {
-            healthTracker.isHealthy(LlmProvider.GROQ.name) -> LlmProvider.GROQ
-            healthTracker.isHealthy(LlmProvider.CEREBRAS.name) -> LlmProvider.CEREBRAS
-            healthTracker.isHealthy(LlmProvider.GEMINI.name) -> LlmProvider.GEMINI
-            else -> LlmProvider.OPENROUTER
-        }
-
-        // Critic: most reliable available — prefer different provider than Actor
-        val critic = when {
-            healthTracker.isHealthy(LlmProvider.GEMINI.name) && actor != LlmProvider.GEMINI -> LlmProvider.GEMINI
-            healthTracker.isHealthy(LlmProvider.GROQ.name) && actor != LlmProvider.GROQ -> LlmProvider.GROQ
-            else -> actor  // Same provider if no alternative
-        }
-
-        return ActorCriticProviders(actor = actor, critic = critic)
     }
 
     suspend fun analyze(
@@ -61,50 +40,50 @@ class ActorCriticPipeline @Inject constructor(
         prefs: UserPreferences,
         onStepChange: suspend (PipelineStep) -> Unit = {}
     ): CorvusCheckResult.GeneralResult {
-        // Limit sources to prevent context overflow (matching LlmRepository)
         val limitedSources = sources.take(10)
         
-        val providers = selectActorCriticProviders(healthTracker, prefs)
-        val actorContext = contextBuilder.build(limitedSources, providers.actor)
+        val assignment = providerSelector.select(classified)
+        val actorContext = contextBuilder.build(limitedSources, assignment.actor)
+        val criticContext = contextBuilder.build(limitedSources, assignment.critic)
 
-        Log.d(TAG, "Actor pass starting: ${providers.actor}")
+        Log.d(TAG, "Actor pass starting: ${assignment.actor}")
+        Log.d(TAG, "Critic pass starting: ${assignment.critic}")
 
-        // ── Pass 1: Actor ──
         onStepChange(PipelineStep.ANALYZING)
         val actorPrompt = buildActorPrompt(claim, classified, actorContext)
-        val actorRaw = completePrompt(providers.actor, actorPrompt)
+        val actorRaw = completePrompt(assignment.actor, actorPrompt)
         val actorDraft = parseActorDraft(actorRaw)
 
-        Log.d(TAG, "Critic pass starting: ${providers.critic}")
+        Log.d(TAG, "Critic pass starting: ${assignment.critic}")
 
-        // ── Pass 2: Critic ──
         onStepChange(PipelineStep.VERIFYING)
         
-        // REVISE CONTEXT: Only send sources used by actor + top 2 unused credible sources to the critic
         val actorUsedIndices = actorDraft.sourcesUsed.toSet()
         val criticSources = limitedSources.filterIndexed { index, _ -> 
             actorUsedIndices.contains(index) 
         }.toMutableList()
         
-        // Add top 2 unused sources as fallback for the critic to check for missed evidence
         val unusedSources = limitedSources.filterIndexed { index, _ -> !actorUsedIndices.contains(index) }
             .take(2)
         criticSources.addAll(unusedSources)
         
-        val condensedCriticContext = contextBuilder.build(criticSources, providers.critic)
+        val condensedCriticContext = contextBuilder.build(criticSources, assignment.critic)
         
         val criticPrompt = buildCriticPrompt(claim, condensedCriticContext, actorDraft)
         
         var criticRaw: String
-        var finalCriticProvider = providers.critic
+        var finalCriticProvider = assignment.critic
         
         try {
-            criticRaw = completePrompt(providers.critic, criticPrompt)
+            criticRaw = completePrompt(assignment.critic, criticPrompt)
+        } catch (e: CohereQuotaExceededException) {
+            Log.w(TAG, "Cohere quota exceeded: ${e.message}. Falling back to standard Critic.")
+            criticRaw = completePrompt(LlmProvider.GEMINI, criticPrompt)
+            finalCriticProvider = LlmProvider.GEMINI
         } catch (e: Exception) {
-            Log.e(TAG, "Primary Critic (${providers.critic}) failed: ${e.message}")
+            Log.e(TAG, "Primary Critic (${assignment.critic}) failed: ${e.message}")
             
-            // Fallback: If primary critic fails (429/timeout), try Gemini (if it wasn't already the critic/actor)
-            if (isRetryableError(e) && providers.critic != LlmProvider.GEMINI && providers.actor != LlmProvider.GEMINI) {
+            if (isRetryableError(e) && assignment.critic != LlmProvider.GEMINI && assignment.actor != LlmProvider.GEMINI) {
                 Log.d(TAG, "Attempting fallback Critic: GEMINI")
                 try {
                     criticRaw = completePrompt(LlmProvider.GEMINI, criticPrompt)
@@ -120,9 +99,8 @@ class ActorCriticPipeline @Inject constructor(
         
         val finalResult = parseCriticOutput(criticRaw, limitedSources)
 
-        // Attach metadata
         return finalResult.copy(
-            actorProvider = providers.actor,
+            actorProvider = assignment.actor,
             criticProvider = finalCriticProvider,
             correctionsLog = actorDraft.unsupportedAssumptions + (finalResult.correctionsLog ?: emptyList())
         )
@@ -135,6 +113,10 @@ class ActorCriticPipeline @Inject constructor(
                 LlmProvider.GROQ -> groqClient.chat(prompt)
                 LlmProvider.CEREBRAS -> cerebrasClient.chat(prompt)
                 LlmProvider.OPENROUTER -> openRouterClient.chat(prompt)
+                LlmProvider.MISTRAL_SABA -> mistralClient.chatSaba(prompt)
+                LlmProvider.MISTRAL_SMALL -> mistralClient.chatSmall(prompt)
+                LlmProvider.COHERE_R -> cohereClient.chatR(prompt)
+                LlmProvider.COHERE_R_PLUS -> cohereClient.chatRPlus(prompt)
             }
         } catch (e: Exception) {
             healthTracker.reportError(provider.name)

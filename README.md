@@ -64,12 +64,26 @@ GEMINI_API_KEY=your_key
 GROQ_API_KEY=your_key
 CEREBRAS_API_KEY=your_key
 OPENROUTER_API_KEY=your_key
+MISTRAL_API_KEY=your_key
+COHERE_API_KEY=your_key
 
 # Search & Specialty Sources
 TAVILY_API_KEY=your_key
 GOOGLE_FACT_CHECK_API_KEY=your_key
 HF_TOKEN=your_huggingface_token_for_gated_models
 ```
+
+### Free API Key Sources
+| Provider | Free Tier | Sign Up |
+|----------|-----------|---------|
+| Gemini | 1,500 requests/day | https://aistudio.google.com/app/apikey |
+| Groq | ~500k tokens/day | https://console.groq.com/keys |
+| Cerebras | ~1M tokens/day | https://cloud.cerebras.ai |
+| OpenRouter | Model-dependent | https://openrouter.ai/keys |
+| Mistral | ~500k tokens/day | https://console.mistral.ai |
+| Cohere | 1,000 calls/month | https://dashboard.cohere.com |
+| Tavily | 1,000 searches/month | https://tavily.com |
+| Google Fact Check | Varies | https://developers.google.com/fact-check/tools-api |
 
 ### Build Requirements
 - Android Studio Ladybug+

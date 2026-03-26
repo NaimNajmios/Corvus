@@ -1,6 +1,7 @@
 package com.najmi.corvus.domain.router
 
 import android.util.Log
+import com.najmi.corvus.domain.model.LlmProvider
 import javax.inject.Inject
 import javax.inject.Singleton
 import java.util.concurrent.ConcurrentHashMap
@@ -11,7 +12,7 @@ class LlmProviderHealthTracker @Inject constructor() {
     
     companion object {
         private const val ERROR_THRESHOLD = 3
-        private const val HEALTH_WINDOW_MS = 300_000L // 5 minutes
+        private const val HEALTH_WINDOW_MS = 300_000L
         private const val TAG = "LlmHealthTracker"
     }
 
@@ -20,7 +21,6 @@ class LlmProviderHealthTracker @Inject constructor() {
         val errors = providerErrors.getOrPut(providerId) { mutableListOf() }
         synchronized(errors) {
             errors.add(now)
-            // Cleanup old errors
             errors.removeIf { it < now - HEALTH_WINDOW_MS }
         }
         Log.w(TAG, "Reported error for $providerId. Total in window: ${errors.size}")
@@ -33,6 +33,16 @@ class LlmProviderHealthTracker @Inject constructor() {
         return synchronized(errors) {
             errors.removeIf { it < now - HEALTH_WINDOW_MS }
             errors.size < ERROR_THRESHOLD
+        }
+    }
+
+    fun isAvailable(provider: LlmProvider): Boolean {
+        if (!isHealthy(provider.name)) return false
+
+        return when (provider) {
+            LlmProvider.COHERE_R,
+            LlmProvider.COHERE_R_PLUS -> true
+            else -> true
         }
     }
 

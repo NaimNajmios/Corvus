@@ -4,7 +4,9 @@ import android.util.Log
 import com.najmi.corvus.data.remote.CerebrasClient
 import com.najmi.corvus.data.remote.GeminiClient
 import com.najmi.corvus.data.remote.GroqClient
+import com.najmi.corvus.data.remote.MistralClient
 import com.najmi.corvus.data.remote.OpenRouterClient
+import com.najmi.corvus.data.remote.cohere.CohereClient
 import com.najmi.corvus.data.remote.llm.SourceContextBuilder
 import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.domain.util.HarmPreScreener
@@ -64,6 +66,8 @@ class LlmRepository @Inject constructor(
     private val groqClient: GroqClient,
     private val cerebrasClient: CerebrasClient,
     private val openRouterClient: OpenRouterClient,
+    private val mistralClient: MistralClient,
+    private val cohereClient: CohereClient,
     private val json: Json,
     private val sourceContextBuilder: SourceContextBuilder
 ) {
@@ -96,6 +100,10 @@ class LlmRepository @Inject constructor(
                     LlmProvider.GROQ -> groqClient.chat(prompt)
                     LlmProvider.CEREBRAS -> cerebrasClient.chat(prompt)
                     LlmProvider.OPENROUTER -> openRouterClient.chat(prompt)
+                    LlmProvider.MISTRAL_SABA -> mistralClient.chatSaba(prompt)
+                    LlmProvider.MISTRAL_SMALL -> mistralClient.chatSmall(prompt)
+                    LlmProvider.COHERE_R -> cohereClient.chatR(prompt)
+                    LlmProvider.COHERE_R_PLUS -> cohereClient.chatRPlus(prompt)
                 }
                 
                 Log.d(TAG, "Got response, parsing...")

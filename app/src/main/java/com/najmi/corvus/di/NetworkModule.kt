@@ -82,6 +82,16 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @Named("mistral")
+    fun provideMistralApiKey(): String = BuildConfig.MISTRAL_API_KEY
+
+    @Provides
+    @Singleton
+    @Named("cohere")
+    fun provideCohereApiKey(): String = BuildConfig.COHERE_API_KEY
+
+    @Provides
+    @Singleton
     @Named("google_cse_api_key")
     fun provideGoogleCseApiKey(): String = BuildConfig.GOOGLE_CUSTOM_SEARCH_API_KEY
 

@@ -33,6 +33,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.Surface
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -59,6 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.najmi.corvus.BuildConfig
 import com.najmi.corvus.domain.model.LlmProvider
 import com.najmi.corvus.ui.theme.CorvusBorder
 import com.najmi.corvus.ui.theme.CorvusShapes
@@ -127,6 +129,22 @@ fun SettingsScreen(
                     expanded = showProviderMenu,
                     onDismiss = { showProviderMenu = false }
                 )
+            }
+
+            SettingsSection(title = "API Keys") {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    ApiKeyStatusRow("Gemini (AI Studio)", BuildConfig.GEMINI_API_KEY.isNotBlank())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ApiKeyStatusRow("Groq", BuildConfig.GROQ_API_KEY.isNotBlank())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ApiKeyStatusRow("Cerebras", BuildConfig.CEREBRAS_API_KEY.isNotBlank())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ApiKeyStatusRow("OpenRouter", BuildConfig.OPENROUTER_API_KEY.isNotBlank())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ApiKeyStatusRow("Mistral", BuildConfig.MISTRAL_API_KEY.isNotBlank())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ApiKeyStatusRow("Cohere", BuildConfig.COHERE_API_KEY.isNotBlank())
+                }
             }
 
             SettingsSection(title = "Language") {
@@ -530,6 +548,35 @@ fun ThemePreviewSwatch(isDark: Boolean) {
                 .clip(CorvusShapes.extraSmall)
                 .background(MaterialTheme.colorScheme.primary)
         )
+    }
+}
+
+@Composable
+fun ApiKeyStatusRow(provider: String, isConfigured: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = provider,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Surface(
+            color = if (isConfigured)
+                Color(0xFF10B981).copy(alpha = 0.12f)
+            else
+                Color(0xFFEF4444).copy(alpha = 0.12f),
+            shape = CorvusShapes.extraSmall
+        ) {
+            Text(
+                text = if (isConfigured) "Configured" else "Not set",
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isConfigured) Color(0xFF10B981) else Color(0xFFEF4444)
+            )
+        }
     }
 }
 

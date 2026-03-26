@@ -4,5 +4,9 @@ enum class LlmProvider {
     GEMINI,
     GROQ,
     CEREBRAS,
-    OPENROUTER
+    OPENROUTER,
+    MISTRAL_SABA,
+    MISTRAL_SMALL,
+    COHERE_R,
+    COHERE_R_PLUS
 }
