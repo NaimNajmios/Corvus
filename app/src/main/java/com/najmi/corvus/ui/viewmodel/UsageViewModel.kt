@@ -3,11 +3,6 @@ package com.najmi.corvus.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.BuildConfig
-import com.najmi.corvus.data.local.UserPreferences
-import com.najmi.corvus.data.local.UserPreferencesRepository
-import com.najmi.corvus.ui.theme.ColorPalette
-import com.najmi.corvus.data.repository.HistoryRepository
-import com.najmi.corvus.domain.model.LlmProvider
 import com.najmi.corvus.domain.usecase.CohereQuotaGuard
 import com.najmi.corvus.domain.usecase.GeminiQuotaGuard
 import com.najmi.corvus.domain.usecase.MistralQuotaGuard
@@ -20,83 +15,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class CohereQuotaInfo(
-    val dailyCallsR: Int = 0,
-    val dailyCallsRPlus: Int = 0,
-    val monthlyCalls: Int = 0,
-    val dailyLimitR: Int = 28,
-    val dailyLimitRPlus: Int = 8,
-    val monthlyLimit: Int = 950
-)
-
-data class ApiQuotaInfo(
-    val providerName: String,
-    val modelName: String,
-    val dailyCallsUsed: Int,
-    val dailyLimit: Int,
-    val monthlyCallsUsed: Int?,
-    val monthlyLimit: Int?,
-    val hasApiKey: Boolean
-)
-
-data class SettingsUiState(
-    val preferences: UserPreferences = UserPreferences(),
-    val historyCount: Int = 0,
-    val isLoading: Boolean = false,
-    val cohereQuota: CohereQuotaInfo = CohereQuotaInfo(),
-    val apiQuotas: List<ApiQuotaInfo> = emptyList()
-)
-
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
-    private val userPreferencesRepository: UserPreferencesRepository,
-    private val historyRepository: HistoryRepository,
+class UsageViewModel @Inject constructor(
     private val cohereQuotaGuard: CohereQuotaGuard,
     private val openRouterQuotaGuard: OpenRouterQuotaGuard,
     private val mistralQuotaGuard: MistralQuotaGuard,
     private val geminiQuotaGuard: GeminiQuotaGuard
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SettingsUiState())
-    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(UsageUiState())
+    val uiState: StateFlow<UsageUiState> = _uiState.asStateFlow()
 
     init {
-        loadPreferences()
-        loadHistoryCount()
-        loadCohereQuota()
         loadAllQuotas()
-    }
-
-    private fun loadPreferences() {
-        viewModelScope.launch {
-            userPreferencesRepository.preferences.collect { prefs ->
-                _uiState.update { it.copy(preferences = prefs) }
-            }
-        }
-    }
-
-    private fun loadHistoryCount() {
-        viewModelScope.launch {
-            val count = historyRepository.getCount()
-            _uiState.update { it.copy(historyCount = count) }
-        }
-    }
-
-    private fun loadCohereQuota() {
-        viewModelScope.launch {
-            val dailyR = cohereQuotaGuard.dailyCallsR()
-            val dailyRPlus = cohereQuotaGuard.dailyCallsRPlus()
-            val monthly = cohereQuotaGuard.monthlyCallsUsed()
-            _uiState.update {
-                it.copy(
-                    cohereQuota = CohereQuotaInfo(
-                        dailyCallsR = dailyR,
-                        dailyCallsRPlus = dailyRPlus,
-                        monthlyCalls = monthly
-                    )
-                )
-            }
-        }
     }
 
     private fun loadAllQuotas() {
@@ -178,45 +109,11 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setPreferredProvider(provider: LlmProvider) {
-        viewModelScope.launch {
-            userPreferencesRepository.setPreferredProvider(provider)
-        }
-    }
-
-    fun setResponseLanguage(language: String) {
-        viewModelScope.launch {
-            userPreferencesRepository.setResponseLanguage(language)
-        }
-    }
-
-    fun setDarkMode(enabled: Boolean?) {
-        viewModelScope.launch {
-            userPreferencesRepository.setDarkMode(enabled)
-        }
-    }
-
-    fun setShowAnimations(show: Boolean) {
-        viewModelScope.launch {
-            userPreferencesRepository.setShowAnimations(show)
-        }
-    }
-
-    fun setColorPalette(palette: ColorPalette) {
-        viewModelScope.launch {
-            userPreferencesRepository.setColorPalette(palette)
-        }
-    }
-
-    fun clearHistory() {
-        viewModelScope.launch {
-            historyRepository.clearAll()
-            loadHistoryCount()
-        }
-    }
-
     fun refreshQuotas() {
-        loadCohereQuota()
         loadAllQuotas()
     }
 }
+
+data class UsageUiState(
+    val apiQuotas: List<ApiQuotaInfo> = emptyList()
+)

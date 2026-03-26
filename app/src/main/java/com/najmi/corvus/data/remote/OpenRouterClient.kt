@@ -2,6 +2,7 @@ package com.najmi.corvus.data.remote
 
 import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
+import com.najmi.corvus.domain.usecase.OpenRouterQuotaGuard
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -67,17 +68,31 @@ data class OpenRouterError(
     val code: String? = null
 )
 
+class OpenRouterQuotaExceededException(
+    message: String,
+    val callsToday: Int
+) : Exception(message)
+
 @Singleton
 class OpenRouterClient @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
-    @Named("openrouter") private val apiKey: String
+    @Named("openrouter") private val apiKey: String,
+    private val quotaGuard: OpenRouterQuotaGuard
 ) : LlmClient {
     companion object {
         private const val TAG = "OpenRouterClient"
     }
 
     override suspend fun chat(prompt: String): String {
+        if (!quotaGuard.canCall()) {
+            val callsToday = quotaGuard.callsToday()
+            throw OpenRouterQuotaExceededException(
+                "OpenRouter daily quota reached. Calls today: $callsToday",
+                callsToday
+            )
+        }
+
         Log.d(TAG, "Sending request to OpenRouter, prompt length: ${prompt.length}")
         
         val response = httpClient.post("https://openrouter.ai/api/v1/chat/completions") {
@@ -127,6 +142,9 @@ class OpenRouterClient @Inject constructor(
         )
 
         Log.d(TAG, "Received response, tokens: ${usage.totalTokens}")
+
+        quotaGuard.recordCall()
+
         return text
     }
 }

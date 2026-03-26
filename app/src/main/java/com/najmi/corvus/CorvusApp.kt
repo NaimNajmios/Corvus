@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
@@ -46,6 +48,7 @@ import com.najmi.corvus.ui.input.InputScreen
 import com.najmi.corvus.ui.result.LoadingScreen
 import com.najmi.corvus.ui.result.ResultScreen
 import com.najmi.corvus.ui.settings.SettingsScreen
+import com.najmi.corvus.ui.usage.UsageScreen
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
 import kotlinx.coroutines.launch
 
@@ -56,6 +59,7 @@ object Routes {
     const val HISTORY = "history"
     const val SETTINGS = "settings"
     const val COMPARE = "compare"
+    const val USAGE = "usage"
 }
 
 data class BottomNavItem(
@@ -96,6 +100,12 @@ fun CorvusApp(
             route = Routes.HISTORY
         ),
         BottomNavItem(
+            title = "Usage",
+            selectedIcon = Icons.Filled.Analytics,
+            unselectedIcon = Icons.Outlined.Analytics,
+            route = Routes.USAGE
+        ),
+        BottomNavItem(
             title = "Settings",
             selectedIcon = Icons.Filled.Settings,
             unselectedIcon = Icons.Outlined.Settings,
@@ -103,7 +113,7 @@ fun CorvusApp(
         )
     )
 
-    val showBottomBar = currentRoute in listOf(Routes.INPUT, Routes.HISTORY, Routes.SETTINGS)
+    val showBottomBar = currentRoute in listOf(Routes.INPUT, Routes.HISTORY, Routes.USAGE, Routes.SETTINGS)
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -269,6 +279,10 @@ fun CorvusApp(
 
                 composable(Routes.SETTINGS) {
                     SettingsScreen()
+                }
+
+                composable(Routes.USAGE) {
+                    UsageScreen()
                 }
                 
                 composable(Routes.COMPARE) {

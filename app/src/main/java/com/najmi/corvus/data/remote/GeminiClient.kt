@@ -3,6 +3,7 @@ package com.najmi.corvus.data.remote
 import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
 import com.najmi.corvus.domain.model.TokenUsage
+import com.najmi.corvus.domain.usecase.GeminiQuotaGuard
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpRequestTimeoutException
@@ -81,16 +82,30 @@ data class GeminiError(
     val status: String
 )
 
+class GeminiQuotaExceededException(
+    message: String,
+    val callsToday: Int
+) : Exception(message)
+
 @Singleton
 class GeminiClient @Inject constructor(
     private val httpClient: HttpClient,
-    @Named("gemini") private val apiKey: String
+    @Named("gemini") private val apiKey: String,
+    private val quotaGuard: GeminiQuotaGuard
 ) : LlmClient {
     companion object {
         private const val TAG = "GeminiClient"
     }
 
     override suspend fun chat(prompt: String): String {
+        if (!quotaGuard.canCall()) {
+            val callsToday = quotaGuard.callsToday()
+            throw GeminiQuotaExceededException(
+                "Gemini daily quota reached. Calls today: $callsToday",
+                callsToday
+            )
+        }
+
         Log.d(TAG, "Sending request to Gemini, prompt length: ${prompt.length}")
         
         val response = httpClient.post(
@@ -151,6 +166,9 @@ class GeminiClient @Inject constructor(
         )
 
         Log.d(TAG, "Received response, length: ${text.length}, tokens: ${usage.totalTokens}")
+
+        quotaGuard.recordCall()
+
         return text
     }
 }

@@ -70,6 +70,7 @@ import com.najmi.corvus.ui.theme.CorvusVoid
 import com.najmi.corvus.ui.theme.CorvusVoidLight
 import com.najmi.corvus.ui.theme.ColorPalette
 import com.najmi.corvus.ui.theme.Palettes
+import com.najmi.corvus.ui.viewmodel.ApiQuotaInfo
 import com.najmi.corvus.ui.viewmodel.CohereQuotaInfo
 import com.najmi.corvus.ui.viewmodel.SettingsViewModel
 
@@ -155,11 +156,22 @@ fun SettingsScreen(
                 }
             }
 
-            SettingsSection(title = "Cohere Quota") {
-                CohereQuotaCard(
-                    quota = uiState.cohereQuota,
-                    modifier = Modifier.padding(16.dp)
-                )
+            SettingsSection(title = "API Quotas") {
+                if (uiState.apiQuotas.isNotEmpty()) {
+                    uiState.apiQuotas.forEach { quota ->
+                        ProviderQuotaCard(
+                            quota = quota,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "No API keys configured. Add an API key to track quota usage.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
             }
 
             SettingsSection(title = "Usage Analytics") {
@@ -771,6 +783,78 @@ fun CohereQuotaCard(
 
         Text(
             text = "Resets daily at midnight and monthly on the 1st",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
+fun ProviderQuotaCard(
+    quota: ApiQuotaInfo,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = quota.providerName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = quota.modelName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Daily",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            QuotaProgressBar(
+                used = quota.dailyCallsUsed,
+                limit = quota.dailyLimit
+            )
+        }
+
+        quota.monthlyCallsUsed?.let { monthlyUsed ->
+            quota.monthlyLimit?.let { monthlyLimit ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Monthly",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    QuotaProgressBar(
+                        used = monthlyUsed,
+                        limit = monthlyLimit
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+        Text(
+            text = "Resets daily at midnight",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )

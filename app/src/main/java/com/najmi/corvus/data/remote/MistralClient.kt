@@ -2,6 +2,7 @@ package com.najmi.corvus.data.remote
 
 import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
+import com.najmi.corvus.domain.usecase.MistralQuotaGuard
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -76,11 +77,17 @@ object MistralModels {
     )
 }
 
+class MistralQuotaExceededException(
+    message: String,
+    val callsToday: Int
+) : Exception(message)
+
 @Singleton
 class MistralClient @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
-    @Named("mistral") private val apiKey: String
+    @Named("mistral") private val apiKey: String,
+    private val quotaGuard: MistralQuotaGuard
 ) : LlmClient {
     companion object {
         private const val TAG = "MistralClient"
@@ -90,6 +97,14 @@ class MistralClient @Inject constructor(
     override suspend fun chat(prompt: String): String = chat(prompt, MistralModels.SMALL)
  
     suspend fun chat(prompt: String, model: String = MistralModels.SMALL): String {
+        if (!quotaGuard.canCall()) {
+            val callsToday = quotaGuard.callsToday()
+            throw MistralQuotaExceededException(
+                "Mistral daily quota reached. Calls today: $callsToday",
+                callsToday
+            )
+        }
+
         Log.d(TAG, "Sending request to Mistral ($model), prompt length: ${prompt.length}")
 
         val response = httpClient.post(BASE_URL) {
@@ -138,9 +153,12 @@ class MistralClient @Inject constructor(
         )
 
         Log.d(TAG, "Received response, tokens: ${usage.totalTokens}")
+
+        quotaGuard.recordCall()
+
         return text
     }
- 
+  
     suspend fun chatSaba(prompt: String): String = chat(prompt, MistralModels.SABA)
  
     suspend fun chatSmall(prompt: String): String = chat(prompt, MistralModels.SMALL)
