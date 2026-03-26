@@ -2,6 +2,8 @@ package com.najmi.corvus.data.remote
 
 import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
+import com.najmi.corvus.data.remote.LlmResponse
+import com.najmi.corvus.domain.model.TokenUsage
 import com.najmi.corvus.domain.usecase.OpenRouterQuotaGuard
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -84,7 +86,7 @@ class OpenRouterClient @Inject constructor(
         private const val TAG = "OpenRouterClient"
     }
 
-    override suspend fun chat(prompt: String): String {
+    override suspend fun chat(prompt: String): LlmResponse {
         if (!quotaGuard.canCall()) {
             val callsToday = quotaGuard.callsToday()
             throw OpenRouterQuotaExceededException(
@@ -133,7 +135,7 @@ class OpenRouterClient @Inject constructor(
         val text = openRouterResponse.choices.firstOrNull()?.message?.content
             ?: throw Exception("Empty response from OpenRouter")
 
-        val usage = com.najmi.corvus.domain.model.TokenUsage(
+        val usage = TokenUsage(
             promptTokens = openRouterResponse.usage?.promptTokens ?: 0,
             completionTokens = openRouterResponse.usage?.completionTokens ?: 0,
             totalTokens = openRouterResponse.usage?.totalTokens ?: 0,
@@ -145,6 +147,6 @@ class OpenRouterClient @Inject constructor(
 
         quotaGuard.recordCall()
 
-        return text
+        return LlmResponse(text, usage)
     }
 }

@@ -4,6 +4,7 @@ import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
 import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.model.LlmProvider
+import com.najmi.corvus.domain.model.TokenUsage
 import com.najmi.corvus.domain.usecase.CohereQuotaGuard
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -31,13 +32,13 @@ class CohereClient @Inject constructor(
     private val quotaGuard: CohereQuotaGuard
 ) : LlmClient {
     
-    override suspend fun chat(prompt: String): String = chatR(prompt)
+    override suspend fun chat(prompt: String): LlmResponse = chatR(prompt)
     companion object {
         private const val TAG = "CohereClient"
         private const val CHAT_URL = "https://api.cohere.com/v2/chat"
     }
 
-    suspend fun chat(prompt: String, model: String = CohereModels.COMMAND_R): String {
+    suspend fun chat(prompt: String, model: String = CohereModels.COMMAND_R): LlmResponse {
         if (!quotaGuard.canCall(model)) {
             val callsToday = quotaGuard.callsToday()
             throw CohereQuotaExceededException(
@@ -83,7 +84,7 @@ class CohereClient @Inject constructor(
 
         quotaGuard.recordCall(model)
         
-        val usage = com.najmi.corvus.domain.model.TokenUsage(
+        val usage = TokenUsage(
             promptTokens = cohereResponse.meta?.tokens?.inputTokens ?: cohereResponse.meta?.billedUnits?.inputTokens ?: 0,
             completionTokens = cohereResponse.meta?.tokens?.outputTokens ?: cohereResponse.meta?.billedUnits?.outputTokens ?: 0,
             totalTokens = (cohereResponse.meta?.tokens?.inputTokens ?: 0) + (cohereResponse.meta?.tokens?.outputTokens ?: 0),
@@ -91,12 +92,12 @@ class CohereClient @Inject constructor(
             model = model
         )
         
-        return cohereResponse.text
+        return LlmResponse(cohereResponse.text, usage)
     }
 
-    suspend fun chatR(prompt: String): String = chat(prompt, CohereModels.COMMAND_R)
+    suspend fun chatR(prompt: String): LlmResponse = chat(prompt, CohereModels.COMMAND_R)
 
-    suspend fun chatRPlus(prompt: String): String = chat(prompt, CohereModels.COMMAND_R_PLUS)
+    suspend fun chatRPlus(prompt: String): LlmResponse = chat(prompt, CohereModels.COMMAND_R_PLUS)
 
     fun getProvider(model: String): LlmProvider = when {
         model.contains("plus", ignoreCase = true) -> LlmProvider.COHERE_R_PLUS

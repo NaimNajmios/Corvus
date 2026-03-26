@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.BuildConfig
 import com.najmi.corvus.domain.usecase.CohereQuotaGuard
 import com.najmi.corvus.domain.usecase.GeminiQuotaGuard
+import com.najmi.corvus.domain.usecase.GroqQuotaGuard
 import com.najmi.corvus.domain.usecase.MistralQuotaGuard
 import com.najmi.corvus.domain.usecase.OpenRouterQuotaGuard
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +21,8 @@ class UsageViewModel @Inject constructor(
     private val cohereQuotaGuard: CohereQuotaGuard,
     private val openRouterQuotaGuard: OpenRouterQuotaGuard,
     private val mistralQuotaGuard: MistralQuotaGuard,
-    private val geminiQuotaGuard: GeminiQuotaGuard
+    private val geminiQuotaGuard: GeminiQuotaGuard,
+    private val groqQuotaGuard: GroqQuotaGuard
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UsageUiState())
@@ -100,6 +102,21 @@ class UsageViewModel @Inject constructor(
                         dailyLimit = GeminiQuotaGuard.DAILY_LIMIT,
                         monthlyCallsUsed = geminiQuotaGuard.monthlyCallsUsed(),
                         monthlyLimit = GeminiQuotaGuard.MONTHLY_LIMIT,
+                        hasApiKey = true
+                    )
+                )
+            }
+
+            val hasGroqKey = BuildConfig.GROQ_API_KEY.isNotBlank()
+            if (hasGroqKey) {
+                quotas.add(
+                    ApiQuotaInfo(
+                        providerName = "Groq",
+                        modelName = "llama-3.3-70b-versatile",
+                        dailyCallsUsed = groqQuotaGuard.callsToday(),
+                        dailyLimit = GroqQuotaGuard.DAILY_LIMIT,
+                        monthlyCallsUsed = groqQuotaGuard.monthlyCallsUsed(),
+                        monthlyLimit = GroqQuotaGuard.MONTHLY_LIMIT,
                         hasApiKey = true
                     )
                 )

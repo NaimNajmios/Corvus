@@ -44,7 +44,7 @@ class EntityExtractorUseCase @Inject constructor(
                 Claim: "$claim"
                 """.trimIndent()
             )
-            val name = response.trim().removeSurrounding("\"")
+            val name = response.text.trim().removeSurrounding("\"")
             if (name == "NONE" || name.isBlank() || name.length > 100) null
             else ExtractedEntity(
                 name = name,

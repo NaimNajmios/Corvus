@@ -156,31 +156,6 @@ fun SettingsScreen(
                 }
             }
 
-            SettingsSection(title = "API Quotas") {
-                if (uiState.apiQuotas.isNotEmpty()) {
-                    uiState.apiQuotas.forEach { quota ->
-                        ProviderQuotaCard(
-                            quota = quota,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
-                } else {
-                    Text(
-                        text = "No API keys configured. Add an API key to track quota usage.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-            }
-
-            SettingsSection(title = "Usage Analytics") {
-                TokenUsageDashboard(
-                    uiState = tokenUsageState,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-
             SettingsSection(title = "Language") {
                 SettingsItemWithDropdown(
                     icon = Icons.Default.Language,

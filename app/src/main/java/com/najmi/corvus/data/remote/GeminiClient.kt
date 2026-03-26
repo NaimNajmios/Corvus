@@ -2,6 +2,7 @@ package com.najmi.corvus.data.remote
 
 import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
+import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.model.TokenUsage
 import com.najmi.corvus.domain.usecase.GeminiQuotaGuard
 import io.ktor.client.HttpClient
@@ -97,7 +98,7 @@ class GeminiClient @Inject constructor(
         private const val TAG = "GeminiClient"
     }
 
-    override suspend fun chat(prompt: String): String {
+    override suspend fun chat(prompt: String): LlmResponse {
         if (!quotaGuard.canCall()) {
             val callsToday = quotaGuard.callsToday()
             throw GeminiQuotaExceededException(
@@ -157,7 +158,7 @@ class GeminiClient @Inject constructor(
             throw Exception("Empty response from Gemini")
         }
 
-        val usage = com.najmi.corvus.domain.model.TokenUsage(
+        val usage = TokenUsage(
             promptTokens = geminiResponse.usageMetadata?.promptTokenCount ?: 0,
             completionTokens = geminiResponse.usageMetadata?.candidatesTokenCount ?: 0,
             totalTokens = geminiResponse.usageMetadata?.totalTokenCount ?: 0,
@@ -169,6 +170,6 @@ class GeminiClient @Inject constructor(
 
         quotaGuard.recordCall()
 
-        return text
+        return LlmResponse(text, usage)
     }
 }

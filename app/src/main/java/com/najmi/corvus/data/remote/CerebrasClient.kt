@@ -2,6 +2,8 @@ package com.najmi.corvus.data.remote
 
 import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
+import com.najmi.corvus.data.remote.LlmResponse
+import com.najmi.corvus.domain.model.TokenUsage
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -79,7 +81,7 @@ class CerebrasClient @Inject constructor(
         private const val TAG = "CerebrasClient"
     }
 
-    override suspend fun chat(prompt: String): String = withContext(Dispatchers.IO) {
+    override suspend fun chat(prompt: String): LlmResponse = withContext(Dispatchers.IO) {
         Log.d(TAG, "Sending request to Cerebras, prompt length: ${prompt.length}")
         
         val response = httpClient.post("https://api.cerebras.ai/v1/chat/completions") {
@@ -118,7 +120,7 @@ class CerebrasClient @Inject constructor(
         val text = cerebrasResponse.choices.firstOrNull()?.message?.content
             ?: throw Exception("Empty response from Cerebras")
 
-        val usage = com.najmi.corvus.domain.model.TokenUsage(
+        val usage = TokenUsage(
             promptTokens = cerebrasResponse.usage?.promptTokens ?: 0,
             completionTokens = cerebrasResponse.usage?.completionTokens ?: 0,
             totalTokens = cerebrasResponse.usage?.totalTokens ?: 0,
@@ -127,6 +129,6 @@ class CerebrasClient @Inject constructor(
         )
 
         Log.d(TAG, "Received response, tokens: ${usage.totalTokens}")
-        text
+        LlmResponse(text, usage)
     }
 }

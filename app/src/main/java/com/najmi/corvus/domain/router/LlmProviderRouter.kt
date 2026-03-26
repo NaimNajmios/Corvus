@@ -23,7 +23,7 @@ class LlmProviderRouter @Inject constructor(
         val primaryClient = clients[preferredProvider]
         if (primaryClient != null && healthTracker.isAvailable(preferredProvider)) {
             try {
-                return LlmResponse(primaryClient.chat(prompt), com.najmi.corvus.domain.model.TokenUsage.EMPTY)
+                return primaryClient.chat(prompt)
             } catch (e: Exception) {
                 Log.e(TAG, "Primary provider ($preferredProvider) failed: ${e.message}")
                 healthTracker.reportError(preferredProvider.name)
@@ -39,7 +39,7 @@ class LlmProviderRouter @Inject constructor(
             if (geminiClient != null && healthTracker.isAvailable(LlmProvider.GEMINI)) {
                 try {
                     Log.i(TAG, "Falling back to GEMINI for prompt resilience")
-                    return LlmResponse(geminiClient.chat(prompt), com.najmi.corvus.domain.model.TokenUsage.EMPTY)
+                    return geminiClient.chat(prompt)
                 } catch (e: Exception) {
                     Log.e(TAG, "Fallback GEMINI failed: ${e.message}")
                     healthTracker.reportError(LlmProvider.GEMINI.name)
@@ -58,7 +58,7 @@ class LlmProviderRouter @Inject constructor(
             if (client != null && healthTracker.isAvailable(provider)) {
                 try {
                     Log.i(TAG, "Trying last-resort fallback: ${provider.name}")
-                    return LlmResponse(client.chat(prompt), com.najmi.corvus.domain.model.TokenUsage.EMPTY)
+                    return client.chat(prompt)
                 } catch (e: Exception) {
                     Log.e(TAG, "Last-resort fallback ${provider.name} failed: ${e.message}")
                     healthTracker.reportError(provider.name)

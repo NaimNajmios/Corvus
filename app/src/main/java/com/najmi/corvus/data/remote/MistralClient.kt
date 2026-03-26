@@ -2,6 +2,8 @@ package com.najmi.corvus.data.remote
 
 import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
+import com.najmi.corvus.data.remote.LlmResponse
+import com.najmi.corvus.domain.model.TokenUsage
 import com.najmi.corvus.domain.usecase.MistralQuotaGuard
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -94,9 +96,9 @@ class MistralClient @Inject constructor(
         private const val BASE_URL = "https://api.mistral.ai/v1/chat/completions"
     }
 
-    override suspend fun chat(prompt: String): String = chat(prompt, MistralModels.SMALL)
+    override suspend fun chat(prompt: String): LlmResponse = chat(prompt, MistralModels.SMALL)
  
-    suspend fun chat(prompt: String, model: String = MistralModels.SMALL): String {
+    suspend fun chat(prompt: String, model: String = MistralModels.SMALL): LlmResponse {
         if (!quotaGuard.canCall()) {
             val callsToday = quotaGuard.callsToday()
             throw MistralQuotaExceededException(
@@ -144,7 +146,7 @@ class MistralClient @Inject constructor(
         val text = mistralResponse.choices.firstOrNull()?.message?.content
             ?: throw Exception("Empty response from Mistral")
 
-        val usage = com.najmi.corvus.domain.model.TokenUsage(
+        val usage = TokenUsage(
             promptTokens = mistralResponse.usage?.promptTokens ?: 0,
             completionTokens = mistralResponse.usage?.completionTokens ?: 0,
             totalTokens = mistralResponse.usage?.totalTokens ?: 0,
@@ -156,10 +158,10 @@ class MistralClient @Inject constructor(
 
         quotaGuard.recordCall()
 
-        return text
+        return LlmResponse(text, usage)
     }
   
-    suspend fun chatSaba(prompt: String): String = chat(prompt, MistralModels.SABA)
+    suspend fun chatSaba(prompt: String): LlmResponse = chat(prompt, MistralModels.SABA)
  
-    suspend fun chatSmall(prompt: String): String = chat(prompt, MistralModels.SMALL)
+    suspend fun chatSmall(prompt: String): LlmResponse = chat(prompt, MistralModels.SMALL)
 }

@@ -63,7 +63,7 @@ class PlausibilityEnricherUseCase @Inject constructor(
 
         return try {
             val response = groqClient.chat(prompt)
-            val cleanedText = response
+            val cleanedText = response.text
                 .trim()
                 .removePrefix("```json")
                 .removePrefix("```")

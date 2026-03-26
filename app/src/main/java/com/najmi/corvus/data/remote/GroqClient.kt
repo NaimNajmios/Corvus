@@ -2,6 +2,9 @@ package com.najmi.corvus.data.remote
 
 import android.util.Log
 import com.najmi.corvus.data.remote.LlmClient
+import com.najmi.corvus.data.remote.LlmResponse
+import com.najmi.corvus.domain.model.TokenUsage
+import com.najmi.corvus.domain.usecase.GroqQuotaGuard
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -67,17 +70,31 @@ data class GroqError(
     val code: String? = null
 )
 
+class GroqQuotaExceededException(
+    message: String,
+    val callsToday: Int
+) : Exception(message)
+
 @Singleton
 class GroqClient @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
-    @Named("groq") private val apiKey: String
+    @Named("groq") private val apiKey: String,
+    private val quotaGuard: GroqQuotaGuard
 ) : LlmClient {
     companion object {
         private const val TAG = "GroqClient"
     }
 
-    override suspend fun chat(prompt: String): String {
+    override suspend fun chat(prompt: String): LlmResponse {
+        if (!quotaGuard.canCall()) {
+            val callsToday = quotaGuard.callsToday()
+            throw GroqQuotaExceededException(
+                "Groq daily quota reached. Calls today: $callsToday",
+                callsToday
+            )
+        }
+
         Log.d(TAG, "Sending request to Groq, prompt length: ${prompt.length}")
         
         val response = httpClient.post("https://api.groq.com/openai/v1/chat/completions") {
@@ -116,7 +133,7 @@ class GroqClient @Inject constructor(
         val text = groqResponse.choices.firstOrNull()?.message?.content
             ?: throw Exception("Empty response from Groq")
 
-        val usage = com.najmi.corvus.domain.model.TokenUsage(
+        val usage = TokenUsage(
             promptTokens = groqResponse.usage?.promptTokens ?: 0,
             completionTokens = groqResponse.usage?.completionTokens ?: 0,
             totalTokens = groqResponse.usage?.totalTokens ?: 0,
@@ -125,6 +142,9 @@ class GroqClient @Inject constructor(
         )
 
         Log.d(TAG, "Received response, tokens: ${usage.totalTokens}")
-        return text
+
+        quotaGuard.recordCall()
+
+        return LlmResponse(text, usage)
     }
 }
