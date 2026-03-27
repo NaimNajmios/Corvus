@@ -627,7 +627,12 @@ fun ResultBottomActions(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .graphicsLayer { translationY = offsetY }
+            .graphicsLayer { 
+                // Translate down to hide (offsetY is 0 to -height, so -offsetY is 0 to height)
+                translationY = -offsetY 
+                // Fade out as it moves
+                alpha = if (offsetY < -10f) 0f else 1f
+            }
             .background(MaterialTheme.colorScheme.surface)
             .padding(20.dp)
     ) {

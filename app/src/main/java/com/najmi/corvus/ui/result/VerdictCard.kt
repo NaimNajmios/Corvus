@@ -189,7 +189,7 @@ fun VerdictBadge(
         modifier = modifier
             .background(color.copy(alpha = 0.1f), CorvusShapes.extraSmall)
             .border(0.5.dp, color.copy(alpha = 0.3f), CorvusShapes.extraSmall)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
@@ -239,7 +239,7 @@ fun LargeVerdictBadge(
     Box(
         modifier = modifier
             .background(color.copy(alpha = 0.05f), CorvusShapes.small)
-            .padding(vertical = 4.dp)
+            .padding(vertical = 12.dp, horizontal = 16.dp)
     ) {
         Text(
             text = verdict.displayName().uppercase(),
@@ -253,6 +253,7 @@ fun LargeVerdictBadge(
             color = color
         )
     }
+    Spacer(Modifier.height(10.dp))
 }
 
 @Composable
@@ -264,7 +265,7 @@ fun LargeQuoteVerdictBadge(
     Box(
         modifier = modifier
             .background(color.copy(alpha = 0.05f), CorvusShapes.small)
-            .padding(vertical = 4.dp)
+            .padding(vertical = 12.dp, horizontal = 16.dp)
     ) {
         Text(
             text = verdict.displayName().uppercase(),
@@ -278,6 +279,7 @@ fun LargeQuoteVerdictBadge(
             color = color
         )
     }
+    Spacer(Modifier.height(10.dp))
 }
 
 @Composable
