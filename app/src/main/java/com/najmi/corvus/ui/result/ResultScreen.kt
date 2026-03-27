@@ -79,6 +79,10 @@ fun ResultScreen(
         derivedStateOf { listState.firstVisibleItemIndex > 2 }
     }
 
+    val showStickyStrip by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 1 }
+    }
+
     // Hide-on-scroll logic for bottom bar
     val density = LocalDensity.current
     val bottomBarHeight = 120.dp
@@ -103,15 +107,13 @@ fun ResultScreen(
 
     fun scrollToSource(sourceId: String, sourceIndex: Int) {
         scope.launch {
-            // Scroll directly to the source by its ID-based key
             val targetKey = "source_${sourceId}"
             val targetIndex = listState.layoutInfo.visibleItemsInfo.find { it.key == targetKey }?.index
             
             if (targetIndex != null) {
                 listState.animateScrollToItem(targetIndex)
             } else {
-                // Fallback: heuristic scroll
-                listState.animateScrollToItem(12 + sourceIndex)
+                listState.animateScrollToItem(14 + sourceIndex)
             }
         }
     }
@@ -129,458 +131,538 @@ fun ResultScreen(
         }
     }
 
-
-    Box(
+    Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .nestedScroll(nestedScrollConnection)
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        val corvusResult = result
-        if (corvusResult != null) {
-            val sources = corvusResult.sources
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .alpha(if (showContent) 1f else 0f),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 120.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item(key = "top_spacer") {
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
+            .nestedScroll(nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            if (result != null) {
+                ResultBottomActions(
+                    onAnalyzeAnother = { 
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onAnalyzeAnother() 
+                    },
+                    onShare = { 
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        shareResult() 
+                    },
+                    offsetY = bottomBarOffsetHeightPx
+                )
+            }
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            if (result != null) {
+                val sources = result.sources
+                
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item(key = "top_spacer") {
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
 
-                item(key = "back_button_row") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = {
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onBack()
+                    item(key = "back_button_row") {
+                        StaggeredReveal(index = 0, show = showContent) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(onClick = onBack) {
+                                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                                }
                             }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.onBackground
+                        }
+                    }
+
+                    // 1. PRIMARY FINDING BANNERS (Recency/Viral short-circuits)
+                    if (result is CorvusCheckResult.GeneralResult) {
+                        if (result.verdict == Verdict.RECENCY_UNVERIFIABLE) {
+                            item(key = "recency_banner") {
+                                StaggeredReveal(index = 1, show = showContent) {
+                                    ZombieClaimWarningBanner(result.temporalMismatch ?: TemporalMismatchReport(true, 0, 0, 0, 0, emptyList(), null))
+                                }
+                            }
+                        }
+                        
+                        if (result.viralDetection is ViralDetectionResult.KnownHoax && 
+                            result.verdict == Verdict.RECENCY_UNVERIFIABLE) {
+                            item(key = "viral_banner") {
+                                StaggeredReveal(index = 2, show = showContent) {
+                                    ViralHoaxResultCard(CorvusCheckResult.ViralHoaxResult(
+                                        claim = result.claim,
+                                        matchedClaim = (result.viralDetection as ViralDetectionResult.KnownHoax).matchedClaim,
+                                        debunkUrls = (result.viralDetection as ViralDetectionResult.KnownHoax).debunkUrls
+                                    ))
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. VERDICT CARD — always the first substantive item
+                    item(key = "verdict_card") {
+                        StaggeredReveal(index = 3, show = showContent) {
+                            VerdictCard(
+                                result = result,
+                                modifier = Modifier.fillMaxWidth(),
+                                onSourceClick = { index -> 
+                                    val source = sources.getOrNull(index)
+                                    if (source != null) {
+                                        scrollToSource(source.id, index)
+                                    }
+                                }
                             )
                         }
-                        Spacer(modifier = Modifier.weight(1f))
                     }
-                }
 
-                item(key = "query_card") {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateContentSize()
-                            .clickable {
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                queryExpanded = !queryExpanded
-                            },
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f)
-                        ),
-                        border = BorderStroke(
-                            1.dp, 
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                        ),
-                        shape = CorvusShapes.medium
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .height(IntrinsicSize.Min),
-                            verticalAlignment = Alignment.Top
-                        ) {
-                            Box(
+                    // 3. MISSING CONTEXT / MISLEADING ELEMENTS
+                    if (result is CorvusCheckResult.GeneralResult && result.missingContext != null) {
+                        item(key = "missing_context") {
+                            StaggeredReveal(index = 4, show = showContent) {
+                                MissingContextCallout(result.missingContext!!)
+                            }
+                        }
+                    }
+
+                    // 4. ANALYZED CLAIM
+                    item(key = "query_card") {
+                        StaggeredReveal(index = 5, show = showContent) {
+                            Card(
                                 modifier = Modifier
-                                    .width(4.dp)
-                                    .fillMaxHeight()
-                                    .background(
-                                        MaterialTheme.colorScheme.primary,
-                                        CircleShape
-                                    )
-                            )
-                            Spacer(Modifier.width(16.dp))
-                            Column {
+                                    .fillMaxWidth()
+                                    .animateContentSize()
+                                    .clickable {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        queryExpanded = !queryExpanded
+                                    },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.08f)
+                                ),
+                                border = BorderStroke(
+                                    1.dp, 
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                ),
+                                shape = CorvusShapes.medium
+                            ) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    modifier = Modifier
+                                        .padding(12.dp)
+                                        .height(IntrinsicSize.Min),
+                                    verticalAlignment = Alignment.Top
                                 ) {
-                                    Text(
-                                        text = "ANALYZED CLAIM",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = FontWeight.Black
-                                        ),
-                                        color = MaterialTheme.colorScheme.primary,
-                                        letterSpacing = 1.2.sp
+                                    Box(
+                                        modifier = Modifier
+                                            .width(3.dp)
+                                            .fillMaxHeight()
+                                            .background(
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                                                CircleShape
+                                            )
                                     )
-                                    
-                                    if (!queryExpanded && corvusResult.claim.length > 100) {
+                                    Spacer(Modifier.width(12.dp))
+                                    Column {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "ANALYZED CLAIM",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 9.sp
+                                                ),
+                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                                letterSpacing = 1.sp
+                                            )
+                                            
+                                            if (!queryExpanded && result.claim.length > 100) {
+                                                Text(
+                                                    text = "expand",
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                                    fontStyle = FontStyle.Italic
+                                                )
+                                            }
+                                        }
                                         Text(
-                                            text = "tap to expand",
-                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                                            fontStyle = FontStyle.Italic
+                                            text = result.claim,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                            maxLines = if (queryExpanded) Int.MAX_VALUE else 2,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
-                                Text(
-                                    text = corvusResult.claim,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = if (queryExpanded) Int.MAX_VALUE else 3,
-                                    overflow = TextOverflow.Ellipsis
-                                )
                             }
                         }
                     }
-                }
 
-                if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.temporalMismatch?.hasSignificantMismatch == true) {
-                    item(key = "temporal_warning") {
-                        ZombieClaimWarningBanner(corvusResult.temporalMismatch)
+                    // 5. EXPLANATION
+                    item(key = "explanation_header") {
+                        StaggeredReveal(index = 6, show = showContent) {
+                            Text(
+                                text = when (result) {
+                                    is CorvusCheckResult.GeneralResult -> "EXPLANATION"
+                                    is CorvusCheckResult.QuoteResult -> "CONTEXT & ORIGIN"
+                                    is CorvusCheckResult.CompositeResult -> "SUMMARY"
+                                    else -> "RESULT DETAILS"
+                                },
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
                     }
-                }
 
-                item(key = "verdict_card") {
-                    VerdictCard(
-                        result = corvusResult,
-                        modifier = Modifier.fillMaxWidth(),
-                        onSourceClick = { index -> 
-                            val source = sources.getOrNull(index)
-                            if (source != null) {
-                                scrollToSource(source.id, index)
+                    item(key = "explanation_text") {
+                        StaggeredReveal(index = 7, show = showContent) {
+                            val explanation = when (result) {
+                                is CorvusCheckResult.GeneralResult -> result.explanation
+                                is CorvusCheckResult.QuoteResult -> result.contextExplanation
+                                is CorvusCheckResult.CompositeResult -> result.compositeSummary
+                                else -> ""
                             }
-                        }
-                    )
-                }
-
-                item(key = "explanation_header") {
-                    Text(
-                        text = when (corvusResult) {
-                            is CorvusCheckResult.QuoteResult -> "CONTEXT"
-                            is CorvusCheckResult.CompositeResult -> "SUMMARY"
-                            else -> "EXPLANATION"
-                        },
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            letterSpacing = 1.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.missingContext != null) {
-                    item(key = "missing_context") {
-                        var mcVisible by rememberSaveable { mutableStateOf(false) }
-                        LaunchedEffect(Unit) {
-                            if (!mcVisible) {
-                                delay(200)
-                                mcVisible = true
-                            }
-                        }
-                        AnimatedVisibility(
-                            visible = mcVisible,
-                            enter = slideInVertically(
-                                initialOffsetY = { -20 },
-                                animationSpec = tween(400, easing = FastOutSlowInEasing)
-                            ) + fadeIn(tween(400))
-                        ) {
-                            MissingContextCallout(corvusResult.missingContext)
-                        }
-                    }
-                }
-
-                if (corvusResult !is CorvusCheckResult.ViralHoaxResult) {
-                    val explanation = when (corvusResult) {
-                        is CorvusCheckResult.GeneralResult -> corvusResult.explanation
-                        is CorvusCheckResult.QuoteResult -> corvusResult.contextExplanation
-                        is CorvusCheckResult.CompositeResult -> corvusResult.compositeSummary
-                        else -> ""
-                    }
-
-                    if (explanation.isNotBlank()) {
-                        item(key = "expandable_explanation") {
-                            Column {
-                                if (corvusResult is CorvusCheckResult.GeneralResult) {
-                                    val verification = corvusResult.explanationVerification
-                                    if (verification != null) {
-                                        ExplanationConfidenceBanner(verification)
-                                        Spacer(Modifier.height(12.dp))
-                                    }
-                                }
+                            
+                            if (explanation.isNotBlank()) {
                                 ExpandableExplanation(explanation = explanation)
                             }
                         }
                     }
-                }
 
-                if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.kernelOfTruth != null) {
-                    item(key = "kernel_of_truth") {
-                        KernelOfTruthCard(
-                            kernel = corvusResult.kernelOfTruth,
-                            sources = sources,
-                            onSourceClick = { index -> 
-                                val source = sources.getOrNull(index)
-                                if (source != null) {
-                                    scrollToSource(source.id, index)
-                                }
+                    // 6. KERNEL OF TRUTH (for misleading claims)
+                    if (result is CorvusCheckResult.GeneralResult && result.kernelOfTruth != null) {
+                        item(key = "kernel_of_truth_header") {
+                            StaggeredReveal(index = 8, show = showContent) {
+                                Text(
+                                    text = "KERNEL OF TRUTH",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 16.dp)
+                                )
                             }
-                        )
-                    }
-                }
-
-                if (corvusResult is CorvusCheckResult.GeneralResult && corvusResult.keyFacts.isNotEmpty()) {
-                    item(key = "key_facts_general") {
-                        GroundedFactsList(
-                            facts = corvusResult.keyFacts,
-                            sources = sources,
-                            onSourceClick = { index -> 
-                                val source = sources.getOrNull(index)
-                                if (source != null) {
-                                    scrollToSource(source.id, index)
-                                }
-                            }
-                        )
-                    }
-                }
-
-                if (corvusResult is CorvusCheckResult.QuoteResult && corvusResult.keyFacts.isNotEmpty()) {
-                    item(key = "key_facts_quote") {
-                        GroundedFactsList(
-                            facts = corvusResult.keyFacts,
-                            sources = sources,
-                            onSourceClick = { index -> 
-                                val source = sources.getOrNull(index)
-                                if (source != null) {
-                                    scrollToSource(source.id, index)
-                                }
-                            }
-                        )
-                    }
-                }
-
-                // Entity Context Panel
-                val entity = corvusResult.entityContext
-                if (entity != null) {
-                    item(key = "entity_context") {
-                        var entityVisible by remember { mutableStateOf(false) }
-                        LaunchedEffect(entity) {
-                            delay(450)
-                            entityVisible = true
                         }
                         
-                        AnimatedVisibility(
-                            visible = entityVisible,
-                            enter = fadeIn(tween(400)) + slideInVertically(
-                                animationSpec = tween(400, easing = FastOutSlowInEasing),
-                                initialOffsetY = { it / 4 }
-                            )
-                        ) {
-                            EntityContextPanel(
-                                entity = entity,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                        item(key = "kernel_card") {
+                            StaggeredReveal(index = 9, show = showContent) {
+                                KernelOfTruthCard(
+                                    kernel = result.kernelOfTruth,
+                                    sources = sources,
+                                    onSourceClick = { scrollToSource(sources[it].id, it) }
+                                )
+                            }
                         }
                     }
-                } else if (uiState.isEntityContextLoading) {
-                    item(key = "entity_context_skeleton") {
-                        EntityContextSkeleton()
-                    }
-                }
 
-                if (sources.isNotEmpty()) {
-                    item(key = "evidence_header") {
-                        Text(
-                            text = "EVIDENCE",
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                letterSpacing = 1.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    // 7. GROUNDED FACTS
+                    val groundedFacts = when (result) {
+                        is CorvusCheckResult.GeneralResult -> result.keyFacts
+                        is CorvusCheckResult.QuoteResult -> result.keyFacts
+                        else -> emptyList()
                     }
 
-                    for (index in sources.indices) {
-                        val source = sources[index]
-                        item(key = "source_${source.id}") {
-                            var sourceVisible by rememberSaveable { mutableStateOf(false) }
-                            LaunchedEffect(Unit) {
-                                if (!sourceVisible) {
-                                    delay(200 + (index * 80L))
-                                    sourceVisible = true
-                                }
-                            }
-
-                            AnimatedVisibility(
-                                visible = sourceVisible,
-                                enter = fadeIn(
-                                    animationSpec = tween(durationMillis = 280)
-                                ) + slideInVertically(
-                                    animationSpec = tween(durationMillis = 280),
-                                    initialOffsetY = { it / 2 }
+                    if (groundedFacts.isNotEmpty()) {
+                        item(key = "grounded_facts_header") {
+                            StaggeredReveal(index = 10, show = showContent) {
+                                Text(
+                                    text = "GROUNDED FACTS",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 16.dp)
                                 )
-                            ) {
+                            }
+                        }
+                        
+                        item(key = "grounded_facts_list") {
+                            StaggeredReveal(index = 11, show = showContent) {
+                                GroundedFactsList(
+                                    facts = groundedFacts,
+                                    sources = sources,
+                                    onSourceClick = { scrollToSource(sources[it].id, it) }
+                                )
+                            }
+                        }
+                    }
+
+                    // 8. ENTITY CONTEXT
+                    val entity = result.entityContext
+                    if (entity != null) {
+                        item(key = "entity_context") {
+                            StaggeredReveal(index = 12, show = showContent) {
+                                EntityContextPanel(entity = entity, modifier = Modifier.fillMaxWidth())
+                            }
+                        }
+                    }
+
+                    // 9. EVIDENCE & SOURCES
+                    if (sources.isNotEmpty()) {
+                        item(key = "sources_header") {
+                            StaggeredReveal(index = 13, show = showContent) {
+                                Text(
+                                    text = "EVIDENCE & SOURCES",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 16.dp)
+                                )
+                            }
+                        }
+
+                        itemsIndexed(
+                            items = sources,
+                            key = { _, source -> "source_${source.id}" }
+                        ) { index, source ->
+                            StaggeredReveal(index = 14 + index, show = showContent) {
                                 SourceCard(
                                     source = source,
-                                    index = index
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                             }
                         }
                     }
-                }
 
-                val timeline = when (corvusResult) {
-                    is CorvusCheckResult.GeneralResult -> corvusResult.confidenceTimeline
-                    is CorvusCheckResult.QuoteResult -> corvusResult.confidenceTimeline
-                    is CorvusCheckResult.CompositeResult -> corvusResult.confidenceTimeline
-                    else -> emptyList<ConfidencePoint>()
-                }
+                    // 10. CONFIDENCE TIMELINE
+                    val timeline = when (result) {
+                        is CorvusCheckResult.GeneralResult -> result.confidenceTimeline
+                        is CorvusCheckResult.QuoteResult -> result.confidenceTimeline
+                        is CorvusCheckResult.CompositeResult -> result.confidenceTimeline
+                        else -> emptyList<ConfidencePoint>()
+                    }
 
-                if (timeline.size >= 2) {
-                    item(key = "confidence_timeline") {
-                        ConfidenceTimelineCard(points = timeline)
+                    if (timeline.size >= 2) {
+                        item(key = "timeline_header") {
+                            StaggeredReveal(index = 15 + sources.size, show = showContent) {
+                                Text(
+                                    text = "ANALYSIS TIMELINE",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 16.dp)
+                                )
+                            }
+                        }
+                        item(key = "confidence_timeline") {
+                            StaggeredReveal(index = 16 + sources.size, show = showContent) {
+                                ConfidenceTimelineCard(points = timeline)
+                            }
+                        }
+                    }
+
+                    // 11. METHODOLOGY
+                    item(key = "methodology") {
+                        StaggeredReveal(index = 17 + sources.size, show = showContent) {
+                            MethodologyCard(result)
+                        }
+                    }
+
+                    item(key = "bottom_spacer") {
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
 
-                item(key = "methodology") {
-                    corvusResult?.let { result ->
-                        MethodologyCard(result)
+                // Scroll to top FAB
+                AnimatedVisibility(
+                    visible = showScrollToTop && !showStickyStrip,
+                    enter = scaleIn() + fadeIn(),
+                    exit = scaleOut() + fadeOut(),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 120.dp, end = 16.dp)
+                        .graphicsLayer { translationY = bottomBarOffsetHeightPx }
+                ) {
+                    FloatingActionButton(
+                        onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            scope.launch { listState.animateScrollToItem(0) }
+                        },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        elevation = FloatingActionButtonDefaults.elevation(4.dp)
+                    ) {
+                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Scroll to top")
                     }
                 }
 
-                item(key = "bottom_spacer") {
-                    Spacer(modifier = Modifier.height(0.dp))
-                }
-            }
-            
-            AnimatedVisibility(
-                visible = showScrollToTop,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 110.dp)
-                    .graphicsLayer { translationY = bottomBarOffsetHeightPx },
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut()
-            ) {
-                SmallFloatingActionButton(
-                    onClick = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        scope.launch { listState.animateScrollToItem(0) }
-                    },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                // STICKY VERDICT STRIP
+                AnimatedVisibility(
+                    visible = showStickyStrip,
+                    enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                    exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+                    modifier = Modifier.align(Alignment.TopCenter)
                 ) {
-                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Scroll to top")
+                    StickyVerdictStrip(
+                        result = result,
+                        onBack = onBack,
+                        onScrollToTop = {
+                            scope.launch { listState.animateScrollToItem(0) }
+                        }
+                    )
                 }
-            }
-        } else if (uiState.isLoading) {
-            // Loading state
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp)
-                )
-            }
-        } else {
-            // Empty state fallback
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "No result available",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "Try analysing a claim first.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
-                Spacer(Modifier.height(24.dp))
-                Button(
-                    onClick = { onAnalyzeAnother() },
-                    shape = CorvusShapes.small
-                ) {
-                    Text("GO TO INPUT")
-                }
+            } else if (uiState.isLoading) {
+                CorvusResultSkeleton()
             }
         }
-      Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .graphicsLayer { translationY = bottomBarOffsetHeightPx }
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(24.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onAnalyzeAnother()
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        shape = CorvusShapes.small
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                        contentDescription = "Analyse another",
-                        modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text(
-                            text = "ANALYSE",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
+    }
+}
 
-                    Button(
-                        onClick = {
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            shareResult()
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onBackground
-                        ),
-                        shape = CorvusShapes.small
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                        contentDescription = "Share result",
-                        modifier = Modifier.size(18.dp)
+@Composable
+fun StaggeredReveal(
+    index: Int,
+    show: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    AnimatedVisibility(
+        visible = show,
+        enter = fadeIn(animationSpec = tween(durationMillis = 600, delayMillis = index * 120)) +
+                slideInVertically(
+                    initialOffsetY = { it / 4 }, // Start from 1/4 of the height lower
+                    animationSpec = tween(durationMillis = 600, delayMillis = index * 120)
+                ),
+        modifier = modifier
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun StickyVerdictStrip(
+    result: CorvusCheckResult,
+    onBack: () -> Unit,
+    onScrollToTop: () -> Unit
+) {
+    Surface(
+        onClick = onScrollToTop,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+        shadowElevation = 8.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+
+            Spacer(Modifier.width(8.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                val verdict = result.getVerdictDisplayName()
+                val color = result.getVerdictColor()
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = verdict.uppercase(),
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = color
                         )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text(
-                            text = "SHARE",
-                            style = MaterialTheme.typography.titleMedium
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(60.dp)
+                            .height(4.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(result.confidence)
+                                .fillMaxHeight()
+                                .background(color, CircleShape)
                         )
                     }
                 }
+                
+                Text(
+                    text = result.claim,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
+        }
+    }
+}
+
+@Composable
+fun ResultBottomActions(
+    onAnalyzeAnother: () -> Unit,
+    onShare: () -> Unit,
+    offsetY: Float
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer { translationY = offsetY }
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(20.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = onAnalyzeAnother,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp),
+                shape = CorvusShapes.medium
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.size(8.dp))
+                Text("ANALYSE")
+            }
+
+            Button(
+                onClick = onShare,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                shape = CorvusShapes.medium
+            ) {
+                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.size(8.dp))
+                Text("SHARE")
+            }
+        }
     }
 }
 
@@ -593,7 +675,6 @@ private fun ExpandableExplanation(
     val clipboardManager = LocalClipboardManager.current
     var isExpanded by remember { mutableStateOf(false) }
     val maxLines = 4
-
     val shouldShowExpand = explanation.length > 200 || explanation.lines().size > 3
 
     Column(
@@ -609,59 +690,61 @@ private fun ExpandableExplanation(
                 maxLines = if (shouldShowExpand && !isExpanded) maxLines else Int.MAX_VALUE,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface, CorvusShapes.medium)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), CorvusShapes.medium)
                     .padding(16.dp)
             )
         }
 
-        if (shouldShowExpand) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        clipboardManager.setText(AnnotatedString(explanation))
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.ContentCopy,
-                        contentDescription = "Copy explanation",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    clipboardManager.setText(AnnotatedString(explanation))
                 }
+            ) {
+                Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(18.dp))
+            }
 
-                IconButton(
+            if (shouldShowExpand) {
+                TextButton(
                     onClick = {
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         isExpanded = !isExpanded
                     }
                 ) {
+                    Text(if (isExpanded) "SHOW LESS" else "SHOW MORE")
                     Icon(
                         if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = if (isExpanded) "Show less" else "Show more",
-                        tint = MaterialTheme.colorScheme.primary
+                        contentDescription = null
                     )
                 }
             }
-        } else {
-            IconButton(
-                onClick = {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    clipboardManager.setText(AnnotatedString(explanation))
-                },
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Icon(
-                    Icons.Default.ContentCopy,
-                    contentDescription = "Copy explanation",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
+    }
+}
+
+@Composable
+private fun CorvusCheckResult.getVerdictDisplayName(): String {
+    return when (this) {
+        is CorvusCheckResult.GeneralResult -> verdict.displayName()
+        is CorvusCheckResult.QuoteResult -> quoteVerdict.displayName()
+        is CorvusCheckResult.CompositeResult -> compositeVerdict.displayName()
+        else -> "Result"
+    }
+}
+
+@Composable
+private fun CorvusCheckResult.getVerdictColor(): Color {
+    return when (this) {
+        is CorvusCheckResult.GeneralResult -> getVerdictColor(verdict)
+        is CorvusCheckResult.QuoteResult -> getQuoteVerdictColor(quoteVerdict)
+        is CorvusCheckResult.CompositeResult -> getVerdictColor(compositeVerdict)
+        else -> Color.Gray
     }
 }

@@ -30,6 +30,8 @@ import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.HarmLevel
 import com.najmi.corvus.domain.model.Verdict
+import com.najmi.corvus.domain.util.confidenceColor
+import com.najmi.corvus.domain.util.confidenceLabel
 import com.najmi.corvus.ui.components.ConfidenceBar
 import com.najmi.corvus.ui.theme.CorvusShapes
 import com.najmi.corvus.ui.theme.VerdictFalse
@@ -43,92 +45,94 @@ fun GeneralVerdictCard(
     val verdictColor = getVerdictColor(result.verdict)
     val harm = result.harmAssessment
 
-    // Border intensifies with harm level
-    val borderColor = when {
-        harm.level == HarmLevel.HIGH && result.verdict == Verdict.FALSE -> VerdictFalse
-        harm.level == HarmLevel.HIGH -> VerdictFalse.copy(alpha = 0.7f)
-        harm.level == HarmLevel.MODERATE -> VerdictMisleading
-        else -> verdictColor
-    }
-
-    val borderWidth = when (harm.level) {
-        HarmLevel.HIGH -> 3.dp
-        HarmLevel.MODERATE -> 2.dp
-        else -> 1.5.dp
-    }
-    
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                color = when (harm.level) {
-                    HarmLevel.HIGH -> VerdictFalse.copy(alpha = 0.05f)
-                    else -> MaterialTheme.colorScheme.surface
-                },
-                shape = CorvusShapes.medium
-            )
-            .border(
-                width = borderWidth,
-                color = borderColor,
+                color = MaterialTheme.colorScheme.surface,
                 shape = CorvusShapes.medium
             )
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // Upper signals row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                LargeVerdictBadge(verdict = result.verdict)
-                
-                // Plausibility sub-label for UNVERIFIABLE
-                if (result.verdict == Verdict.UNVERIFIABLE && result.plausibility != null) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "↳ ${result.plausibility.score.displayLabel()}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = result.plausibility.score.labelColor()
-                    )
-                }
-            }
+            VerdictSignalChips(
+                recencySignal = result.recencySignal,
+                viralDetection = result.viralDetection
+            )
             
             if (result.claimType != ClaimType.GENERAL) {
                 TypeBadge(result.claimType)
             }
         }
 
-        // HIGH harm — prominent warning block
-        if (harm.level == HarmLevel.HIGH) {
-            HarmWarningBlock(harm)
+        // LARGE TYPOGRAPHY VERDICT
+        LargeVerdictBadge(verdict = result.verdict)
+
+        // Misleading Kernel Summary
+        if (result.verdict == Verdict.MISLEADING && result.kernelOfTruth != null) {
+            KernelSummaryRow(kernel = result.kernelOfTruth)
         }
 
-        // MODERATE harm — inline tag
+        // Plausibility sub-label for UNVERIFIABLE
+        if (result.verdict == Verdict.UNVERIFIABLE && result.plausibility != null) {
+            Text(
+                text = "↳ ${result.plausibility.score.displayLabel()}",
+                style = MaterialTheme.typography.labelSmall,
+                color = result.plausibility.score.labelColor(),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+
+        // MODERATE harm — inline tag (Demoted from banner)
         if (harm.level == HarmLevel.MODERATE) {
             HarmInlineTag(harm)
+            Spacer(Modifier.height(4.dp))
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "Confidence:",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "${(result.confidence * 100).toInt()}%",
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.primary
+        // HIGH harm — prominent warning block (Retained for safety)
+        if (harm.level == HarmLevel.HIGH) {
+            HarmWarningBlock(harm)
+            Spacer(Modifier.height(4.dp))
+        }
+
+        // Confidence Area
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = result.confidence.confidenceLabel(),
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = result.confidence.confidenceColor(
+                        highColor = MaterialTheme.colorScheme.primary,
+                        midColor = VerdictMisleading,
+                        lowColor = VerdictFalse.copy(alpha = 0.7f)
+                    )
+                )
+                Text(
+                    text = "${(result.confidence * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            ConfidenceBar(
+                confidence = result.confidence,
+                modifier = Modifier.height(8.dp)
             )
         }
 
-        ConfidenceBar(confidence = result.confidence)
-
-        if (result.verdict == Verdict.UNVERIFIABLE && result.plausibility != null) {
+        if ((result.verdict == Verdict.UNVERIFIABLE || result.verdict == Verdict.RECENCY_UNVERIFIABLE) 
+            && result.plausibility != null) {
+            Spacer(Modifier.height(8.dp))
             PlausibilityDetailCard(result.plausibility)
         }
     }

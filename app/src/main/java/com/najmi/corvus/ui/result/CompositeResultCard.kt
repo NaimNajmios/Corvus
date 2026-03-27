@@ -31,14 +31,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.najmi.corvus.domain.model.ClaimType
-import com.najmi.corvus.domain.model.CorvusCheckResult
-import com.najmi.corvus.domain.model.SubClaim
+import com.najmi.corvus.domain.model.*
+import com.najmi.corvus.domain.util.confidenceColor
+import com.najmi.corvus.domain.util.confidenceLabel
 import com.najmi.corvus.ui.components.ConfidenceBar
+import com.najmi.corvus.ui.theme.*
 import com.najmi.corvus.ui.theme.CorvusShapes
 
 @Composable
@@ -53,50 +55,65 @@ fun CompositeResultCard(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, CorvusShapes.medium)
-            .border(
-                width = 3.dp,
-                color = verdictColor,
-                shape = CorvusShapes.medium
-            )
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                LargeVerdictBadge(verdict = result.compositeVerdict)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "Compound claim • ${result.subClaims.size} sub-claims",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = "COMBINED ANALYSIS",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 9.sp,
+                    letterSpacing = 1.sp
+                ),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+            )
             
             TypeBadge(ClaimType.GENERAL) 
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "Avg. Confidence:",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "${(result.confidence * 100).toInt()}%",
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.primary
+        // LARGE TYPOGRAPHY VERDICT
+        LargeVerdictBadge(verdict = result.compositeVerdict)
+
+        Text(
+            text = "Compound claim • ${result.subClaims.size} sub-claims detected",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+
+        // Confidence Area
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = result.confidence.confidenceLabel(),
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = result.confidence.confidenceColor(
+                        highColor = MaterialTheme.colorScheme.primary,
+                        midColor = VerdictMisleading,
+                        lowColor = VerdictFalse.copy(alpha = 0.7f)
+                    )
+                )
+                Text(
+                    text = "${(result.confidence * 100).toInt()}% avg",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            ConfidenceBar(
+                confidence = result.confidence,
+                modifier = Modifier.height(8.dp)
             )
         }
-
-        ConfidenceBar(confidence = result.confidence)
 
         HorizontalDivider(
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
@@ -228,5 +245,26 @@ fun SubClaimDetail(
                 }
             }
         }
+    }
+}
+@Composable
+internal fun SubClaim.getVerdictDisplayName(): String {
+    val res = result
+    return when (res) {
+        is CorvusCheckResult.GeneralResult -> res.verdict.displayName()
+        is CorvusCheckResult.QuoteResult -> res.quoteVerdict.displayName()
+        is CorvusCheckResult.CompositeResult -> res.compositeVerdict.displayName()
+        else -> "Result"
+    }
+}
+
+@Composable
+internal fun SubClaim.getVerdictColor(): Color {
+    val res = result
+    return when (res) {
+        is CorvusCheckResult.GeneralResult -> getVerdictColor(res.verdict)
+        is CorvusCheckResult.QuoteResult -> getQuoteVerdictColor(res.quoteVerdict)
+        is CorvusCheckResult.CompositeResult -> getVerdictColor(res.compositeVerdict)
+        else -> Color.Gray
     }
 }

@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.semantics.contentDescription
@@ -336,30 +336,41 @@ private fun DateBadge(date: String) {
 
 @Composable
 private fun CredibilityIndicator(score: Int) {
-    val color = when {
-        score >= 80 -> CredibilityHigh
-        score >= 60 -> CredibilityMedium
-        else -> CredibilityLow
+    val (color, icon, label) = when {
+        score >= 80 -> Triple(CredibilityHigh, Icons.Default.VerifiedUser, "HIGH")
+        score >= 60 -> Triple(CredibilityMedium, Icons.Default.Info, "MEDIUM")
+        else -> Triple(CredibilityLow, Icons.Default.Warning, "LOW")
     }
     
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
-            .background(color.copy(alpha = 0.1f), CircleShape)
-            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .background(color.copy(alpha = 0.12f), CircleShape)
+            .border(1.dp, color.copy(alpha = 0.2f), CircleShape)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .background(color, CircleShape)
-                .semantics { contentDescription = "Credibility: $score percent" }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = color
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 9.sp
+            ),
+            color = color
         )
         Text(
             text = "$score%",
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-            color = color,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Medium,
+                fontSize = 10.sp
+            ),
+            color = color.copy(alpha = 0.8f)
         )
     }
 }

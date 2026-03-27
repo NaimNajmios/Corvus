@@ -59,7 +59,9 @@ sealed class CorvusCheckResult {
         val correctionsLog: List<String>? = null,
         val reasoningScratchpad: String? = null,
         val retrievalMetadata: RetrievalMetadata? = null,
-        val temporalMismatch: TemporalMismatchReport? = null
+        val temporalMismatch: TemporalMismatchReport? = null,
+        val recencySignal: RecencySignal? = null,
+        val viralDetection: ViralDetectionResult? = null
     ) : CorvusCheckResult()
 
     @Serializable
@@ -276,4 +278,31 @@ fun HarmCategory.displayLabel(): String = when (this) {
     HarmCategory.RELIGIOUS -> "Religious"
     HarmCategory.POLITICAL -> "Political"
     HarmCategory.FINANCIAL -> "Financial"
+}
+
+@Serializable
+enum class RecencySignal {
+    BREAKING,
+    RECENT,
+    HISTORICAL,
+    NOT_APPLICABLE
+}
+
+@Serializable
+sealed class ViralDetectionResult {
+    @Serializable
+    data object None : ViralDetectionResult()
+
+    @Serializable
+    data class KnownHoax(
+        val matchedClaim: String,
+        val similarityScore: Float,
+        val debunkUrls: List<String>
+    ) : ViralDetectionResult()
+
+    @Serializable
+    data class PossiblyRelated(
+        val claim: String,
+        val similarityScore: Float
+    ) : ViralDetectionResult()
 }

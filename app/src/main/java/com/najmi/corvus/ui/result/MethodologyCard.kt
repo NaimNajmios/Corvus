@@ -2,14 +2,20 @@ package com.najmi.corvus.ui.result
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Route
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +25,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.filled.Warning
 import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.MethodologyMetadata
 import com.najmi.corvus.domain.model.displayLabel
@@ -65,7 +70,7 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = if (expanded) "Show less" else "Show more",
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -104,34 +109,36 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                     }
 
                     // Pipeline steps
-                    Text(
-                        text = "Pipeline steps completed:",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    metadata.pipelineStepsCompleted.forEach { step ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle, // Assuming it's a step indicator
-                                contentDescription = "Pipeline step",
-                                modifier = Modifier.size(12.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = step.step.displayLabel().padEnd(25),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = "— ${step.outcome}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        metadata.pipelineStepsCompleted.forEach { step ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .background(
+                                            CorvusTheme.colors.sectionMethodology,
+                                            CircleShape
+                                        )
+                                )
+                                Text(
+                                    text = step.step.displayLabel(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.weight(0.35f)
+                                )
+                                Text(
+                                    text = step.outcome,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(0.65f)
+                                )
+                            }
                         }
                     }
 
@@ -146,11 +153,22 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             Spacer(Modifier.height(8.dp))
                             
-                            Text(
-                                "RETRIEVAL",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = CorvusTheme.colors.sectionMethodology
+                                )
+                                Text(
+                                    "RETRIEVAL",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                             Spacer(Modifier.height(4.dp))
 
                             if (retrieval.coreQuestion != retrieval.originalClaim) {
@@ -178,12 +196,14 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                             retrieval.rewrittenQueries.forEach { query ->
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.padding(top = 2.dp)
                                 ) {
-                                    Text(
-                                        "›",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.primary
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowForward,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(12.dp),
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
                                         "\"$query\"",
@@ -215,11 +235,22 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                     
                     if (metadata.routingRationale.isNotBlank()) {
                         Spacer(Modifier.height(4.dp))
-                        Text(
-                            "ROUTING",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Route,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = CorvusTheme.colors.sectionMethodology
+                            )
+                            Text(
+                                "ROUTING",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         Spacer(Modifier.height(2.dp))
                         Text(
                             metadata.routingRationale,
@@ -271,13 +302,21 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                         }
 
                         AnimatedVisibility(visible = showReasoning) {
-                            Text(
-                                text = scratchpad,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            val reindexed = scratchpad.reindexCitations()
+                            val items = parseReasoningItems(reindexed)
+                            Column(
                                 modifier = Modifier.padding(top = 6.dp),
-                                lineHeight = 18.sp
-                            )
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                items.forEach { item ->
+                                    Text(
+                                        text = item,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 18.sp
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -298,10 +337,11 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.Top
                             ) {
-                                Text(
-                                    "→",
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall
+                                Icon(
+                                    imageVector = Icons.Default.ArrowForward,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.error
                                 )
                                 Text(
                                     correction,
@@ -342,4 +382,14 @@ private fun Long.toFormattedDate(): String {
     val date = Date(this)
     val format = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
     return format.format(date)
+}
+
+private fun String.reindexCitations(): String =
+    this.replace(Regex("\\[(\\d+)\\]")) { match ->
+        "[${match.groupValues[1].toInt() + 1}]"
+    }
+
+private fun parseReasoningItems(scratchpad: String): List<String> {
+    val items = scratchpad.split(Regex("(?=\\d+\\.\\s)"))
+    return items.filter { it.isNotBlank() }.map { it.trim() }
 }

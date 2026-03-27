@@ -1,56 +1,29 @@
 package com.najmi.corvus.ui.result
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.najmi.corvus.domain.model.ClaimType
-import com.najmi.corvus.domain.model.PlausibilityScore
-import com.najmi.corvus.domain.model.Verdict
-import com.najmi.corvus.domain.model.displayLabel
 import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.ui.theme.*
 
@@ -84,42 +57,122 @@ fun AnimatedVerdictCard(
         isRevealed = true
     }
 
-    val scale by animateFloatAsState(
+    val animatedScale by animateFloatAsState(
         targetValue = if (isRevealed) 1f else 0.92f,
-        animationSpec = tween(380),
+        animationSpec = tween(400, easing = FastOutSlowInEasing),
         label = "verdictScale"
     )
     
-    val alpha by animateFloatAsState(
+    val animatedAlpha by animateFloatAsState(
         targetValue = if (isRevealed) 1f else 0f,
-        animationSpec = tween(380),
+        animationSpec = tween(400),
         label = "verdictAlpha"
     )
 
     Box(
         modifier = modifier
-            .scale(scale)
-            .alpha(alpha)
+            .scale(animatedScale)
+            .alpha(animatedAlpha)
     ) {
         content()
     }
 }
 
 @Composable
-fun TypeBadge(
-    type: ClaimType,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CorvusShapes.extraSmall)
-            .padding(horizontal = 8.dp, vertical = 2.dp)
+fun TypeBadge(type: ClaimType) {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
+        shape = CircleShape,
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
     ) {
         Text(
-            text = type.displayLabel(),
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
+            text = type.name.uppercase(),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+fun VerdictSignalChips(
+    recencySignal: RecencySignal?,
+    viralDetection: ViralDetectionResult?,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Recency Signal
+        when (recencySignal) {
+            RecencySignal.BREAKING -> {
+                InlineSignalChip(
+                    label = "BREAKING",
+                    icon = Icons.Default.Info,
+                    color = Color(0xFFC8FF00) // Corvus Accent
+                )
+            }
+            RecencySignal.RECENT -> {
+                InlineSignalChip(
+                    label = "RECENT",
+                    icon = Icons.Default.Info,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                )
+            }
+            else -> {}
+        }
+
+        // Viral Detection
+        when (viralDetection) {
+            is ViralDetectionResult.KnownHoax -> {
+                InlineSignalChip(
+                    label = "KNOWN HOAX",
+                    icon = Icons.Default.Warning,
+                    color = VerdictFalse
+                )
+            }
+            is ViralDetectionResult.PossiblyRelated -> {
+                InlineSignalChip(
+                    label = "VIRAL CONTEXT",
+                    icon = Icons.Default.Info,
+                    color = VerdictMisleading
+                )
+            }
+            else -> {}
+        }
+    }
+}
+
+@Composable
+fun InlineSignalChip(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    color: Color
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .background(color.copy(alpha = 0.1f), CircleShape)
+            .border(0.5.dp, color.copy(alpha = 0.3f), CircleShape)
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(10.dp)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp
+            ),
+            color = color
         )
     }
 }
@@ -135,15 +188,14 @@ fun VerdictBadge(
     Box(
         modifier = modifier
             .background(color.copy(alpha = 0.1f), CorvusShapes.extraSmall)
-            .border(1.dp, color.copy(alpha = 0.5f), CorvusShapes.extraSmall)
+            .border(0.5.dp, color.copy(alpha = 0.3f), CorvusShapes.extraSmall)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = verdict.name.replace("_", " "),
-                style = MaterialTheme.typography.labelSmall,
-                color = color,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = color
             )
             
             if (verdict == Verdict.UNVERIFIABLE && plausibility != null) {
@@ -167,14 +219,13 @@ fun QuoteVerdictBadge(
     Box(
         modifier = modifier
             .background(color.copy(alpha = 0.1f), CorvusShapes.extraSmall)
-            .border(1.dp, color.copy(alpha = 0.5f), CorvusShapes.extraSmall)
+            .border(0.5.dp, color.copy(alpha = 0.3f), CorvusShapes.extraSmall)
             .padding(horizontal = 8.dp, vertical = 2.dp)
     ) {
         Text(
             text = verdict.name.replace("_", " "),
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = color
         )
     }
 }
@@ -185,18 +236,19 @@ fun LargeVerdictBadge(
     modifier: Modifier = Modifier
 ) {
     val color = getVerdictColor(verdict)
-    
     Box(
         modifier = modifier
-            .background(color.copy(alpha = 0.1f), CorvusShapes.small)
-            .border(2.dp, color, CorvusShapes.small)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .background(color.copy(alpha = 0.05f), CorvusShapes.small)
+            .padding(vertical = 4.dp)
     ) {
         Text(
-            text = verdict.name.replace("_", " "),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
+            text = verdict.displayName().uppercase(),
+            style = MaterialTheme.typography.displayLarge.copy(
+                fontFamily = DmSerifDisplay,
+                fontSize = 46.sp,
+                fontWeight = FontWeight.Normal,
+                letterSpacing = (-1).sp,
+                lineHeight = 48.sp
             ),
             color = color
         )
@@ -209,18 +261,19 @@ fun LargeQuoteVerdictBadge(
     modifier: Modifier = Modifier
 ) {
     val color = getQuoteVerdictColor(verdict)
-    
     Box(
         modifier = modifier
-            .background(color.copy(alpha = 0.1f), CorvusShapes.small)
-            .border(2.dp, color, CorvusShapes.small)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .background(color.copy(alpha = 0.05f), CorvusShapes.small)
+            .padding(vertical = 4.dp)
     ) {
         Text(
-            text = verdict.name.replace("_", " "),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
+            text = verdict.displayName().uppercase(),
+            style = MaterialTheme.typography.displayLarge.copy(
+                fontFamily = DmSerifDisplay,
+                fontSize = 46.sp,
+                fontWeight = FontWeight.Normal,
+                letterSpacing = (-1).sp,
+                lineHeight = 48.sp
             ),
             color = color
         )
@@ -228,28 +281,29 @@ fun LargeQuoteVerdictBadge(
 }
 
 @Composable
-fun getVerdictColor(verdict: Verdict): Color {
-    return when (verdict) {
-        Verdict.TRUE -> VerdictTrue
-        Verdict.FALSE -> VerdictFalse
-        Verdict.MISLEADING -> VerdictMisleading
-        Verdict.PARTIALLY_TRUE -> VerdictPartiallyTrue
-        Verdict.UNVERIFIABLE -> VerdictUnverifiable
-        Verdict.CHECKING -> MaterialTheme.colorScheme.primary
-        Verdict.NOT_A_CLAIM -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-    }
-}
-
-@Composable
-fun getQuoteVerdictColor(verdict: QuoteVerdict): Color {
-    return when (verdict) {
-        QuoteVerdict.VERIFIED -> VerdictTrue
-        QuoteVerdict.FABRICATED -> VerdictFalse
-        QuoteVerdict.MISATTRIBUTED -> VerdictFalse
-        QuoteVerdict.OUT_OF_CONTEXT -> VerdictMisleading
-        QuoteVerdict.PARAPHRASED -> VerdictPartiallyTrue
-        QuoteVerdict.SATIRE_ORIGIN -> VerdictMisleading
-        QuoteVerdict.UNVERIFIABLE -> VerdictUnverifiable
+fun KernelSummaryRow(
+    kernel: KernelOfTruth,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .background(VerdictFalse, CircleShape)
+        )
+        Text(
+            text = "TWIST: ${kernel.twistExplanation}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -440,6 +494,33 @@ fun PlausibilitySpectrumBar(score: PlausibilityScore) {
     }
 }
 
+/**
+ * Extension to get human-readable verdict names.
+ */
+fun Verdict.displayName(): String = when (this) {
+    Verdict.TRUE -> "True"
+    Verdict.FALSE -> "False"
+    Verdict.MISLEADING -> "Misleading"
+    Verdict.PARTIALLY_TRUE -> "Partial Truth"
+    Verdict.UNVERIFIABLE -> "Unverifiable"
+    Verdict.RECENCY_UNVERIFIABLE -> "Too Recent"
+    Verdict.CHECKING -> "Checking..."
+    Verdict.NOT_A_CLAIM -> "Opinion/Query"
+}
+
+/**
+ * Extension to get human-readable quote verdict names.
+ */
+fun QuoteVerdict.displayName(): String = when (this) {
+    QuoteVerdict.VERIFIED -> "Verified"
+    QuoteVerdict.PARAPHRASED -> "Paraphrased"
+    QuoteVerdict.OUT_OF_CONTEXT -> "Missing Context"
+    QuoteVerdict.MISATTRIBUTED -> "Misattributed"
+    QuoteVerdict.FABRICATED -> "Fabricated"
+    QuoteVerdict.SATIRE_ORIGIN -> "Satire"
+    QuoteVerdict.UNVERIFIABLE -> "Unverifiable"
+}
+
 fun PlausibilityScore.displayLabel() = when (this) {
     PlausibilityScore.IMPLAUSIBLE -> "High Implausibility"
     PlausibilityScore.UNLIKELY -> "Unlikely"
@@ -455,4 +536,31 @@ fun PlausibilityScore.labelColor() = when (this) {
     PlausibilityScore.NEUTRAL -> VerdictUnverifiable
     PlausibilityScore.PLAUSIBLE -> VerdictTrue.copy(alpha = 0.8f)
     PlausibilityScore.PROBABLE -> VerdictTrue
+}
+
+@Composable
+fun getVerdictColor(verdict: Verdict): Color {
+    return when (verdict) {
+        Verdict.TRUE -> VerdictTrue
+        Verdict.FALSE -> VerdictFalse
+        Verdict.MISLEADING -> VerdictMisleading
+        Verdict.PARTIALLY_TRUE -> VerdictPartiallyTrue
+        Verdict.UNVERIFIABLE -> VerdictUnverifiable
+        Verdict.RECENCY_UNVERIFIABLE -> VerdictMisleading
+        Verdict.CHECKING -> MaterialTheme.colorScheme.primary
+        Verdict.NOT_A_CLAIM -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    }
+}
+
+@Composable
+fun getQuoteVerdictColor(verdict: QuoteVerdict): Color {
+    return when (verdict) {
+        QuoteVerdict.VERIFIED -> VerdictTrue
+        QuoteVerdict.FABRICATED -> VerdictFalse
+        QuoteVerdict.MISATTRIBUTED -> VerdictFalse
+        QuoteVerdict.OUT_OF_CONTEXT -> VerdictMisleading
+        QuoteVerdict.PARAPHRASED -> VerdictPartiallyTrue
+        QuoteVerdict.SATIRE_ORIGIN -> VerdictMisleading
+        QuoteVerdict.UNVERIFIABLE -> VerdictUnverifiable
+    }
 }
