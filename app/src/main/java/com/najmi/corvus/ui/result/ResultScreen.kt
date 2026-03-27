@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -135,22 +136,7 @@ fun ResultScreen(
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            if (result != null) {
-                ResultBottomActions(
-                    onAnalyzeAnother = { 
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onAnalyzeAnother() 
-                    },
-                    onShare = { 
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        shareResult() 
-                    },
-                    offsetY = bottomBarOffsetHeightPx
-                )
-            }
-        }
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -164,7 +150,7 @@ fun ResultScreen(
                     state = listState,
                     modifier = Modifier
                         .fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 100.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 140.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     item(key = "top_spacer") {
@@ -523,6 +509,24 @@ fun ResultScreen(
             } else if (uiState.isLoading) {
                 CorvusResultSkeleton()
             }
+
+            // Floating Bottom Actions
+            Box(
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                ResultBottomActions(
+                    onAnalyzeAnother = { 
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onAnalyzeAnother() 
+                    },
+                    onShare = { 
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        shareResult() 
+                    },
+                    offsetY = bottomBarOffsetHeightPx,
+                    maxHeightPx = bottomBarHeightPx
+                )
+            }
         }
     }
 }
@@ -622,19 +626,28 @@ fun StickyVerdictStrip(
 fun ResultBottomActions(
     onAnalyzeAnother: () -> Unit,
     onShare: () -> Unit,
-    offsetY: Float
+    offsetY: Float,
+    maxHeightPx: Float
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer { 
-                // Translate down to hide (offsetY is 0 to -height, so -offsetY is 0 to height)
-                translationY = -offsetY 
-                // Fade out as it moves
-                alpha = if (offsetY < -10f) 0f else 1f
+                // Translate down to hide (offsetY is 0 to maxHeightPx)
+                translationY = offsetY 
+                // Fade out smoothly as it moves
+                alpha = (1f - (offsetY / maxHeightPx)).coerceIn(0f, 1f)
             }
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(20.dp)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+                        MaterialTheme.colorScheme.background
+                    )
+                )
+            )
+            .padding(horizontal = 20.dp, vertical = 24.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
