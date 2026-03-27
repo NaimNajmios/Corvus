@@ -33,6 +33,8 @@ import coil.request.ImageRequest
 import android.util.Log
 import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.ui.theme.*
+import com.najmi.corvus.domain.util.*
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun SourceCard(
@@ -174,8 +176,9 @@ fun SourceCard(
 }
 
 @Composable
-private fun SourceRatingBreakdown(rating: com.najmi.corvus.domain.model.OutletRating) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun SourceRatingBreakdown(rating: OutletRating) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Overall Score & Label
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -183,18 +186,13 @@ private fun SourceRatingBreakdown(rating: com.najmi.corvus.domain.model.OutletRa
         ) {
             Column {
                 Text(
-                    text = "CREDIBILITY",
-                    style = MaterialTheme.typography.labelSmall,
+                    text = "CREDIBILITY SCORE",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
                 Text(
-                    text = when {
-                        rating.credibility >= 80 -> "High / Reliable"
-                        rating.credibility >= 60 -> "Mostly Factual"
-                        rating.credibility >= 40 -> "Mixed / Variable"
-                        else -> "Low / Unreliable"
-                    },
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    text = rating.credibilityLabel().uppercase(),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
                     color = when {
                         rating.credibility >= 80 -> CredibilityHigh
                         rating.credibility >= 60 -> CredibilityMedium
@@ -203,71 +201,122 @@ private fun SourceRatingBreakdown(rating: com.najmi.corvus.domain.model.OutletRa
                 )
             }
             
-            // Large circular indicator
-            Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    progress = rating.credibility / 100f,
-                    modifier = Modifier.size(36.dp),
-                    color = when {
-                        rating.credibility >= 80 -> CredibilityHigh
-                        rating.credibility >= 60 -> CredibilityMedium
-                        else -> CredibilityLow
-                    },
-                    strokeWidth = 3.dp,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-                Text(
-                    text = "${rating.credibility}",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                    fontWeight = FontWeight.Bold
-                )
+            Text(
+                text = "${rating.credibility} / 100",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        // 4-Dimension Breakdown
+        rating.breakdown?.let { b ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ScoreDimensionRow("Factual Accuracy", b.factualAccuracy)
+                ScoreDimensionRow("Source Quality", b.sourceQuality)
+                ScoreDimensionRow("Bias Impact", b.biasImpact)
+                ScoreDimensionRow("Transparency", b.transparency)
             }
         }
 
+        // Flags & Metadata
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             // Bias Badge
             BiasTag(rating.bias)
             
-            // Category Badge
-            rating.mbfcCategory?.let { cat ->
+            // Flags
+            rating.flags.forEach { flag ->
                 Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(4.dp)
-                ) {
-                    Text(
-                        text = cat.name.replace("_", " "),
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            if (rating.isGovAffiliated) {
-                Surface(
-                    color = VerdictMisleading.copy(alpha = 0.1f),
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
                     shape = RoundedCornerShape(4.dp),
-                    border = BorderStroke(1.dp, VerdictMisleading.copy(alpha = 0.3f))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f))
                 ) {
                     Text(
-                        text = "GOVT AFFILIATED",
+                        text = flag.name.replace("_", " "),
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                        color = VerdictMisleading
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
             }
         }
         
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 4.dp),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Rated by: ${rating.ratingSource.name.replace("_", " ")}",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                color = CorvusTextTertiary
+            )
+            
+            Text(
+                text = "Confidence: ${rating.confidence.ratingConfidenceLabel()}",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScoreDimensionRow(label: String, score: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         Text(
-            text = "Rating source: ${rating.ratingSource.name.replace("_", " ")}",
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-            color = CorvusTextTertiary
+            text = label,
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(100.dp)
+        )
+        
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(6.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+        ) {
+            val color = when {
+                score >= 80 -> CredibilityHigh
+                score >= 60 -> CredibilityMedium
+                else -> CredibilityLow
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(score / 100f)
+                    .fillMaxHeight()
+                    .background(color, CircleShape)
+            )
+        }
+        
+        Text(
+            text = score.toString(),
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.width(24.dp),
+            textAlign = TextAlign.End
         )
     }
+}
+
+private fun Float.ratingConfidenceLabel() = when {
+    this >= 0.80f -> "High"
+    this >= 0.50f -> "Moderate"
+    this >= 0.25f -> "Low"
+    else          -> "Unknown"
 }
 
 @Composable

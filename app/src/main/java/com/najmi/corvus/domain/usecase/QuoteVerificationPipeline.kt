@@ -7,11 +7,8 @@ import com.najmi.corvus.data.remote.WikiquoteClient
 import com.najmi.corvus.data.repository.GoogleFactCheckRepository
 import com.najmi.corvus.data.repository.TavilyRepository
 import com.najmi.corvus.data.repository.OutletRatingRepository
-import com.najmi.corvus.domain.model.ClaimType
-import com.najmi.corvus.domain.model.ClassifiedClaim
-import com.najmi.corvus.domain.model.CorvusCheckResult
-import com.najmi.corvus.domain.model.QuoteVerdict
-import com.najmi.corvus.domain.model.Source
+import com.najmi.corvus.domain.model.*
+import com.najmi.corvus.domain.util.*
 import com.najmi.corvus.domain.router.LlmRouter
 import javax.inject.Inject
 
@@ -92,7 +89,10 @@ class QuoteVerificationPipeline @Inject constructor(
         steps: List<com.najmi.corvus.domain.model.PipelineStepResult>
     ): CorvusCheckResult.QuoteResult {
         // Enrich with Bias/Credibility Ratings
-        val enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url)) }
+        var enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url, ClaimType.QUOTE)) }
+        
+        // Runtime Signal Boosting
+        enrichedSources = RuntimeCredibilityAdjuster.adjustForConsensus(enrichedSources, ClaimType.QUOTE)
 
         // Source Quality Gate
         val filteredSources = enrichedSources.filter { 

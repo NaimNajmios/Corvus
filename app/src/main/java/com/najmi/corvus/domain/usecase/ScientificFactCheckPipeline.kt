@@ -4,13 +4,8 @@ import android.util.Log
 import com.najmi.corvus.data.remote.PubMedClient
 import com.najmi.corvus.data.repository.OutletRatingRepository
 import com.najmi.corvus.data.repository.TavilyRepository
-import com.najmi.corvus.domain.model.ClaimLanguage
-import com.najmi.corvus.domain.model.ClaimType
-import com.najmi.corvus.domain.model.ClassifiedClaim
-import com.najmi.corvus.domain.model.CorvusCheckResult
-import com.najmi.corvus.domain.model.CredibilityTier
-import com.najmi.corvus.domain.model.Source
-import com.najmi.corvus.domain.model.SourceType
+import com.najmi.corvus.domain.model.*
+import com.najmi.corvus.domain.util.*
 import com.najmi.corvus.domain.router.LlmRouter
 import javax.inject.Inject
 
@@ -65,7 +60,10 @@ class ScientificFactCheckPipeline @Inject constructor(
         }
 
         // Enrich with Bias/Credibility Ratings
-        val enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url)) }
+        var enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url, ClaimType.SCIENTIFIC)) }
+        
+        // Runtime Signal Boosting
+        enrichedSources = RuntimeCredibilityAdjuster.adjustForConsensus(enrichedSources, ClaimType.SCIENTIFIC)
 
         // Source Quality Gate
         val filteredSources = enrichedSources.filter { 

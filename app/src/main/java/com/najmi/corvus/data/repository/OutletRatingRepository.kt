@@ -3,9 +3,8 @@ package com.najmi.corvus.data.repository
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import com.najmi.corvus.domain.model.OutletRating
-import com.najmi.corvus.domain.model.MbfcCategory
-import com.najmi.corvus.domain.model.RatingSource
+import com.najmi.corvus.domain.model.*
+import com.najmi.corvus.domain.util.*
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,31 +16,102 @@ class OutletRatingRepository @Inject constructor(
     companion object {
         private const val TAG = "OutletRatingRepo"
         
-        private val MY_OUTLET_RATINGS = mapOf(
-            "bernama.com"              to OutletRating(credibility = 75, bias = 0,  isGovAffiliated = true,  mbfcCategory = MbfcCategory.GOVERNMENT, ratingSource = RatingSource.MY_HARDCODED),
-            "malaysiakini.com"         to OutletRating(credibility = 80, bias = -1, isGovAffiliated = false, mbfcCategory = MbfcCategory.HIGH_FACTUAL, ratingSource = RatingSource.MY_HARDCODED),
-            "freemalaysiatoday.com"    to OutletRating(credibility = 72, bias = -1, isGovAffiliated = false, mbfcCategory = MbfcCategory.HIGH_FACTUAL, ratingSource = RatingSource.MY_HARDCODED),
-            "thestar.com.my"           to OutletRating(credibility = 78, bias = 0,  isGovAffiliated = false, mbfcCategory = MbfcCategory.HIGH_FACTUAL, ratingSource = RatingSource.MY_HARDCODED),
-            "nst.com.my"               to OutletRating(credibility = 70, bias = 1,  isGovAffiliated = false, mbfcCategory = MbfcCategory.MOSTLY_FACTUAL, ratingSource = RatingSource.MY_HARDCODED),
-            "astroawani.com"           to OutletRating(credibility = 73, bias = 0,  isGovAffiliated = false, mbfcCategory = MbfcCategory.HIGH_FACTUAL, ratingSource = RatingSource.MY_HARDCODED),
-            "utusan.com.my"            to OutletRating(credibility = 60, bias = 2,  isGovAffiliated = false, mbfcCategory = MbfcCategory.MIXED_FACTUAL, ratingSource = RatingSource.MY_HARDCODED),
-            "sebenarnya.my"            to OutletRating(credibility = 85, bias = 0,  isGovAffiliated = true,  mbfcCategory = MbfcCategory.GOVERNMENT, ratingSource = RatingSource.MY_HARDCODED),
-            "sinarharian.com.my"       to OutletRating(credibility = 65, bias = 1,  isGovAffiliated = false, mbfcCategory = MbfcCategory.MOSTLY_FACTUAL, ratingSource = RatingSource.MY_HARDCODED)
+        private val MY_OUTLET_PROFILES = mapOf(
+            "bernama.com" to TopicCredibilityProfile(
+                overall = 76,
+                byTopic = mapOf(
+                    ClaimType.STATISTICAL   to 88,
+                    ClaimType.PERSON_FACT   to 82,
+                    ClaimType.SCIENTIFIC    to 65,
+                    ClaimType.CURRENT_EVENT to 78
+                ),
+                flags = setOf(CredibilityFlag.GOVERNMENT_AFFILIATED, CredibilityFlag.SYNDICATED)
+            ),
+            "malaysiakini.com" to TopicCredibilityProfile(
+                overall = 80,
+                byTopic = mapOf(
+                    ClaimType.PERSON_FACT   to 82,
+                    ClaimType.STATISTICAL   to 75
+                ),
+                flags = setOf(CredibilityFlag.PAYWALLED)
+            ),
+            "sebenarnya.my" to TopicCredibilityProfile(
+                overall = 88,
+                byTopic = mapOf(ClaimType.GENERAL to 90),
+                flags = setOf(CredibilityFlag.FACT_CHECKER, CredibilityFlag.GOVERNMENT_AFFILIATED)
+            ),
+            "thestar.com.my" to TopicCredibilityProfile(
+                overall = 72,
+                byTopic = mapOf(
+                    ClaimType.STATISTICAL   to 74,
+                    ClaimType.SCIENTIFIC    to 60,
+                    ClaimType.CURRENT_EVENT to 73
+                ),
+                flags = setOf(CredibilityFlag.CLICKBAIT_HEADLINES)
+            )
         )
     }
 
     private val mbfcRatings: Map<String, OutletRating> by lazy { loadMbfcRatings() }
 
-    fun getRating(url: String): OutletRating {
+    fun getRating(url: String, claimType: ClaimType = ClaimType.GENERAL): OutletRating {
         val domain = extractDomain(url)
-        return MY_OUTLET_RATINGS[domain]
-            ?: mbfcRatings[domain]
-            ?: estimateHeuristically(domain)
+        
+        // 1. Check Hardcoded Profiles (MY specific overrides)
+        val profile = MY_OUTLET_PROFILES[domain]
+        if (profile != null) {
+            val baseRating = mbfcRatings[domain]
+            return OutletRating(
+                credibility = profile.byTopic[claimType] ?: profile.overall,
+                bias = baseRating?.bias ?: 0,
+                isGovAffiliated = profile.flags.contains(CredibilityFlag.GOVERNMENT_AFFILIATED),
+                flags = profile.flags,
+                ratingSource = RatingSource.MY_HARDCODED,
+                mbfcCategory = baseRating?.mbfcCategory,
+                confidence = 0.95f
+            )
+        }
+
+        // 2. Fusion Logic
+        val contributions = mutableListOf<RatingContribution>()
+        
+        // MBFC Contribution
+        mbfcRatings[domain]?.let { mbfc ->
+            contributions.add(RatingContribution(
+                ratingSource = RatingSource.MBFC_CSV,
+                rawScore = mbfc.credibility,
+                weight = 0.5f,
+                originalLabel = mbfc.mbfcCategory?.displayLabel
+            ))
+        }
+
+        // Heuristic Contribution
+        val heuristic = EnhancedDomainHeuristics.analyse(domain)
+        contributions.add(RatingContribution(
+            ratingSource = RatingSource.HEURISTIC,
+            rawScore = heuristic.credibility,
+            weight = 0.2f
+        ))
+
+        // Perform Fusion
+        val fused = CredibilityFuser.fuse(contributions)
+
+        return OutletRating(
+            credibility = fused.composite,
+            bias = mbfcRatings[domain]?.bias ?: 0,
+            confidence = fused.confidence,
+            isGovAffiliated = heuristic.flags.contains(CredibilityFlag.GOVERNMENT_AFFILIATED),
+            isSatire = heuristic.flags.contains(CredibilityFlag.SATIRE),
+            mbfcCategory = mbfcRatings[domain]?.mbfcCategory,
+            ratingSource = if (contributions.any { it.ratingSource == RatingSource.MBFC_CSV }) RatingSource.MBFC_CSV else RatingSource.HEURISTIC,
+            breakdown = fused.breakdown,
+            flags = heuristic.flags
+        )
     }
 
     fun getRatingOrNull(url: String): OutletRating? {
         val domain = extractDomain(url)
-        return MY_OUTLET_RATINGS[domain] ?: mbfcRatings[domain]
+        return mbfcRatings[domain]
     }
 
     private fun extractDomain(url: String): String {
@@ -70,7 +140,8 @@ class OutletRatingRepository @Inject constructor(
                             isGovAffiliated = biasStr.contains("government") || domain.endsWith(".gov") || domain.endsWith(".gov.my"),
                             isSatire = factualStr.contains("satire"),
                             mbfcCategory = mapFactualToMbfcCategory(factualStr),
-                            ratingSource = RatingSource.MBFC_CSV
+                            ratingSource = RatingSource.MBFC_CSV,
+                            confidence = 0.8f // MBFC is relatively high confidence
                         )
                     }
                 }
@@ -112,14 +183,4 @@ class OutletRatingRepository @Inject constructor(
         else                          -> null
     }
 
-    private fun estimateHeuristically(domain: String): OutletRating {
-        return when {
-            domain.endsWith(".gov.my") -> OutletRating(90, 0, true, mbfcCategory = com.najmi.corvus.domain.model.MbfcCategory.GOVERNMENT, ratingSource = RatingSource.HEURISTIC)
-            domain.endsWith(".gov")     -> OutletRating(85, 0, true, mbfcCategory = com.najmi.corvus.domain.model.MbfcCategory.GOVERNMENT, ratingSource = RatingSource.HEURISTIC)
-            domain.endsWith(".edu.my") || domain.endsWith(".edu") -> OutletRating(82, 0, false, ratingSource = RatingSource.HEURISTIC)
-            domain.contains("blog")     -> OutletRating(25, 0, false, ratingSource = RatingSource.HEURISTIC)
-            domain.contains("wordpress") || domain.contains("blogger") -> OutletRating(20, 0, false, ratingSource = RatingSource.HEURISTIC)
-            else                        -> OutletRating(50, 0, false, ratingSource = RatingSource.UNKNOWN)
-        }
-    }
 }

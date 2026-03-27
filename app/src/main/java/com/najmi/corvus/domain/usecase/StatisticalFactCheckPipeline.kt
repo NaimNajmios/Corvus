@@ -5,14 +5,9 @@ import com.najmi.corvus.data.remote.DosmClient
 import com.najmi.corvus.data.remote.WorldBankClient
 import com.najmi.corvus.data.repository.TavilyRepository
 import com.najmi.corvus.data.repository.OutletRatingRepository
-import com.najmi.corvus.domain.model.ClaimLanguage
-import com.najmi.corvus.domain.model.ClaimType
-import com.najmi.corvus.domain.model.ClassifiedClaim
-import com.najmi.corvus.domain.model.CorvusCheckResult
-import com.najmi.corvus.domain.model.CredibilityTier
-import com.najmi.corvus.domain.model.Source
-import com.najmi.corvus.domain.model.SourceType
+import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.domain.router.LlmRouter
+import com.najmi.corvus.domain.util.*
 import javax.inject.Inject
 
 class StatisticalFactCheckPipeline @Inject constructor(
@@ -64,7 +59,10 @@ class StatisticalFactCheckPipeline @Inject constructor(
         }
 
         // Enrich with Bias/Credibility Ratings
-        val enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url)) }
+        var enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url, ClaimType.STATISTICAL)) }
+        
+        // Runtime Signal Boosting
+        enrichedSources = RuntimeCredibilityAdjuster.adjustForConsensus(enrichedSources, ClaimType.STATISTICAL)
 
         // Source Quality Gate
         val filteredSources = enrichedSources.filter { 

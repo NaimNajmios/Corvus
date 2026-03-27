@@ -4,13 +4,9 @@ import android.util.Log
 import com.najmi.corvus.data.remote.GdeltClient
 import com.najmi.corvus.data.repository.OutletRatingRepository
 import com.najmi.corvus.data.repository.TavilyRepository
-import com.najmi.corvus.domain.model.ClaimLanguage
-import com.najmi.corvus.domain.model.ClaimType
-import com.najmi.corvus.domain.model.ClassifiedClaim
-import com.najmi.corvus.domain.model.CorvusCheckResult
-import com.najmi.corvus.domain.model.Source
-import com.najmi.corvus.domain.model.SourceType
+import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.domain.router.LlmRouter
+import com.najmi.corvus.domain.util.*
 import javax.inject.Inject
 
 class CurrentEventPipeline @Inject constructor(
@@ -56,7 +52,10 @@ class CurrentEventPipeline @Inject constructor(
         }
 
         // Enrich with Bias/Credibility Ratings
-        val enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url)) }
+        var enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url, ClaimType.CURRENT_EVENT)) }
+        
+        // Runtime Signal Boosting
+        enrichedSources = RuntimeCredibilityAdjuster.adjustForConsensus(enrichedSources, ClaimType.CURRENT_EVENT)
 
         // Source Quality Gate
         val filteredSources = enrichedSources.filter { 

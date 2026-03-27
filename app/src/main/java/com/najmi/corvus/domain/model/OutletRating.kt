@@ -4,12 +4,16 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class OutletRating(
-    val credibility: Int,              // 0–100
+    val credibility: Int,              // 0–100 composite
     val bias: Int,                     // -2 to +2
+    val confidence: Float = 0f,        // 0.0–1.0
     val isGovAffiliated: Boolean,
     val isSatire: Boolean = false,
     val mbfcCategory: MbfcCategory? = null,
-    val ratingSource: RatingSource = RatingSource.HEURISTIC
+    val ratingSource: RatingSource = RatingSource.HEURISTIC,
+    val ratedAt: Long? = null,         // Epoch ms
+    val breakdown: ScoreBreakdown? = null,
+    val flags: Set<CredibilityFlag> = emptySet()
 )
 
 @Serializable
@@ -30,6 +34,8 @@ enum class MbfcCategory(val displayLabel: String, val credibilityHint: String) {
 @Serializable
 enum class RatingSource {
     MBFC_CSV,      // From bundled mbfc_ratings.csv
+    AD_FONTES,
+    NEWS_GUARD,
     MY_HARDCODED,  // From MY_OUTLET_RATINGS hardcoded map
     HEURISTIC,     // Domain-based inference
     UNKNOWN

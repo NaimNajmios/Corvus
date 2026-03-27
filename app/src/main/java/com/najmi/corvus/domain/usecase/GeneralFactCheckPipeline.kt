@@ -11,6 +11,7 @@ import com.najmi.corvus.data.repository.*
 import com.najmi.corvus.domain.model.*
 import com.najmi.corvus.domain.remote.llm.TemporalPromptInjector
 import com.najmi.corvus.domain.usecase.*
+import com.najmi.corvus.domain.util.*
 import com.najmi.corvus.domain.util.TokenCollector
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.coroutineScope
@@ -106,7 +107,10 @@ class GeneralFactCheckPipeline @Inject constructor(
         }
 
         // Enrich with Bias/Credibility Ratings
-        val enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url)) }
+        var enrichedSources = sources.map { it.copy(outletRating = ratingRepo.getRating(it.url, classified.type)) }
+
+        // Runtime Signal Boosting
+        enrichedSources = RuntimeCredibilityAdjuster.adjustForConsensus(enrichedSources, classified.type)
 
         // Source Quality Gate
         val filteredSourcesCount = enrichedSources.count { (it.outletRating?.credibility ?: 50) >= 40 }
@@ -222,7 +226,7 @@ class GeneralFactCheckPipeline @Inject constructor(
             keyFacts = verifiedFacts,
             confidence = adjustedConfidence,
             explanationVerification = explanationVerification,
-            correctionsLog = (finalResult.correctionsLog ?: emptyList()) + penaltyLog,
+            correctionsLog = (finalResult.correctionsLog ?: emptyList<String>()) + penaltyLog,
             retrievalMetadata = RetrievalMetadata(
                 originalClaim = classified.raw,
                 rewrittenQueries = rewrittenQuery.searchQueries,
