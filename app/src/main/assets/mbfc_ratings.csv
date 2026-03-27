@@ -19,3 +19,147 @@ NST,nst.com.my,right-center,mostly,malaysia,news,70
 Utusan,utusan.com.my,right,mixed,malaysia,news,55
 Harapan Daily,harapandaily.com,left,mostly,malaysia,news,65
 HarakahDaily,harakahdaily.net,right,mixed,malaysia,news,50
+CNN,cnn.com,left,mixed,usa,news,50
+MSNBC,msnbc.com,left,mixed,usa,news,48
+The Washington Post,washingtonpost.com,left-center,mostly factual,usa,news,75
+NPR,npr.org,left-center,high,usa,news,85
+PBS,pbs.org,center,high,usa,news,88
+CBS News,cbsnews.com,left-center,high,usa,news,80
+ABC News,abcnews.go.com,left-center,high,usa,news,80
+USA Today,usatoday.com,left-center,high,usa,news,78
+Politico,politico.com,left-center,high,usa,news,75
+The Atlantic,theatlantic.com,left-center,high,usa,magazine,75
+Vox,vox.com,left,mostly factual,usa,news,65
+HuffPost,huffpost.com,left,mixed,usa,news,55
+The Daily Wire,dailywire.com,right,mixed,usa,news,45
+Newsmax,newsmax.com,right,mixed,usa,news,35
+OAN,oann.com,far right,low,usa,news,15
+Daily Mail,dailymail.co.uk,right,low,uk,news,25
+The Telegraph,telegraph.co.uk,right-center,mostly factual,uk,news,70
+The Times,thetimes.co.uk,right-center,mostly factual,uk,news,75
+Bloomberg,bloomberg.com,left-center,high,usa,news,82
+Forbes,forbes.com,right-center,mostly factual,usa,magazine,70
+Mother Jones,motherjones.com,left,mostly factual,usa,magazine,70
+Jacobin,jacobinmag.com,left,mixed,usa,magazine,55
+Daily Kos,dailykos.com,left,mixed,usa,website,50
+Slate,slate.com,left,mostly factual,usa,magazine,68
+The Intercept,theintercept.com,left,mostly factual,usa,news,70
+Salon,salon.com,left,mixed,usa,website,55
+The Nation,thenation.com,left,mostly factual,usa,magazine,65
+Time,time.com,left-center,high,usa,magazine,80
+Newsweek,newsweek.com,left-center,mixed,usa,magazine,50
+The New Yorker,newyorker.com,left-center,high,usa,magazine,82
+Vice,vice.com,left-center,mostly factual,usa,news,68
+Rolling Stone,rollingstone.com,left,mixed,usa,magazine,55
+The Independent,independent.co.uk,left-center,mostly factual,uk,news,72
+Sydney Morning Herald,smh.com.au,left-center,high,australia,news,80
+Toronto Star,thestar.com,left-center,high,canada,news,80
+Der Spiegel,spiegel.de,left-center,high,germany,magazine,85
+C-SPAN,c-span.org,center,very high,usa,tv,98
+Pew Research Center,pewresearch.org,center,very high,usa,organization,98
+Gallup,gallup.com,center,very high,usa,organization,95
+Financial Times,ft.com,center,high,uk,news,85
+Christian Science Monitor,csmonitor.com,center,high,usa,news,88
+Axios,axios.com,center,high,usa,news,85
+National Geographic,nationalgeographic.com,pro-science,very high,usa,magazine,95
+Scientific American,scientificamerican.com,pro-science,very high,usa,magazine,95
+Nature,nature.com,pro-science,very high,uk,journal,98
+Science,science.org,pro-science,very high,usa,journal,98
+NASA,nasa.gov,pro-science,very high,usa,organization,100
+New York Post,nypost.com,right-center,mixed,usa,news,45
+Washington Examiner,washingtonexaminer.com,right,mixed,usa,magazine,50
+The Dispatch,thedispatch.com,right-center,high,usa,website,80
+Reason,reason.com,right-center,high,usa,magazine,78
+The Economist,economist.com,right-center,high,uk,magazine,85
+National Review,nationalreview.com,right,mostly factual,usa,magazine,65
+The Blaze,theblaze.com,right,mixed,usa,website,40
+Washington Times,washingtontimes.com,right,mixed,usa,news,50
+Daily Caller,dailycaller.com,right,mixed,usa,website,40
+Fox Business,foxbusiness.com,right,mixed,usa,tv,55
+Sky News Australia,skynews.com.au,right,mixed,australia,tv,45
+Gateway Pundit,thegatewaypundit.com,far right,very low,usa,website,5
+Epoch Times,theepochtimes.com,right,mixed,usa,news,35
+WND (WorldNetDaily),wnd.com,far right,low,usa,website,15
+Rebel News,rebelnews.com,far right,mixed,canada,website,30
+ZeroHedge,zerohedge.com,right,low,usa,blog,20
+Babylon Bee,babylonbee.com,satire,satire,usa,satire,40
+The Borowitz Report,newyorker.com/humor/borowitz-report,satire,satire,usa,satire,50
+CNA (Channel News Asia),channelnewsasia.com,center,high,singapore,news,80
+The Straits Times,straitstimes.com,right-center,high,singapore,news,78
+The Jakarta Post,thejakartapost.com,center,high,indonesia,news,80
+South China Morning Post,scmp.com,left-center,mixed,hong kong,news,60
+Times of India,timesofindia.indiatimes.com,right-center,mixed,india,news,55
+The Athletic,theathletic.com,center,high,usa,website,85
+Sky Sports,skysports.com,center,mostly factual,uk,tv,75
+ESPN,espn.com,center,high,usa,tv,80
+BBC Sport,bbc.com/sport,center,high,uk,website,88
+Goal,goal.com,center,mostly factual,uk,website,65
+Marca,marca.com,right-center,mostly factual,spain,newspaper,60
+L'Equipe,lequipe.fr,center,high,france,newspaper,80
+Kicker,kicker.de,center,high,germany,magazine,85
+La Gazzetta dello Sport,gazzetta.it,center,mostly factual,italy,newspaper,65
+FourFourTwo,fourfourtwo.com,center,high,uk,magazine,80
+Wired,wired.com,left-center,high,usa,magazine,80
+The Verge,theverge.com,left-center,high,usa,website,75
+TechCrunch,techcrunch.com,center,high,usa,website,80
+Ars Technica,arstechnica.com,left-center,high,usa,website,85
+MIT Technology Review,technologyreview.com,pro-science,very high,usa,magazine,95
+Hackaday,hackaday.com,center,high,usa,website,85
+Tom's Hardware,tomshardware.com,center,high,usa,website,80
+IEEE Spectrum,spectrum.ieee.org,pro-science,very high,usa,magazine,95
+PetaPixel,petapixel.com,center,high,usa,website,80
+Fstoppers,fstoppers.com,center,high,usa,website,75
+DPReview,dpreview.com,center,high,usa,website,85
+Astro Awani,astroawani.com,center,high,malaysia,tv,80
+Malay Mail,malaymail.com,center,high,malaysia,news,75
+Sinar Harian,sinarharian.com.my,right-center,mostly factual,malaysia,newspaper,65
+Berita Harian,bharian.com.my,right-center,mostly factual,malaysia,newspaper,65
+Utusan Malaysia,utusan.com.my,right,mixed,malaysia,newspaper,50
+The Edge Markets,theedgemarkets.com,center,high,malaysia,news,85
+Borneo Post,theborneopost.com,center,high,malaysia,newspaper,75
+Le Monde,lemonde.fr,left-center,high,france,newspaper,80
+El Pais,elpais.com,left-center,high,spain,newspaper,80
+Al Arabiya,alarabiya.net,right-center,mixed,uae,tv,55
+Haaretz,haaretz.com,left-center,high,israel,newspaper,75
+The Jerusalem Post,jpost.com,right-center,mostly factual,israel,newspaper,70
+Global Times,globaltimes.cn,far right,mixed,china,newspaper,30
+Xinhua,xinhuanet.com,center,mixed,china,news,40
+The Hindu,thehindu.com,left-center,high,india,newspaper,80
+Hindustan Times,hindustantimes.com,center,mostly factual,india,newspaper,70
+Asahi Shimbun,asahi.com,left-center,high,japan,newspaper,80
+Yomiuri Shimbun,yomiuri.co.jp,right-center,high,japan,newspaper,80
+The Globe and Mail,theglobeandmail.com,center,high,canada,newspaper,85
+CBC News,cbc.ca/news,left-center,high,canada,tv,80
+ABC News Australia,abc.net.au/news,left-center,high,australia,tv,85
+The Australian,theaustralian.com.au,right-center,mostly factual,australia,newspaper,70
+NZ Herald,nzherald.co.nz,right-center,mostly factual,new zealand,newspaper,70
+Deutsche Welle,dw.com,center,high,germany,tv,85
+France 24,france24.com,center,high,france,tv,80
+TASS,tass.com,right,mixed,russia,news,35
+Sputnik,sputniknews.com,far right,low,russia,news,20
+Telesur,telesurenglish.net,far left,mixed,venezuela,tv,40
+Daily Mirror,mirror.co.uk,left-center,mixed,uk,newspaper,50
+The Sun,thesun.co.uk,right,mixed,uk,newspaper,40
+Daily Express,express.co.uk,right,mixed,uk,newspaper,40
+HuffPost UK,huffingtonpost.co.uk,left,mostly factual,uk,website,65
+Politico Europe,politico.eu,center,high,belgium,news,80
+Euronews,euronews.com,center,high,france,tv,80
+The Daily Beast,thedailybeast.com,left,mixed,usa,website,55
+Raw Story,rawstory.com,left,mixed,usa,website,50
+AlterNet,alternet.org,left,mixed,usa,website,50
+Palmer Report,palmerreport.com,far left,mixed,usa,blog,30
+Occupy Democrats,occupydemocrats.com,far left,low,usa,website,20
+Bitchute,bitchute.com,far right,very low,uk,video,10
+Rumble,rumble.com,right,mixed,canada,video,40
+Substack (General),substack.com,center,mixed,usa,platform,50
+Medium,medium.com,center,mixed,usa,platform,50
+The Conversation,theconversation.com,left-center,high,australia,website,85
+ProPublica,propublica.org,left-center,high,usa,news,90
+Center for Public Integrity,publicintegrity.org,center,high,usa,organization,90
+Bellingcat,bellingcat.com,left-center,high,netherlands,website,85
+Snopes,snopes.com,left-center,high,usa,website,85
+PolitiFact,politifact.com,left-center,high,usa,website,85
+FactCheck.org,factcheck.org,center,high,usa,website,90
+Full Fact,fullfact.org,center,high,uk,website,90
+AP Fact Check,apnews.com/ap-fact-check,center,very high,usa,news,95
+Reuters Fact Check,reuters.com/fact-check,center,very high,uk,news,95
