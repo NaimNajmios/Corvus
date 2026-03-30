@@ -2,6 +2,7 @@ package com.najmi.corvus.di
 
 import android.content.Context
 import androidx.room.Room
+import com.najmi.corvus.data.local.BookmarkDao
 import com.najmi.corvus.data.local.CorvusDatabase
 import com.najmi.corvus.data.local.HistoryDao
 import com.najmi.corvus.data.local.TokenReportDao
@@ -45,5 +46,11 @@ object DatabaseModule {
     @Singleton
     fun provideTokenReportDao(database: CorvusDatabase): TokenReportDao {
         return database.tokenReportDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideBookmarkDao(database: CorvusDatabase): BookmarkDao {
+        return database.bookmarkDao()
     }
 }

@@ -6,6 +6,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.najmi.corvus.data.repository.BookmarkRepository
 import com.najmi.corvus.data.repository.HistoryRepository
 import com.najmi.corvus.domain.model.CorvusCheckResult
 import com.najmi.corvus.domain.model.CorvusUiState
@@ -26,6 +27,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CorvusViewModel @Inject constructor(
     private val historyRepository: HistoryRepository,
+    private val bookmarkRepository: BookmarkRepository,
     private val workManager: WorkManager
 ) : ViewModel() {
 
@@ -170,5 +172,17 @@ class CorvusViewModel @Inject constructor(
         if (claim.isNotBlank() && claim.length >= MIN_CLAIM_LENGTH) {
             analyze()
         }
+    }
+
+    fun addBookmark(notes: String = "", tags: String = "") {
+        val result = _uiState.value.result ?: return
+        viewModelScope.launch {
+            bookmarkRepository.addBookmark(result, notes, tags)
+        }
+    }
+
+    suspend fun isCurrentResultBookmarked(): Boolean {
+        val result = _uiState.value.result ?: return false
+        return bookmarkRepository.isBookmarked(result.id)
     }
 }

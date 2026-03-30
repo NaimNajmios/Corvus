@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Analytics
+import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
@@ -42,6 +44,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.najmi.corvus.ui.bookmarks.BookmarkDetailScreen
+import com.najmi.corvus.ui.bookmarks.BookmarkScreen
 import com.najmi.corvus.ui.compare.CompareScreen
 import com.najmi.corvus.ui.history.HistoryScreen
 import com.najmi.corvus.ui.input.InputScreen
@@ -60,6 +64,8 @@ object Routes {
     const val SETTINGS = "settings"
     const val COMPARE = "compare"
     const val USAGE = "usage"
+    const val BOOKMARKS = "bookmarks"
+    const val BOOKMARK_DETAIL = "bookmark_detail/{bookmarkId}"
 }
 
 data class BottomNavItem(
@@ -106,6 +112,12 @@ fun CorvusApp(
             route = Routes.USAGE
         ),
         BottomNavItem(
+            title = "Bookmarks",
+            selectedIcon = Icons.Filled.Bookmark,
+            unselectedIcon = Icons.Outlined.Bookmark,
+            route = Routes.BOOKMARKS
+        ),
+        BottomNavItem(
             title = "Settings",
             selectedIcon = Icons.Filled.Settings,
             unselectedIcon = Icons.Outlined.Settings,
@@ -113,7 +125,7 @@ fun CorvusApp(
         )
     )
 
-    val showBottomBar = currentRoute in listOf(Routes.INPUT, Routes.HISTORY, Routes.USAGE, Routes.SETTINGS)
+    val showBottomBar = currentRoute in listOf(Routes.INPUT, Routes.HISTORY, Routes.USAGE, Routes.BOOKMARKS, Routes.SETTINGS)
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -283,6 +295,26 @@ fun CorvusApp(
 
                 composable(Routes.USAGE) {
                     UsageScreen()
+                }
+
+                composable(Routes.BOOKMARKS) {
+                    BookmarkScreen(
+                        onItemClick = { bookmarkId ->
+                            navController.navigate("bookmark_detail/$bookmarkId")
+                        }
+                    )
+                }
+
+                composable(Routes.BOOKMARK_DETAIL) { backStackEntry ->
+                    val bookmarkId = backStackEntry.arguments?.getString("bookmarkId") ?: return@composable
+                    BookmarkDetailScreen(
+                        bookmarkId = bookmarkId,
+                        onBack = { navController.popBackStack() },
+                        onNavigateToResult = { resultId ->
+                            viewModel.loadResultById(resultId)
+                            navController.navigate(Routes.RESULT)
+                        }
+                    )
                 }
                 
                 composable(Routes.COMPARE) {

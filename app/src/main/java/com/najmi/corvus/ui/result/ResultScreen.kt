@@ -18,12 +18,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -77,11 +79,20 @@ fun ResultScreen(
     }
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
 
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
     var showContent by remember { mutableStateOf(false) }
     var queryExpanded by rememberSaveable { mutableStateOf(false) }
+    var showBookmarkDialog by remember { mutableStateOf(false) }
+    var bookmarkNotes by remember { mutableStateOf("") }
+    var isCurrentResultBookmarked by remember { mutableStateOf(false) }
+
+    LaunchedEffect(result) {
+        result?.let {
+            isCurrentResultBookmarked = viewModel.isCurrentResultBookmarked()
+        }
+    }
 
     val showScrollToTop by remember {
         derivedStateOf { listState.firstVisibleItemIndex > 2 }
@@ -594,11 +605,61 @@ fun ResultScreen(
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                         shareResult() 
                     },
+                    onBookmark = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        if (isCurrentResultBookmarked) {
+                            // Already bookmarked - could show a message
+                        } else {
+                            showBookmarkDialog = true
+                        }
+                    },
+                    isBookmarked = isCurrentResultBookmarked,
                     offsetY = bottomBarOffsetHeightPx,
                     maxHeightPx = bottomBarHeightPx
                 )
             }
         }
+    }
+
+    if (showBookmarkDialog) {
+        AlertDialog(
+            onDismissRequest = { showBookmarkDialog = false },
+            title = { Text("Add Bookmark") },
+            text = {
+                Column {
+                    Text(
+                        text = "Save this fact-check result for later reference.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = bookmarkNotes,
+                        onValueChange = { bookmarkNotes = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Add a note (optional)") },
+                        minLines = 2,
+                        maxLines = 4
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.addBookmark(bookmarkNotes)
+                        isCurrentResultBookmarked = true
+                        showBookmarkDialog = false
+                        bookmarkNotes = ""
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBookmarkDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
@@ -697,6 +758,8 @@ fun StickyVerdictStrip(
 fun ResultBottomActions(
     onAnalyzeAnother: () -> Unit,
     onShare: () -> Unit,
+    onBookmark: () -> Unit,
+    isBookmarked: Boolean,
     offsetY: Float,
     maxHeightPx: Float
 ) {
@@ -720,36 +783,59 @@ fun ResultBottomActions(
             )
             .padding(horizontal = 20.dp, vertical = 24.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Button(
-                onClick = onAnalyzeAnother,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                shape = CorvusShapes.medium
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.size(8.dp))
-                Text("ANALYSE")
+                Button(
+                    onClick = onAnalyzeAnother,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
+                    shape = CorvusShapes.medium
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("ANALYSE")
+                }
+
+                Button(
+                    onClick = onShare,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    shape = CorvusShapes.medium
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("SHARE")
+                }
             }
 
-            Button(
-                onClick = onShare,
+            OutlinedButton(
+                onClick = onBookmark,
                 modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                shape = CorvusShapes.medium
+                    .fillMaxWidth()
+                    .height(44.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             ) {
-                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(
+                    imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
                 Spacer(modifier = Modifier.size(8.dp))
-                Text("SHARE")
+                Text(if (isBookmarked) "BOOKMARKED" else "BOOKMARK FOR LATER")
             }
         }
     }

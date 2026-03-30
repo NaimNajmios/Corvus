@@ -10,9 +10,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CorvusHistoryEntity::class,
         ViralHoaxEntity::class,
         com.najmi.corvus.data.local.entity.KgCacheEntity::class,
-        com.najmi.corvus.data.local.entity.TokenReportEntity::class
+        com.najmi.corvus.data.local.entity.TokenReportEntity::class,
+        BookmarkEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false 
 )
 abstract class CorvusDatabase : RoomDatabase() {
@@ -20,6 +21,7 @@ abstract class CorvusDatabase : RoomDatabase() {
     abstract fun viralHoaxDao(): ViralHoaxDao
     abstract fun kgCacheDao(): com.najmi.corvus.data.local.entity.KgCacheDao
     abstract fun tokenReportDao(): TokenReportDao
+    abstract fun bookmarkDao(): BookmarkDao
     
     companion object {
         const val DATABASE_NAME = "corvus_database"
@@ -47,6 +49,25 @@ abstract class CorvusDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6)
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS bookmarks (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        resultId TEXT NOT NULL,
+                        claim TEXT NOT NULL,
+                        resultType TEXT NOT NULL,
+                        verdict TEXT NOT NULL,
+                        confidence REAL NOT NULL,
+                        bookmarkedAt INTEGER NOT NULL,
+                        userNotes TEXT NOT NULL DEFAULT '',
+                        tags TEXT NOT NULL DEFAULT '',
+                        lastEditedAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+            }
+        }
+
+        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
     }
 }
