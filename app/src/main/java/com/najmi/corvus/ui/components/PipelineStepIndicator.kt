@@ -28,7 +28,8 @@ import com.najmi.corvus.ui.theme.CorvusShapes
 @Composable
 fun PipelineStepIndicator(
     currentStep: PipelineStep,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    elapsedSeconds: Int = 0
 ) {
     val steps = listOf(
         "Checking viral database" to PipelineStep.CHECKING_VIRAL_DATABASE,
@@ -41,12 +42,36 @@ fun PipelineStepIndicator(
         "Grounding check" to PipelineStep.GROUNDING_CHECK
     )
 
+    val currentIndex = steps.indexOfFirst { it.second == currentStep }
+    val progressPercent = if (currentIndex >= 0) {
+        ((currentIndex.toFloat() / steps.size) * 100).toInt()
+    } else {
+        0
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Pipeline Progress",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Step ${if (currentIndex >= 0) currentIndex + 1 else "-" }/${steps.size} • $progressPercent%",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
         steps.forEach { (label, step) ->
             PipelineStepItem(
                 label = label,

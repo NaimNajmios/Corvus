@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.najmi.corvus.R
 import com.najmi.corvus.domain.model.PipelineStep
+import com.najmi.corvus.ui.components.LoadingTipCard
 import com.najmi.corvus.ui.components.PipelineStepIndicator
 import kotlinx.coroutines.delay
 
@@ -141,9 +142,16 @@ private fun LoadingContent(
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        PipelineStepIndicator(currentStep = currentStep)
+        PipelineStepIndicator(
+            currentStep = currentStep,
+            elapsedSeconds = elapsedSeconds
+        )
         
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        LoadingTipCard()
+        
+        Spacer(modifier = Modifier.height(32.dp))
         
         androidx.compose.foundation.layout.Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
