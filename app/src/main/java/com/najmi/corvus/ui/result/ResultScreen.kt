@@ -64,10 +64,17 @@ import kotlin.math.roundToInt
 fun ResultScreen(
     viewModel: CorvusViewModel = hiltViewModel(),
     onAnalyzeAnother: () -> Unit,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onRequestHumanReview: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val result = uiState.result
+
+    LaunchedEffect(uiState.showHumanReviewScreen) {
+        if (uiState.showHumanReviewScreen) {
+            onRequestHumanReview?.invoke()
+        }
+    }
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
 
@@ -207,6 +214,63 @@ fun ResultScreen(
                                     }
                                 }
                             )
+                        }
+                    }
+
+                    // 2.5 EMPTY & ERROR STATES
+                    if (result is CorvusCheckResult.GeneralResult) {
+                        when (result.verificationStatus) {
+                            VerificationStatus.NO_SOURCES_FOUND -> {
+                                item(key = "no_sources_card") {
+                                    StaggeredReveal(index = 4, show = showContent) {
+                                        NoSourcesFoundCard(
+                                            reasons = result.noSourceReasons,
+                                            onRequestHumanReview = {
+                                                viewModel.requestHumanReview()
+                                                onRequestHumanReview?.invoke()
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            VerificationStatus.API_FAILURE -> {
+                                item(key = "api_failure_card") {
+                                    StaggeredReveal(index = 4, show = showContent) {
+                                        ApiFailureCard(
+                                            errorMessage = result.apiErrorMessage ?: "Unknown error",
+                                            partialResultsAvailable = result.savedProgress != null,
+                                            onRetry = { viewModel.retryVerification() },
+                                            onNotifyWhenComplete = { viewModel.notifyWhenComplete() }
+                                        )
+                                    }
+                                }
+                            }
+                            VerificationStatus.LOW_CONFIDENCE -> {
+                                item(key = "low_confidence_card") {
+                                    StaggeredReveal(index = 4, show = showContent) {
+                                        LowConfidenceCard(
+                                            currentConfidence = result.confidence,
+                                            knownFactors = result.sources.mapNotNull { it.title }.take(3),
+                                            helpRequests = result.helpRequests
+                                        )
+                                    }
+                                }
+                            }
+                            else -> {}
+                        }
+                    }
+
+                    // 3. TEMPORAL CONTEXT BANNER
+                    if (result is CorvusCheckResult.GeneralResult && 
+                        (result.temporalMismatch?.hasSignificantMismatch == true || result.recencySignal != null)) {
+                        item(key = "temporal_banner") {
+                            StaggeredReveal(index = 5, show = showContent) {
+                                TemporalContextBanner(
+                                    mismatchReport = result.temporalMismatch,
+                                    recencySignal = result.recencySignal,
+                                    onLearnMore = { /* Open learn more URL */ }
+                                )
+                            }
                         }
                     }
 
@@ -451,7 +515,14 @@ fun ResultScreen(
                         }
                         item(key = "confidence_timeline") {
                             StaggeredReveal(index = 16 + sources.size, show = showContent) {
-                                ConfidenceTimelineCard(points = timeline)
+                                ConfidenceTimelineCard(
+                                    points = timeline,
+                                    sources = sources,
+                                    showSourceAttribution = true,
+                                    onConfidenceDrop = { point, prevConf, source, idx ->
+                                        // Dialog is handled internally by the card
+                                    }
+                                )
                             }
                         }
                     }

@@ -2,6 +2,19 @@
 
 All notable changes to the **Corvus** project will be documented in this file.
 
+## [1.3.0] - 2026-03-30
+
+### Added
+- **Multi-Source Credibility Fusion**: Real-time aggregation of MBFC, AdFontes, and NewsGuard data.
+- **Educational Loading Experience**: New loading screen with real-time pipeline progress tracking and instructional "Tip Cards".
+- **Above-The-Fold Layout**: Refined `ResultScreen` UI guaranteeing visibility of the verdict on entry.
+- **Sticky Verdict Context**: Persistent status strip that slides into view during scrolling.
+- **MBFC Ratings Integration**: Local asset `mbfc_ratings.csv` for high-speed credibility lookups.
+
+### Changed
+- **Source Card UI**: Left-border encoding for credibility tiers (Gold for Primary sources).
+- **Confidence Visualization**: Animated confidence bar directly integrated with the verdict word.
+
 ## [1.2.0] - 2026-03-26
 
 ### Added

@@ -149,4 +149,26 @@ class CorvusViewModel @Inject constructor(
         cancelAnalysis()
         _uiState.update { CorvusUiState() }
     }
+
+    fun requestHumanReview() {
+        _uiState.update { it.copy(
+            humanReviewRequested = true,
+            showHumanReviewScreen = true
+        ) }
+    }
+
+    fun dismissHumanReviewScreen() {
+        _uiState.update { it.copy(showHumanReviewScreen = false) }
+    }
+
+    fun notifyWhenComplete() {
+        _uiState.update { it.copy(notificationRequested = true) }
+    }
+
+    fun retryVerification() {
+        val claim = _uiState.value.inputText
+        if (claim.isNotBlank() && claim.length >= MIN_CLAIM_LENGTH) {
+            analyze()
+        }
+    }
 }

@@ -61,7 +61,12 @@ sealed class CorvusCheckResult {
         val retrievalMetadata: RetrievalMetadata? = null,
         val temporalMismatch: TemporalMismatchReport? = null,
         val recencySignal: RecencySignal? = null,
-        val viralDetection: ViralDetectionResult? = null
+        val viralDetection: ViralDetectionResult? = null,
+        val verificationStatus: VerificationStatus = VerificationStatus.COMPLETED,
+        val noSourceReasons: List<NoSourceReason> = emptyList(),
+        val helpRequests: List<HelpRequestInfo> = emptyList(),
+        val apiErrorMessage: String? = null,
+        val savedProgress: CorvusCheckResult? = null
     ) : CorvusCheckResult()
 
     @Serializable
@@ -86,7 +91,11 @@ sealed class CorvusCheckResult {
         override val methodology: MethodologyMetadata? = null,
         val harmAssessment: HarmAssessment = HarmAssessment(),
         val plausibility: PlausibilityAssessment? = null,
-        val keyFacts: List<GroundedFact> = emptyList()
+        val keyFacts: List<GroundedFact> = emptyList(),
+        val verificationStatus: VerificationStatus = VerificationStatus.COMPLETED,
+        val noSourceReasons: List<NoSourceReason> = emptyList(),
+        val helpRequests: List<HelpRequestInfo> = emptyList(),
+        val apiErrorMessage: String? = null
     ) : CorvusCheckResult()
 
     @Serializable
@@ -102,7 +111,9 @@ sealed class CorvusCheckResult {
         override val checkedAt: Long = System.currentTimeMillis(),
         val confidenceTimeline: List<ConfidencePoint> = emptyList(),
         override val entityContext: EntityContext? = null,
-        override val methodology: MethodologyMetadata? = null
+        override val methodology: MethodologyMetadata? = null,
+        val verificationStatus: VerificationStatus = VerificationStatus.COMPLETED,
+        val noSourceReasons: List<NoSourceReason> = emptyList()
     ) : CorvusCheckResult()
 
     @Serializable
@@ -119,7 +130,9 @@ sealed class CorvusCheckResult {
         override val checkedAt: Long = 0,
         val confidenceTimeline: List<ConfidencePoint> = emptyList(),
         override val entityContext: EntityContext? = null,
-        override val methodology: MethodologyMetadata? = null
+        override val methodology: MethodologyMetadata? = null,
+        val verificationStatus: VerificationStatus = VerificationStatus.COMPLETED,
+        val noSourceReasons: List<NoSourceReason> = emptyList()
     ) : CorvusCheckResult()
 }
 
@@ -133,12 +146,57 @@ data class SubClaim(
 )
 
 @Serializable
+enum class VerificationStatus {
+    COMPLETED,
+    NO_SOURCES_FOUND,
+    API_FAILURE,
+    LOW_CONFIDENCE
+}
+
+@Serializable
 data class ConfidencePoint(
     val timestamp: Long,
     val confidence: Float,
     val sourceTitle: String? = null,
+    val sourceIndex: Int? = null,
+    val previousConfidence: Float? = null,
+    val changeReason: String? = null,
+    val contradictingSourceIndex: Int? = null,
     val id: String = java.util.UUID.randomUUID().toString()
 )
+
+@Serializable
+enum class NoSourceReason {
+    BREAKING_NEWS,
+    RECENT_EVENT,
+    NICHE_TOPIC,
+    NO_INTERNET,
+    API_ERROR
+}
+
+@Serializable
+enum class ConfidenceChangeReason {
+    SOURCE_ADDED,
+    SOURCE_CONTRADICTED,
+    EVIDENCE_WEAKENED,
+    NEW_ANALYSIS,
+    GROUNDING_CHECK
+}
+
+@Serializable
+data class HelpRequestInfo(
+    val type: HelpRequestType,
+    val description: String
+)
+
+@Serializable
+enum class HelpRequestType {
+    MORE_RECENT_SOURCES,
+    PRIMARY_SOURCES,
+    OFFICIAL_STATEMENTS,
+    PEER_REVIEWED,
+    ADDITIONAL_CONTEXT
+}
 
 @Serializable
 enum class ClaimLanguage {

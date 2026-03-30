@@ -156,10 +156,197 @@ Medium,medium.com,center,mixed,usa,platform,50
 The Conversation,theconversation.com,left-center,high,australia,website,85
 ProPublica,propublica.org,left-center,high,usa,news,90
 Center for Public Integrity,publicintegrity.org,center,high,usa,organization,90
-Bellingcat,bellingcat.com,left-center,high,netherlands,website,85
 Snopes,snopes.com,left-center,high,usa,website,85
 PolitiFact,politifact.com,left-center,high,usa,website,85
 FactCheck.org,factcheck.org,center,high,usa,website,90
 Full Fact,fullfact.org,center,high,uk,website,90
 AP Fact Check,apnews.com/ap-fact-check,center,very high,usa,news,95
 Reuters Fact Check,reuters.com/fact-check,center,very high,uk,news,95
+Hodinkee,hodinkee.com,center,high,usa,magazine,85
+Fratello Watches,fratellowatches.com,center,high,netherlands,magazine,80
+Worn & Wound,wornandwound.com,center,high,usa,website,80
+A Collected Man,acollectedman.com,center,high,uk,website,85
+Monochrome Watches,monochrome-watches.com,center,high,netherlands,magazine,80
+The MagPi,magpi.raspberrypi.com,pro-science,high,uk,magazine,90
+Make: Magazine,makezine.com,pro-science,high,usa,magazine,85
+Hackster.io,hackster.io,pro-science,high,usa,website,85
+Electromaker,electromaker.io,pro-science,high,usa,website,80
+CNX Software,cnx-software.com,center,high,thailand,website,85
+Towards Data Science,towardsdatascience.com,pro-science,high,usa,blog,75
+KDnuggets,kdnuggets.com,pro-science,high,usa,website,80
+Analytics Vidhya,analyticsvidhya.com,pro-science,high,india,website,75
+MarkTechPost,marktechpost.com,pro-science,high,usa,website,80
+Magnum Photos,magnumphotos.com,center,high,international,agency,95
+Aperture,aperture.org,center,high,usa,magazine,90
+British Journal of Photography,1854.photography,center,high,uk,magazine,90
+35mmc,35mmc.com,center,high,uk,blog,80
+Street Hunters,streethunters.net,center,high,international,website,75
+Mundo Deportivo,mundodeportivo.com,left-center,mixed,spain,newspaper,55
+AS,as.com,right-center,mixed,spain,newspaper,55
+Calciomercato,calciomercato.com,center,mixed,italy,website,50
+Tuttosport,tuttosport.com,right-center,mixed,italy,newspaper,50
+Corriere dello Sport,corrieredellosport.it,center,mixed,italy,newspaper,55
+Sport Bild,sportbild.bild.de,right-center,mixed,germany,magazine,50
+Quanta Magazine,quantamagazine.org,pro-science,very high,usa,magazine,98
+Phys.org,phys.org,pro-science,high,uk,website,90
+Live Science,livescience.com,pro-science,high,usa,website,85
+arXiv Blog,blog.arxiv.org,pro-science,very high,usa,blog,95
+SoyaCincau,soyacincau.com,center,high,malaysia,website,80
+Lowyat.net,lowyat.net,center,mostly factual,malaysia,website,70
+Paul Tan's Automotive News,paultan.org,center,high,malaysia,website,85
+The Malaysian Reserve,themalaysianreserve.com,center,high,malaysia,newspaper,75
+Al Jazeera English,aljazeera.com,left-center,mostly factual,qatar,tv,75
+The Independent (IE),independent.ie,right-center,mostly factual,ireland,newspaper,75
+Irish Times,irishtimes.com,left-center,high,ireland,newspaper,85
+South African Broadcasting Corporation (SABC),sabcnews.com,center,mostly factual,south africa,tv,70
+News24,news24.com,center,high,south africa,website,80
+Daily Nation,nation.africa,center,mostly factual,kenya,newspaper,75
+The EastAfrican,theeastafrican.co.ke,center,high,kenya,newspaper,80
+Dawn,dawn.com,left-center,high,pakistan,newspaper,80
+Geo News,geo.tv,center,mostly factual,pakistan,tv,70
+Bangkok Post,bangkokpost.com,center,mostly factual,thailand,newspaper,75
+Khaosod English,khaosodenglish.com,left-center,mostly factual,thailand,newspaper,70
+VnExpress,e.vnexpress.net,center,mostly factual,vietnam,news,65
+Philippine Daily Inquirer,inquirer.net,left-center,high,philippines,newspaper,80
+Rappler,rappler.com,left-center,high,philippines,website,85
+Taiwan News,taiwannews.com.tw,right-center,mostly factual,taiwan,newspaper,75
+Taipei Times,taipeitimes.com,left-center,high,taiwan,newspaper,80
+The Korea Herald,koreaherald.com,center,mostly factual,south korea,newspaper,75
+Yonhap News Agency,en.yna.co.kr,center,high,south korea,agency,85
+Kyodo News,english.kyodonews.net,center,high,japan,agency,85
+Buenos Aires Times,batimes.com.ar,center,mostly factual,argentina,newspaper,75
+The Rio Times,riotimesonline.com,right-center,mixed,brazil,newspaper,60
+MercoPress,en.mercopress.com,center,mostly factual,uruguay,agency,75
+Roll Call,rollcall.com,center,high,usa,newspaper,85
+The Hill,thehill.com,center,mostly factual,usa,newspaper,75
+Cook Political Report,cookpolitical.com,center,high,usa,website,90
+RealClearPolitics,realclearpolitics.com,right-center,mostly factual,usa,website,70
+FiveThirtyEight,fivethirtyeight.com,left-center,high,usa,website,85
+Lawfare,lawfareblog.com,left-center,high,usa,blog,85
+SCOTUSblog,scotusblog.com,center,very high,usa,blog,95
+MarketWatch,marketwatch.com,right-center,mostly factual,usa,website,75
+Barron's,barrons.com,right-center,high,usa,magazine,80
+Investopedia,investopedia.com,center,high,usa,website,85
+Nikkei Asia,asia.nikkei.com,center,high,japan,magazine,85
+The Motley Fool,fool.com,center,mixed,usa,website,60
+UK Parliament Hansard,hansard.parliament.uk,center,very high,uk,government,100
+GovTrack,govtrack.us,center,very high,usa,government,95
+Congress.gov,congress.gov,center,very high,usa,government,100
+TheyWorkForYou,theyworkforyou.com,center,high,uk,organization,90
+OpenParliament.ca,openparliament.ca,center,high,canada,organization,90
+OpenAustralia,openaustralia.org.au,center,high,australia,organization,90
+Parliament of Malaysia (Hansard),parlimen.gov.my,center,very high,malaysia,government,95
+EUR-Lex,eur-lex.europa.eu,center,very high,eu,government,100
+Africa Check,africacheck.org,center,high,south africa,organization,90
+Lead Stories,leadstories.com,center,high,usa,organization,90
+Alt News,altnews.in,left-center,high,india,organization,85
+BOOM Live,boomlive.in,center,high,india,organization,85
+AFP Fact Check,factcheck.afp.com,center,very high,france,agency,95
+Chequeado,chequeado.com,center,high,argentina,organization,90
+Science Feedback,sciencefeedback.co,pro-science,very high,france,organization,95
+Health Feedback,healthfeedback.org,pro-science,very high,france,organization,95
+Climate Feedback,climatefeedback.org,pro-science,very high,france,organization,95
+Washington Post Fact Checker,washingtonpost.com/news/fact-checker,left-center,high,usa,news,85
+Poynter Institute,poynter.org,center,high,usa,organization,90
+VeraFiles,verafiles.org,center,high,philippines,organization,85
+Facta,facta.news,center,high,italy,organization,85
+Newtral,newtral.es,center,high,spain,organization,85
+Brookings Institution,brookings.edu,center,high,usa,think tank,90
+RAND Corporation,rand.org,center,very high,usa,think tank,95
+Council on Foreign Relations,cfr.org,center,high,usa,think tank,90
+Center for Strategic and International Studies (CSIS),csis.org,center,high,usa,think tank,90
+Chatham House,chathamhouse.org,center,high,uk,think tank,90
+Carnegie Endowment for International Peace,carnegieendowment.org,center,high,usa,think tank,90
+Amnesty International,amnesty.org,left-center,high,international,ngo,85
+Human Rights Watch,hrw.org,left-center,high,international,ngo,85
+World Economic Forum,weforum.org,center,high,international,organization,85
+National Bureau of Economic Research (NBER),nber.org,center,very high,usa,organization,95
+Hoover Institution,hoover.org,right-center,high,usa,think tank,80
+Cato Institute,cato.org,right-center,high,usa,think tank,80
+Heritage Foundation,heritage.org,right,mixed,usa,think tank,60
+Center for American Progress,americanprogress.org,left,mostly factual,usa,think tank,70
+Encyclopedia Britannica,britannica.com,center,very high,usa,encyclopedia,98
+Stanford Encyclopedia of Philosophy,plato.stanford.edu,pro-science,very high,usa,encyclopedia,98
+Internet Encyclopedia of Philosophy,iep.utm.edu,pro-science,very high,usa,encyclopedia,95
+CIA World Factbook,cia.gov/the-world-factbook,center,high,usa,government,90
+Our World in Data,ourworldindata.org,pro-science,very high,uk,organization,98
+The Lancet,thelancet.com,pro-science,very high,uk,journal,98
+New England Journal of Medicine (NEJM),nejm.org,pro-science,very high,usa,journal,98
+Cell,cell.com,pro-science,very high,usa,journal,98
+PLOS One,journals.plos.org,pro-science,high,usa,journal,90
+British Medical Journal (BMJ),bmj.com,pro-science,very high,uk,journal,95
+JAMA Network,jamanetwork.com,pro-science,very high,usa,journal,95
+Proceedings of the National Academy of Sciences (PNAS),pnas.org,pro-science,very high,usa,journal,95
+IEEE Xplore,ieeexplore.ieee.org,pro-science,very high,usa,database,98
+ACM Digital Library,dl.acm.org,pro-science,very high,usa,database,98
+SpringerLink,link.springer.com,pro-science,high,germany,publisher,90
+Elsevier / ScienceDirect,sciencedirect.com,pro-science,high,netherlands,publisher,90
+Wiley Online Library,onlinelibrary.wiley.com,pro-science,high,usa,publisher,90
+DFRLab (Digital Forensic Research Lab),digitalsherlocks.org,center,high,usa,organization,90
+Graphika,graphika.com,center,high,usa,organization,90
+Krebs on Security,krebsonsecurity.com,center,high,usa,blog,95
+BleepingComputer,bleepingcomputer.com,center,high,usa,website,90
+Dark Reading,darkreading.com,center,high,usa,website,85
+Schneier on Security,schneier.com,center,high,usa,blog,90
+The Hacker News,thehackernews.com,center,high,international,news,85
+CyberScoop,cyberscoop.com,center,high,usa,news,85
+The Vibes,thevibes.com,left-center,mostly factual,malaysia,news,70
+BFM 89.9,bfm.my,center,high,malaysia,radio,85
+Kosmo!,kosmo.com.my,right-center,mixed,malaysia,newspaper,55
+Harian Metro,hmetro.com.my,right-center,mixed,malaysia,newspaper,55
+Sin Chew Daily,sinchew.com.my,center,mostly factual,malaysia,newspaper,70
+Nanyang Siang Pau,enanyang.my,center,mostly factual,malaysia,newspaper,70
+Oriental Daily News,orientaldaily.com.my,center,mostly factual,malaysia,newspaper,70
+New Straits Times,nst.com.my,right-center,mostly factual,malaysia,newspaper,65
+Bloomberg Law,news.bloomberglaw.com,center,very high,usa,news,90
+Thomson Reuters Westlaw,legal.thomsonreuters.com,center,very high,international,database,95
+UPI (United Press International),upi.com,center,high,usa,agency,80
+Agence France-Presse (AFP),afp.com,center,very high,france,agency,95
+PA Media (Press Association),pamediagroup.com,center,high,uk,agency,90
+EFE,efe.com,center,high,spain,agency,85
+ANSA,ansa.it,center,high,italy,agency,85
+DPA International,dpa-international.com,center,high,germany,agency,90
+Columbia Journalism Review,cjr.org,left-center,high,usa,magazine,85
+Nieman Lab,niemanlab.org,center,high,usa,organization,90
+Media Matters for America,mediamatters.org,left,mostly factual,usa,organization,65
+Media Research Center,mrc.org,right,mixed,usa,organization,45
+FAIR (Fairness & Accuracy In Reporting),fair.org,left,mostly factual,usa,organization,70
+Android Authority,androidauthority.com,center,high,usa,website,80
+XDA Developers,xda-developers.com,center,high,usa,website,80
+ProAndroidDev,proandroiddev.com,pro-science,high,international,blog,85
+Android Weekly,androidweekly.net,pro-science,high,international,newsletter,85
+Kotlin Weekly,kotlinweekly.net,pro-science,high,international,newsletter,85
+Google AI Blog,ai.googleblog.com,pro-science,high,usa,blog,90
+OpenAI Blog,openai.com/blog,pro-science,high,usa,blog,90
+DeepMind Blog,deepmind.com/blog,pro-science,high,uk,blog,90
+Hugging Face Blog,huggingface.co/blog,pro-science,high,usa,blog,90
+Raspberry Pi Blog,raspberrypi.org/blog,pro-science,high,uk,blog,95
+SparkFun Blog,sparkfun.com/news,pro-science,high,usa,blog,85
+Adafruit Blog,blog.adafruit.com,pro-science,high,usa,blog,85
+Arduino Blog,blog.arduino.cc,pro-science,high,italy,blog,90
+Le Figaro,lefigaro.fr,right-center,mostly factual,france,newspaper,75
+Libération,liberation.fr,left-center,mostly factual,france,newspaper,75
+Frankfurter Allgemeine Zeitung (FAZ),faz.net,right-center,high,germany,newspaper,85
+Süddeutsche Zeitung,sueddeutsche.de,left-center,high,germany,newspaper,85
+Corriere della Sera,corriere.it,center,high,italy,newspaper,80
+La Repubblica,repubblica.it,left-center,mostly factual,italy,newspaper,75
+El Mundo,elmundo.es,right-center,mostly factual,spain,newspaper,70
+The Irish Independent,independent.ie,right-center,mostly factual,ireland,newspaper,75
+The Scotsman,scotsman.com,center,mostly factual,uk,newspaper,70
+Evening Standard,standard.co.uk,center,mostly factual,uk,newspaper,65
+Project Management Institute (PMI),pmi.org,pro-science,very high,usa,organization,95
+Overleaf Blog,overleaf.com/blog,pro-science,high,uk,blog,90
+OpenSecrets,opensecrets.org,center,very high,usa,organization,95
+Bellingcat,bellingcat.com,left-center,high,netherlands,organization,85
+First Draft News,firstdraftnews.org,center,high,international,organization,90
+Los Angeles Times,latimes.com,left-center,high,usa,newspaper,80
+Chicago Tribune,chicagotribune.com,right-center,high,usa,newspaper,80
+Boston Globe,bostonglobe.com,left-center,high,usa,newspaper,85
+Seattle Times,seattletimes.com,left-center,high,usa,newspaper,85
+Houston Chronicle,houstonchronicle.com,left-center,high,usa,newspaper,80
+Dallas Morning News,dallasnews.com,right-center,high,usa,newspaper,80
+Miami Herald,miamiherald.com,left-center,high,usa,newspaper,80
+San Francisco Chronicle,sfchronicle.com,left-center,high,usa,newspaper,80
+National Post,nationalpost.com,right-center,mostly factual,canada,newspaper,70
+Montreal Gazette,montrealgazette.com,right-center,high,canada,newspaper,80
+Vancouver Sun,vancouversun.com,right-center,high,canada,newspaper,80
