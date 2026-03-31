@@ -136,7 +136,7 @@ class SettingsViewModel @Inject constructor(
                 quotas.add(
                     ApiQuotaInfo(
                         providerName = "OpenRouter",
-                        modelName = "gemini-2.0-flash-exp:free",
+                        modelName = "qwen/qwen3.6-plus-preview",
                         dailyCallsUsed = openRouterQuotaGuard.callsToday(),
                         dailyLimit = OpenRouterQuotaGuard.DAILY_LIMIT,
                         monthlyCallsUsed = openRouterQuotaGuard.monthlyCallsUsed(),
@@ -150,7 +150,18 @@ class SettingsViewModel @Inject constructor(
             if (hasMistralKey) {
                 quotas.add(
                     ApiQuotaInfo(
-                        providerName = "Mistral",
+                        providerName = "Mistral SABA",
+                        modelName = "mistral-saba-latest",
+                        dailyCallsUsed = mistralQuotaGuard.callsToday(),
+                        dailyLimit = MistralQuotaGuard.DAILY_LIMIT,
+                        monthlyCallsUsed = mistralQuotaGuard.monthlyCallsUsed(),
+                        monthlyLimit = MistralQuotaGuard.MONTHLY_LIMIT,
+                        hasApiKey = true
+                    )
+                )
+                quotas.add(
+                    ApiQuotaInfo(
+                        providerName = "Mistral Small",
                         modelName = "mistral-small-latest",
                         dailyCallsUsed = mistralQuotaGuard.callsToday(),
                         dailyLimit = MistralQuotaGuard.DAILY_LIMIT,

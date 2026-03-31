@@ -146,13 +146,17 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     ApiKeyStatusRow("Groq", BuildConfig.GROQ_API_KEY.isNotBlank(), "llama-3.3-70b-versatile")
                     Spacer(modifier = Modifier.height(8.dp))
-                    ApiKeyStatusRow("Cerebras", BuildConfig.CEREBRAS_API_KEY.isNotBlank(), "llama-3.3-70b-versatile")
+                    ApiKeyStatusRow("Cerebras", BuildConfig.CEREBRAS_API_KEY.isNotBlank(), "llama3.3-70b")
                     Spacer(modifier = Modifier.height(8.dp))
-                    ApiKeyStatusRow("OpenRouter", BuildConfig.OPENROUTER_API_KEY.isNotBlank(), "gemini-2.0-flash-exp:free")
+                    ApiKeyStatusRow("OpenRouter", BuildConfig.OPENROUTER_API_KEY.isNotBlank(), "qwen/qwen3.6-plus-preview")
                     Spacer(modifier = Modifier.height(8.dp))
-                    ApiKeyStatusRow("Mistral", BuildConfig.MISTRAL_API_KEY.isNotBlank(), "mistral-small-latest")
+                    ApiKeyStatusRow("Mistral SABA", BuildConfig.MISTRAL_API_KEY.isNotBlank(), "mistral-saba-latest")
                     Spacer(modifier = Modifier.height(8.dp))
-                    ApiKeyStatusRow("Cohere", BuildConfig.COHERE_API_KEY.isNotBlank(), "Command-R / Command-R+")
+                    ApiKeyStatusRow("Mistral Small", BuildConfig.MISTRAL_API_KEY.isNotBlank(), "mistral-small-latest")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ApiKeyStatusRow("Cohere Command-R", BuildConfig.COHERE_API_KEY.isNotBlank(), "command-r-08-2024")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ApiKeyStatusRow("Cohere Command-R+", BuildConfig.COHERE_API_KEY.isNotBlank(), "command-r-plus-08-2024")
                 }
             }
 

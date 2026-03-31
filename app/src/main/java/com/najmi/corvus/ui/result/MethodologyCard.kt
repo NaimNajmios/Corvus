@@ -8,21 +8,26 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ChangeCircle
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Route
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.najmi.corvus.domain.model.ClaimType
@@ -209,7 +214,7 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                                     modifier = Modifier.padding(top = 2.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.ArrowForward,
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                         contentDescription = null,
                                         modifier = Modifier.size(12.dp),
                                         tint = MaterialTheme.colorScheme.primary
@@ -292,7 +297,7 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         Spacer(Modifier.height(8.dp))
 
-                        var showReasoning by remember { mutableStateOf(false) }
+                        var showReasoning by remember { mutableStateOf(true) }
 
                         Row(
                             modifier = Modifier
@@ -302,11 +307,27 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                "FULL REASONING",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "FULL REASONING",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Surface(
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                    shape = CircleShape
+                                ) {
+                                    Text(
+                                        text = "EXPANDED",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
                             Icon(
                                 if (showReasoning) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                 contentDescription = "Show reasoning",
@@ -318,16 +339,22 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                         AnimatedVisibility(visible = showReasoning) {
                             val reindexed = scratchpad.reindexCitations()
                             val items = parseReasoningItems(reindexed)
+                            
                             Column(
-                                modifier = Modifier.padding(top = 6.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                modifier = Modifier
+                                    .padding(top = 8.dp)
+                                    .fillMaxWidth()
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                items.forEach { item ->
-                                    Text(
-                                        text = item,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        lineHeight = 18.sp
+                                items.forEachIndexed { index, item ->
+                                    ReasoningItem(
+                                        index = index + 1,
+                                        content = item
                                     )
                                 }
                             }
@@ -339,36 +366,205 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         Spacer(Modifier.height(8.dp))
 
-                        Text(
-                            "CRITIC CORRECTIONS",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.height(4.dp))
-
-                        corrections.forEach { correction ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.Top
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowForward,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp),
-                                    tint = MaterialTheme.colorScheme.error
-                                )
                                 Text(
-                                    correction,
-                                    style = MaterialTheme.typography.bodySmall,
+                                    "CRITIC CORRECTIONS",
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                Surface(
+                                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                                    shape = CircleShape
+                                ) {
+                                    Text(
+                                        text = "${corrections.size} made",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                        color = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
                             }
-                            Spacer(Modifier.height(2.dp))
+                        }
+                        Spacer(Modifier.height(8.dp))
+
+                        // Group corrections by type
+                        val groupedCorrections = corrections.groupBy { correction ->
+                            when {
+                                correction.contains("citation", ignoreCase = true) ||
+                                correction.contains("source", ignoreCase = true) ||
+                                correction.contains("attribution", ignoreCase = true) -> CorrectionType.CITATION
+                                correction.contains("verdict", ignoreCase = true) ||
+                                correction.contains("verdict", ignoreCase = true) -> CorrectionType.VERDICT
+                                correction.contains("confidence", ignoreCase = true) -> CorrectionType.CONFIDENCE
+                                correction.contains("explanation", ignoreCase = true) ||
+                                correction.contains("rewritten", ignoreCase = true) -> CorrectionType.EXPLANATION
+                                else -> CorrectionType.OTHER
+                            }
+                        }
+
+                        groupedCorrections.forEach { (type, typeCorrections) ->
+                            CorrectionGroup(
+                                type = type,
+                                corrections = typeCorrections
+                            )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ReasoningItem(
+    index: Int,
+    content: String
+) {
+    val hasCitation = content.contains(Regex("\\[\\d+\\]"))
+    val cleanContent = content.replace(Regex("^\\d+\\.\\s*"), "")
+    
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (hasCitation) {
+                Text(
+                    text = cleanContent,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        lineHeight = 20.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            } else {
+                Text(
+                    text = cleanContent,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        lineHeight = 20.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
+}
+
+enum class CorrectionType {
+    CITATION,
+    VERDICT,
+    CONFIDENCE,
+    EXPLANATION,
+    OTHER
+}
+
+@Composable
+private fun CorrectionGroup(
+    type: CorrectionType,
+    corrections: List<String>
+) {
+    val (icon, color, label) = when (type) {
+        CorrectionType.CITATION -> Triple(
+            Icons.Default.Warning,
+            MaterialTheme.colorScheme.error,
+            "Citation Errors"
+        )
+        CorrectionType.VERDICT -> Triple(
+            Icons.Default.SwapHoriz,
+            MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+            "Verdict Corrections"
+        )
+        CorrectionType.CONFIDENCE -> Triple(
+            Icons.Default.ChangeCircle,
+            MaterialTheme.colorScheme.tertiary,
+            "Confidence Adjustments"
+        )
+        CorrectionType.EXPLANATION -> Triple(
+            Icons.Default.CheckCircle,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+            "Explanation Updates"
+        )
+        CorrectionType.OTHER -> Triple(
+            Icons.AutoMirrored.Filled.ArrowForward,
+            MaterialTheme.colorScheme.onSurfaceVariant,
+            "Other Corrections"
+        )
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = color
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = color
+            )
+        }
+
+        corrections.forEach { correction ->
+            CorrectionItem(
+                correction = correction,
+                color = color
+            )
+        }
+        
+        Spacer(Modifier.height(4.dp))
+    }
+}
+
+@Composable
+private fun CorrectionItem(
+    correction: String,
+    color: Color
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color.copy(alpha = 0.05f),
+                RoundedCornerShape(6.dp)
+            )
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(
+            modifier = Modifier
+                .size(4.dp)
+                .padding(top = 8.dp)
+                .background(color, CircleShape)
+        )
+        Text(
+            text = correction,
+            style = MaterialTheme.typography.bodySmall.copy(
+                lineHeight = 18.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
