@@ -21,7 +21,7 @@ class BookmarkRepository @Inject constructor(
         private const val TAG = "BookmarkRepository"
     }
 
-    suspend fun addBookmark(result: CorvusCheckResult, notes: String = "", tags: String = ""): String {
+    suspend fun addBookmark(result: CorvusCheckResult, notes: String = ""): String {
         val bookmarkId = UUID.randomUUID().toString()
         val bookmark = BookmarkEntity(
             id = bookmarkId,
@@ -30,8 +30,7 @@ class BookmarkRepository @Inject constructor(
             resultType = getResultType(result),
             verdict = getVerdictString(result),
             confidence = result.confidence,
-            userNotes = notes,
-            tags = tags
+            userNotes = notes
         )
         bookmarkDao.insert(bookmark)
         Log.d(TAG, "Added bookmark with id: $bookmarkId for result: ${result.id}")
@@ -47,46 +46,6 @@ class BookmarkRepository @Inject constructor(
                 )
             )
             Log.d(TAG, "Updated notes for bookmark: $bookmarkId")
-        }
-    }
-
-    suspend fun updateTags(bookmarkId: String, tags: String) {
-        bookmarkDao.getById(bookmarkId)?.let { bookmark ->
-            bookmarkDao.update(
-                bookmark.copy(
-                    tags = tags,
-                    lastEditedAt = System.currentTimeMillis()
-                )
-            )
-            Log.d(TAG, "Updated tags for bookmark: $bookmarkId")
-        }
-    }
-
-    suspend fun addTag(bookmarkId: String, tag: String) {
-        bookmarkDao.getById(bookmarkId)?.let { bookmark ->
-            val currentTags = bookmark.tags.split(",").filter { it.isNotBlank() }.toMutableList()
-            if (!currentTags.contains(tag)) {
-                currentTags.add(tag)
-                bookmarkDao.update(
-                    bookmark.copy(
-                        tags = currentTags.joinToString(","),
-                        lastEditedAt = System.currentTimeMillis()
-                    )
-                )
-            }
-        }
-    }
-
-    suspend fun removeTag(bookmarkId: String, tag: String) {
-        bookmarkDao.getById(bookmarkId)?.let { bookmark ->
-            val currentTags = bookmark.tags.split(",").filter { it.isNotBlank() }.toMutableList()
-            currentTags.remove(tag)
-            bookmarkDao.update(
-                bookmark.copy(
-                    tags = currentTags.joinToString(","),
-                    lastEditedAt = System.currentTimeMillis()
-                )
-            )
         }
     }
 

@@ -19,7 +19,7 @@ interface BookmarkDao {
     @Query("SELECT * FROM bookmarks WHERE resultId = :resultId")
     suspend fun getByResultId(resultId: String): BookmarkEntity?
 
-    @Query("SELECT * FROM bookmarks WHERE claim LIKE '%' || :query || '%' OR userNotes LIKE '%' || :query || '%' OR tags LIKE '%' || :query || '%' ORDER BY bookmarkedAt DESC")
+    @Query("SELECT * FROM bookmarks WHERE claim LIKE '%' || :query || '%' OR userNotes LIKE '%' || :query || '%' ORDER BY bookmarkedAt DESC")
     fun searchBookmarks(query: String): Flow<List<BookmarkEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

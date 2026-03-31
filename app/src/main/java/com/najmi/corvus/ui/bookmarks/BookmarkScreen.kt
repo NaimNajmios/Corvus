@@ -262,17 +262,6 @@ fun BookmarkCard(
                 }
             }
 
-            if (bookmark.tags.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    bookmark.tags.split(",").filter { it.isNotBlank() }.take(3).forEach { tag ->
-                        TagChip(tag = tag.trim())
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
@@ -345,21 +334,6 @@ fun VerdictChip(verdict: String) {
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
             color = color
-        )
-    }
-}
-
-@Composable
-fun TagChip(tag: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-        shape = RoundedCornerShape(4.dp)
-    ) {
-        Text(
-            text = tag,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSecondaryContainer
         )
     }
 }

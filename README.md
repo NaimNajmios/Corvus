@@ -32,6 +32,9 @@ Corvus treats fact-checking as a rigorous investigative process, moving through 
     - **Gemini 2.0 / Groq** for high-speed general reasoning and large context synthesis.
 - **⚖️ Multi-Source Credibility Fusion** - Aggregates data from **MBFC**, **AdFontes**, and **NewsGuard** with bespoke **Domain Heuristics** to provide a 0-100 composite credibility score and bias assessment for every source.
 - **📡 Real-Time Pipeline Transparency** - A stage-aware loading experience that tracks progress through the 11 verification stages in real-time, featuring educational **Tip Cards** to demystify complex analysis.
+- **🔖 Persistent Bookmarking System** - Save fact-check results for later reference, search through your audit history, and add custom **User Notes** for personal research tracking.
+- **⏳ Advanced Temporal Context** - Real-time detection of **"Zombie Hoaxes"** (recycled misinformation) with visual mismatch banners and detailed source-age breakdowns.
+- **📉 Explainable Confidence Shifts** - Interactive dialogs and timeline indicators that explain *why* verification certainty dropped (e.g., source contradiction or grounding failure).
 - **🛡️ Deterministic Grounding** - Algorithmic quote verification that matches LLM claims against raw source text, penalizing confidence for fabricated citations.
 - **🕒 Temporal Mismatch Detection** - Identifies when current claims are being supported by outdated sources or vice-versa.
 - **👁️ Vision Extraction** - Intelligent OCR and image context analysis powered by PaliGemma and Gemini Nano for on-device multi-modal checks.

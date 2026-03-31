@@ -67,10 +67,10 @@ class BookmarkViewModel @Inject constructor(
         _searchQuery.value = query
     }
 
-    fun addBookmark(result: CorvusCheckResult, notes: String = "", tags: String = "") {
+    fun addBookmark(result: CorvusCheckResult, notes: String = "") {
         viewModelScope.launch {
             try {
-                bookmarkRepository.addBookmark(result, notes, tags)
+                bookmarkRepository.addBookmark(result, notes)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }
@@ -81,26 +81,6 @@ class BookmarkViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 bookmarkRepository.updateNotes(bookmarkId, notes)
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
-            }
-        }
-    }
-
-    fun addTag(bookmarkId: String, tag: String) {
-        viewModelScope.launch {
-            try {
-                bookmarkRepository.addTag(bookmarkId, tag)
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
-            }
-        }
-    }
-
-    fun removeTag(bookmarkId: String, tag: String) {
-        viewModelScope.launch {
-            try {
-                bookmarkRepository.removeTag(bookmarkId, tag)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }

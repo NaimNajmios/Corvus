@@ -174,10 +174,10 @@ class CorvusViewModel @Inject constructor(
         }
     }
 
-    fun addBookmark(notes: String = "", tags: String = "") {
+    fun addBookmark(notes: String = "") {
         val result = _uiState.value.result ?: return
         viewModelScope.launch {
-            bookmarkRepository.addBookmark(result, notes, tags)
+            bookmarkRepository.addBookmark(result, notes)
         }
     }
 

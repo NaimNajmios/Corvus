@@ -22,7 +22,7 @@ import javax.inject.Singleton
 
 @Serializable
 data class OpenRouterRequest(
-    val model: String = "google/gemini-2.0-flash-exp:free",
+    val model: String = "qwen/qwen3.6-plus-preview",
     val messages: List<OpenRouterMessage>,
     val temperature: Float = 0.3f,
     @SerialName("max_tokens") val maxTokens: Int = 1024

@@ -14,6 +14,5 @@ data class BookmarkEntity(
     val confidence: Float,
     val bookmarkedAt: Long = System.currentTimeMillis(),
     val userNotes: String = "",
-    val tags: String = "",
     val lastEditedAt: Long = System.currentTimeMillis()
 )

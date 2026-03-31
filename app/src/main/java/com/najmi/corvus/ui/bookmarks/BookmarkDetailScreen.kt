@@ -3,8 +3,6 @@ package com.najmi.corvus.ui.bookmarks
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -33,7 +31,6 @@ fun BookmarkDetailScreen(
     var bookmarkWithResult by remember { mutableStateOf<Pair<BookmarkEntity, CorvusCheckResult>?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var editedNotes by remember { mutableStateOf("") }
-    var newTag by remember { mutableStateOf("") }
     var isEditingNotes by remember { mutableStateOf(false) }
 
     LaunchedEffect(bookmarkId) {
@@ -105,19 +102,7 @@ fun BookmarkDetailScreen(
                     NotesSection(
                         notes = editedNotes,
                         isEditing = isEditingNotes,
-                        onNotesChange = { editedNotes = it },
-                        onAddTag = { tag ->
-                            if (tag.isNotBlank()) {
-                                viewModel.addTag(bookmark.id, tag.trim())
-                                newTag = ""
-                            }
-                        },
-                        newTag = newTag,
-                        onNewTagChange = { newTag = it },
-                        onRemoveTag = { tag ->
-                            viewModel.removeTag(bookmark.id, tag)
-                        },
-                        tags = bookmark.tags.split(",").filter { it.isNotBlank() }
+                        onNotesChange = { editedNotes = it }
                     )
                 }
 
@@ -201,13 +186,12 @@ fun BookmarkDetailScreen(
 private fun NotesSection(
     notes: String,
     isEditing: Boolean,
-    onNotesChange: (String) -> Unit,
-    onAddTag: (String) -> Unit,
-    newTag: String,
-    onNewTagChange: (String) -> Unit,
-    onRemoveTag: (String) -> Unit,
-    tags: List<String>
+    onNotesChange: (String) -> Unit
 ) {
+    if (notes.isBlank() && !isEditing) {
+        return
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = CorvusShapes.medium,
@@ -248,69 +232,10 @@ private fun NotesSection(
                 )
             } else {
                 Text(
-                    text = notes.ifBlank { "No notes added" },
+                    text = notes,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (notes.isBlank()) 
-                        MaterialTheme.colorScheme.onSurfaceVariant 
-                    else 
-                        MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Tags",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(tags) { tag ->
-                    InputChip(
-                        selected = false,
-                        onClick = { },
-                        label = { Text(tag.trim()) },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = { onRemoveTag(tag) },
-                                modifier = Modifier.size(16.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "Remove tag",
-                                    modifier = Modifier.size(12.dp)
-                                )
-                            }
-                        }
-                    )
-                }
-
-                item {
-                    OutlinedTextField(
-                        value = newTag,
-                        onValueChange = onNewTagChange,
-                        modifier = Modifier.width(100.dp),
-                        placeholder = { Text("Add tag") },
-                        singleLine = true,
-                        trailingIcon = {
-                            if (newTag.isNotBlank()) {
-                                IconButton(
-                                    onClick = { onAddTag(newTag) }
-                                ) {
-                                    Icon(
-                                        Icons.Default.Add,
-                                        contentDescription = "Add tag"
-                                    )
-                                }
-                            }
-                        }
-                    )
-                }
             }
         }
     }

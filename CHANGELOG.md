@@ -2,6 +2,18 @@
 
 All notable changes to the **Corvus** project will be documented in this file.
 
+## [1.4.0] - 2026-03-31
+
+### Added
+- **Persistent Bookmarking**: Save, search, and manage fact-check results with local persistence and user notes.
+- **Advanced Temporal Context UI**: `TemporalContextBanner` for detecting "Zombie Hoaxes" and breaking news signals.
+- **Explainable Confidence**: `ConfidenceDropDialog` providing technical rationale for shifts in verification certainty.
+- **Haptic Feedback**: Integrated tactile responses for critical UI interactions (Bookmarks, Loading).
+
+### Changed
+- **Navigation Architecture**: Expanded `CorvusNavHost` to support Bookmark management and detail views.
+- **Result Screen Polish**: Integrated bookmarking triggers and human-review entry points.
+
 ## [1.3.0] - 2026-03-30
 
 ### Added
