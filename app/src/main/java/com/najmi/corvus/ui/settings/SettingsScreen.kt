@@ -142,17 +142,17 @@ fun SettingsScreen(
 
             SettingsSection(title = "API Keys") {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    ApiKeyStatusRow("Gemini (AI Studio)", BuildConfig.GEMINI_API_KEY.isNotBlank())
+                    ApiKeyStatusRow("Gemini (AI Studio)", BuildConfig.GEMINI_API_KEY.isNotBlank(), "gemini-2.0-flash")
                     Spacer(modifier = Modifier.height(8.dp))
-                    ApiKeyStatusRow("Groq", BuildConfig.GROQ_API_KEY.isNotBlank())
+                    ApiKeyStatusRow("Groq", BuildConfig.GROQ_API_KEY.isNotBlank(), "llama-3.3-70b-versatile")
                     Spacer(modifier = Modifier.height(8.dp))
-                    ApiKeyStatusRow("Cerebras", BuildConfig.CEREBRAS_API_KEY.isNotBlank())
+                    ApiKeyStatusRow("Cerebras", BuildConfig.CEREBRAS_API_KEY.isNotBlank(), "llama-3.3-70b-versatile")
                     Spacer(modifier = Modifier.height(8.dp))
-                    ApiKeyStatusRow("OpenRouter", BuildConfig.OPENROUTER_API_KEY.isNotBlank())
+                    ApiKeyStatusRow("OpenRouter", BuildConfig.OPENROUTER_API_KEY.isNotBlank(), "gemini-2.0-flash-exp:free")
                     Spacer(modifier = Modifier.height(8.dp))
-                    ApiKeyStatusRow("Mistral", BuildConfig.MISTRAL_API_KEY.isNotBlank())
+                    ApiKeyStatusRow("Mistral", BuildConfig.MISTRAL_API_KEY.isNotBlank(), "mistral-small-latest")
                     Spacer(modifier = Modifier.height(8.dp))
-                    ApiKeyStatusRow("Cohere", BuildConfig.COHERE_API_KEY.isNotBlank())
+                    ApiKeyStatusRow("Cohere", BuildConfig.COHERE_API_KEY.isNotBlank(), "Command-R / Command-R+")
                 }
             }
 
@@ -561,29 +561,41 @@ fun ThemePreviewSwatch(isDark: Boolean) {
 }
 
 @Composable
-fun ApiKeyStatusRow(provider: String, isConfigured: Boolean) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+fun ApiKeyStatusRow(provider: String, isConfigured: Boolean, modelName: String? = null) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Text(
-            text = provider,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Surface(
-            color = if (isConfigured)
-                Color(0xFF10B981).copy(alpha = 0.12f)
-            else
-                Color(0xFFEF4444).copy(alpha = 0.12f),
-            shape = CorvusShapes.extraSmall
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (isConfigured) "Configured" else "Not set",
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                text = provider,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Surface(
+                color = if (isConfigured)
+                    Color(0xFF10B981).copy(alpha = 0.12f)
+                else
+                    Color(0xFFEF4444).copy(alpha = 0.12f),
+                shape = CorvusShapes.extraSmall
+            ) {
+                Text(
+                    text = if (isConfigured) "Configured" else "Not set",
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isConfigured) Color(0xFF10B981) else Color(0xFFEF4444)
+                )
+            }
+        }
+        if (isConfigured && modelName != null) {
+            Text(
+                text = modelName,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (isConfigured) Color(0xFF10B981) else Color(0xFFEF4444)
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
     }

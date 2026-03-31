@@ -7,6 +7,7 @@ import com.najmi.corvus.domain.model.PipelineStep
 import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.domain.model.SubClaim
 import com.najmi.corvus.domain.model.QuoteVerdict
+import com.najmi.corvus.domain.model.RetrievalMetadata
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -99,6 +100,47 @@ class CompositeFactCheckPipeline @Inject constructor(
         
         onStepChange(PipelineStep.DONE)
         
+        val allReasoning = updatedSubClaims.mapNotNull { sub ->
+            (sub.result as? CorvusCheckResult.GeneralResult)?.reasoningScratchpad
+        }.filter { it.isNotBlank() }
+        
+        val allCorrections = updatedSubClaims.flatMap { sub ->
+            when (sub.result) {
+                is CorvusCheckResult.GeneralResult -> (sub.result as CorvusCheckResult.GeneralResult).correctionsLog ?: emptyList()
+                is CorvusCheckResult.QuoteResult -> (sub.result as CorvusCheckResult.QuoteResult).keyFacts.map { "Sub-claim [${sub.index}]: ${it.statement}" }
+                else -> emptyList()
+            }
+        }
+        
+        val allRewrittenQueries = updatedSubClaims.flatMap { sub ->
+            (sub.result as? CorvusCheckResult.GeneralResult)?.retrievalMetadata?.rewrittenQueries ?: emptyList()
+        }.distinct()
+        
+        val totalRawSources = updatedSubClaims.sumOf { sub ->
+            (sub.result as? CorvusCheckResult.GeneralResult)?.retrievalMetadata?.totalRawSources ?: 0
+        }
+        
+        val totalDedupedSources = updatedSubClaims.sumOf { sub ->
+            (sub.result as? CorvusCheckResult.GeneralResult)?.retrievalMetadata?.dedupedSources ?: 0
+        }
+        
+        val reasoningScratchpad = if (allReasoning.isNotEmpty()) {
+            allReasoning.mapIndexed { index, reasoning ->
+                "=== Sub-Claim ${index + 1} Analysis ===\n$reasoning"
+            }.joinToString("\n\n")
+        } else null
+        
+        val retrievalMeta = if (allRewrittenQueries.isNotEmpty()) {
+            RetrievalMetadata(
+                originalClaim = compound.original,
+                rewrittenQueries = allRewrittenQueries,
+                coreQuestion = compound.original,
+                totalRawSources = totalRawSources,
+                dedupedSources = totalDedupedSources,
+                finalSources = updatedSubClaims.flatMap { it.result?.sources ?: emptyList() }.distinctBy { it.url }.size
+            )
+        } else null
+        
         CorvusCheckResult.CompositeResult(
             claim = compound.original,
             subClaims = updatedSubClaims,
@@ -106,6 +148,9 @@ class CompositeFactCheckPipeline @Inject constructor(
             confidence = updatedSubClaims.map { it.result?.confidence ?: 0f }.average().toFloat(),
             compositeSummary = buildCompositeSummary(updatedSubClaims),
             sources = updatedSubClaims.flatMap { it.result?.sources ?: emptyList() }.distinctBy { it.url },
+            reasoningScratchpad = reasoningScratchpad,
+            correctionsLog = allCorrections.ifEmpty { null },
+            retrievalMetadata = retrievalMeta,
             methodology = com.najmi.corvus.domain.model.MethodologyMetadata(
                 pipelineStepsCompleted = listOf(
                     com.najmi.corvus.domain.model.PipelineStepResult(

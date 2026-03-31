@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Bookmark
@@ -47,6 +48,7 @@ import androidx.navigation.compose.rememberNavController
 import com.najmi.corvus.ui.bookmarks.BookmarkDetailScreen
 import com.najmi.corvus.ui.bookmarks.BookmarkScreen
 import com.najmi.corvus.ui.compare.CompareScreen
+import com.najmi.corvus.ui.components.CorvusHeader
 import com.najmi.corvus.ui.history.HistoryScreen
 import com.najmi.corvus.ui.input.InputScreen
 import com.najmi.corvus.ui.result.LoadingScreen
@@ -168,6 +170,13 @@ fun CorvusApp(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            if (showBottomBar) {
+                CorvusHeader(
+                    modifier = Modifier.statusBarsPadding()
+                )
+            }
+        },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
         },

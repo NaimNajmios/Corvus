@@ -113,7 +113,10 @@ sealed class CorvusCheckResult {
         override val entityContext: EntityContext? = null,
         override val methodology: MethodologyMetadata? = null,
         val verificationStatus: VerificationStatus = VerificationStatus.COMPLETED,
-        val noSourceReasons: List<NoSourceReason> = emptyList()
+        val noSourceReasons: List<NoSourceReason> = emptyList(),
+        val reasoningScratchpad: String? = null,
+        val correctionsLog: List<String>? = null,
+        val retrievalMetadata: RetrievalMetadata? = null
     ) : CorvusCheckResult()
 
     @Serializable

@@ -54,6 +54,13 @@ fun UsageScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            SettingsSection(title = "Token Analytics") {
+                TokenUsageDashboard(
+                    uiState = tokenUsageState,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
             SettingsSection(title = "API Quotas") {
                 if (uiState.apiQuotas.isNotEmpty()) {
                     uiState.apiQuotas.forEach { quota ->
@@ -70,13 +77,6 @@ fun UsageScreen(
                         modifier = Modifier.padding(16.dp)
                     )
                 }
-            }
-
-            SettingsSection(title = "Token Analytics") {
-                TokenUsageDashboard(
-                    uiState = tokenUsageState,
-                    modifier = Modifier.padding(16.dp)
-                )
             }
 
             Box(modifier = Modifier.padding(bottom = 16.dp))
