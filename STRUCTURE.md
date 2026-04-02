@@ -2,12 +2,19 @@
 
 This document provides a high-level index of the Corvus codebase to assist in navigation and contributing.
 
-## 📂 Root Directory
-- `app/` - The main Android application module.
-- `md/` - Comprehensive feature plans and architecture documents.
-- `gradle/` - Build configuration files.
+## 📂 Core Structure
 
-## 🏗️ Application Architecture (app/src/main/java/com/najmi/corvus/)
+- [app/](file:///c:/Users/NAIM/AndroidStudioProjects/Corvus/app) - Android application module
+  - [src/main/java/com/najmi/corvus/](file:///c:/Users/NAIM/AndroidStudioProjects/Corvus/app/src/main/java/com/najmi/corvus)
+    - [data/](file:///c:/Users/NAIM/AndroidStudioProjects/Corvus/app/src/main/java/com/najmi/corvus/data) - Repositories, local Room DB, and remote Ktor clients
+    - [domain/](file:///c:/Users/NAIM/AndroidStudioProjects/Corvus/app/src/main/java/com/najmi/corvus/domain) - Models and Use Cases (The "Brain")
+      - [usecase/HolisticClaimVerifier.kt](file:///c:/Users/NAIM/AndroidStudioProjects/Corvus/app/src/main/java/com/najmi/corvus/domain/usecase/HolisticClaimVerifier.kt) - Narrative shift detection
+    - [ui/](file:///c:/Users/NAIM/AndroidStudioProjects/Corvus/app/src/main/java/com/najmi/corvus/ui) - Jetpack Compose screens and ViewModels
+- [md/](file:///c:/Users/NAIM/AndroidStudioProjects/Corvus/md) - Project metadata and strategic documentation
+  - [branding/](file:///c:/Users/NAIM/AndroidStudioProjects/Corvus/md/branding) - Visual identity and voice guidelines
+  - [plans/](file:///c:/Users/NAIM/AndroidStudioProjects/Corvus/md/plans) - Development roadmaps and feature specs
+  - [prompts/](file:///c:/Users/NAIM/AndroidStudioProjects/Corvus/md/prompts) - System instructions and LLM behavioral prompts
+- [icon/](file:///c:/Users/NAIM/AndroidStudioProjects/Corvus/icon) - Original project assets
 
 ### 🧱 Domain Layer (`domain/`)
 The core logic and business rules of Corvus.

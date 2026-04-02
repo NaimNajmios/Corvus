@@ -19,7 +19,8 @@ class CompositeFactCheckPipeline @Inject constructor(
     private val factCheckUseCase: CorvusFactCheckUseCase,
     private val timelineBuilder: ConfidenceTimelineBuilder,
     private val kgEnricher: KgEnricherUseCase,
-    private val classifier: ClaimClassifierUseCase
+    private val classifier: ClaimClassifierUseCase,
+    private val holisticVerifier: HolisticClaimVerifier
 ) {
     suspend fun check(
         raw: String,
@@ -80,10 +81,6 @@ class CompositeFactCheckPipeline @Inject constructor(
         compound: DecompositionResult.Compound,
         onStepChange: suspend (PipelineStep) -> Unit
     ): CorvusCheckResult.CompositeResult = coroutineScope {
-        // Parallel check for each sub-claim
-        // We use a simplified onStepChange that doesn't trigger for each sub-claim
-        // or we could show something like "Checking sub-claim 1/N..."
-        
         onStepChange(PipelineStep.CHECKING_SUB_CLAIMS)
         
         val deferredResults = compound.subClaims.map { subClaim ->
@@ -98,6 +95,12 @@ class CompositeFactCheckPipeline @Inject constructor(
             sub.copy(result = res)
         }
         
+        val allSources = updatedSubClaims.flatMap { it.result?.sources ?: emptyList() }.distinctBy { it.url }
+        
+        val holisticResult = holisticVerifier.verify(compound.original, updatedSubClaims, allSources)
+        
+        val finalCompositeVerdict = deriveFinalCompositeVerdict(updatedSubClaims, holisticResult)
+        
         onStepChange(PipelineStep.DONE)
         
         val allReasoning = updatedSubClaims.mapNotNull { sub ->
@@ -110,6 +113,10 @@ class CompositeFactCheckPipeline @Inject constructor(
                 is CorvusCheckResult.QuoteResult -> (sub.result as CorvusCheckResult.QuoteResult).keyFacts.map { "Sub-claim [${sub.index}]: ${it.statement}" }
                 else -> emptyList()
             }
+        }.let { corrections ->
+            if (holisticResult.correctionsApplied.isNotEmpty()) {
+                corrections + "HOLISTIC CORRECTIONS: " + holisticResult.correctionsApplied
+            } else corrections
         }
         
         val allRewrittenQueries = updatedSubClaims.flatMap { sub ->
@@ -124,10 +131,18 @@ class CompositeFactCheckPipeline @Inject constructor(
             (sub.result as? CorvusCheckResult.GeneralResult)?.retrievalMetadata?.dedupedSources ?: 0
         }
         
-        val reasoningScratchpad = if (allReasoning.isNotEmpty()) {
+        val holisticAnalysisNote = if (holisticResult.issuesFound.isNotEmpty()) {
+            val issuesSummary = holisticResult.issuesFound.joinToString("; ") { "${it.type}: ${it.description}" }
+            "\n\n=== HOLISTIC ANALYSIS ===\n$issuesSummary\n${holisticResult.holisticExplanation}"
+        } else null
+        
+        val reasoningScratchpad = if (allReasoning.isNotEmpty() || holisticAnalysisNote != null) {
+            val parts = mutableListOf<String>()
             allReasoning.mapIndexed { index, reasoning ->
-                "=== Sub-Claim ${index + 1} Analysis ===\n$reasoning"
-            }.joinToString("\n\n")
+                parts.add("=== Sub-Claim ${index + 1} Analysis ===\n$reasoning")
+            }
+            holisticAnalysisNote?.let { parts.add(it) }
+            parts.joinToString("\n\n")
         } else null
         
         val retrievalMeta = if (allRewrittenQueries.isNotEmpty()) {
@@ -137,29 +152,43 @@ class CompositeFactCheckPipeline @Inject constructor(
                 coreQuestion = compound.original,
                 totalRawSources = totalRawSources,
                 dedupedSources = totalDedupedSources,
-                finalSources = updatedSubClaims.flatMap { it.result?.sources ?: emptyList() }.distinctBy { it.url }.size
+                finalSources = allSources.size
             )
         } else null
+        
+        val avgSubclaimConfidence = updatedSubClaims.map { it.result?.confidence ?: 0f }.average().toFloat()
+        val finalConfidence = if (holisticResult.confidence > 0) {
+            (avgSubclaimConfidence + holisticResult.confidence) / 2
+        } else avgSubclaimConfidence
         
         CorvusCheckResult.CompositeResult(
             claim = compound.original,
             subClaims = updatedSubClaims,
-            compositeVerdict = deriveCompositeVerdict(updatedSubClaims),
-            confidence = updatedSubClaims.map { it.result?.confidence ?: 0f }.average().toFloat(),
+            compositeVerdict = finalCompositeVerdict,
+            confidence = finalConfidence,
             compositeSummary = buildCompositeSummary(updatedSubClaims),
-            sources = updatedSubClaims.flatMap { it.result?.sources ?: emptyList() }.distinctBy { it.url },
+            sources = allSources,
             reasoningScratchpad = reasoningScratchpad,
             correctionsLog = allCorrections.ifEmpty { null },
             retrievalMetadata = retrievalMeta,
+            holisticVerdict = holisticResult.holisticVerdict,
+            holisticIssues = holisticResult.issuesFound,
+            holisticExplanation = holisticResult.holisticExplanation,
+            holisticConfidence = holisticResult.confidence.takeIf { it > 0 },
+            holisticCorrections = holisticResult.correctionsApplied,
             methodology = com.najmi.corvus.domain.model.MethodologyMetadata(
                 pipelineStepsCompleted = listOf(
                     com.najmi.corvus.domain.model.PipelineStepResult(
                         com.najmi.corvus.domain.model.PipelineStep.CHECKING_SUB_CLAIMS, 
                         "Claim decomposed into ${updatedSubClaims.size} sub-claims"
+                    ),
+                    com.najmi.corvus.domain.model.PipelineStepResult(
+                        com.najmi.corvus.domain.model.PipelineStep.GROUNDING_CHECK,
+                        "Holistic verification completed with ${holisticResult.issuesFound.size} issues found"
                     )
                 ),
                 claimTypeDetected = com.najmi.corvus.domain.model.ClaimType.GENERAL,
-                sourcesRetrieved = updatedSubClaims.flatMap { it.result?.sources ?: emptyList() }.distinctBy { it.url }.size,
+                sourcesRetrieved = allSources.size,
                 avgSourceCredibility = if (updatedSubClaims.isNotEmpty()) {
                     updatedSubClaims.mapNotNull { it.result?.methodology?.avgSourceCredibility }.average().toInt().takeIf { it > 0 } ?: 50
                 } else 50,
@@ -173,7 +202,6 @@ class CompositeFactCheckPipeline @Inject constructor(
         val verdicts = subClaims.mapNotNull { 
             (it.result as? CorvusCheckResult.GeneralResult)?.verdict 
                 ?: (it.result as? CorvusCheckResult.QuoteResult)?.let { qr ->
-                    // Map QuoteVerdict to Verdict for aggregation
                     when (qr.quoteVerdict) {
                         QuoteVerdict.VERIFIED -> Verdict.TRUE
                         QuoteVerdict.FABRICATED -> Verdict.FALSE
@@ -191,6 +219,26 @@ class CompositeFactCheckPipeline @Inject constructor(
             verdicts.any { it == Verdict.FALSE } && verdicts.any { it == Verdict.TRUE } -> Verdict.PARTIALLY_TRUE
             verdicts.any { it == Verdict.PARTIALLY_TRUE } -> Verdict.PARTIALLY_TRUE
             else -> Verdict.UNVERIFIABLE
+        }
+    }
+
+    private fun deriveFinalCompositeVerdict(
+        subClaims: List<SubClaim>,
+        holisticResult: com.najmi.corvus.domain.model.HolisticVerificationResult
+    ): Verdict {
+        val subclaimVerdict = deriveCompositeVerdict(subClaims)
+        
+        if (holisticResult.holisticVerdict == Verdict.UNVERIFIABLE) {
+            return subclaimVerdict
+        }
+        
+        return when {
+            holisticResult.holisticVerdict == Verdict.MISLEADING -> Verdict.MISLEADING
+            holisticResult.holisticVerdict == Verdict.FALSE && subclaimVerdict != Verdict.FALSE -> Verdict.FALSE
+            holisticResult.holisticVerdict == Verdict.PARTIALLY_TRUE && 
+                subclaimVerdict in listOf(Verdict.TRUE, Verdict.PARTIALLY_TRUE) -> Verdict.PARTIALLY_TRUE
+            holisticResult.issuesFound.isNotEmpty() && subclaimVerdict == Verdict.TRUE -> Verdict.MISLEADING
+            else -> subclaimVerdict
         }
     }
 

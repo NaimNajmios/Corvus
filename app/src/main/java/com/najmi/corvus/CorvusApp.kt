@@ -289,8 +289,8 @@ fun CorvusApp(
                 composable(Routes.HISTORY) {
                     HistoryScreen(
                         onItemClick = { summary ->
-                            viewModel.updateInputText(summary.claim)
-                            navController.navigate(Routes.INPUT)
+                            viewModel.loadResultById(summary.id)
+                            navController.navigate(Routes.RESULT)
                         },
                         onCompare = {
                             navController.navigate(Routes.COMPARE)

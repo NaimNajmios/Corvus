@@ -2,6 +2,19 @@
 
 All notable changes to the **Corvus** project will be documented in this file.
 
+## [1.5.0] - 2026-04-02
+
+### Added
+- **Holistic Verification System**: Senior-editor pass for compound claims to catch narrative shifts and cherry-picking.
+- **Comparative Audit History**: Multi-selection in History screen to enable claim comparison and delta analysis.
+- **History Analytics**: Visual breakdown of belief distributions and check frequency.
+- **Harm & Plausibility Indicators**: Immediate visual feedback on potential harm levels (High/Moderate) and claim plausibility in history lists.
+
+### Changed
+- **Documentation Restructure**: Migrated all strategic plans, branding, and system prompts into `md/plans/`, `md/branding/`, and `md/prompts/` for better organization.
+- **Model Refactor**: Updated `CompositeResult` and `SubClaim` models to support holistic data and harm assessments.
+- **History UI**: Integrated `CompareSelectionBar` and swipe-to-undo deletion.
+
 ## [1.4.0] - 2026-03-31
 
 ### Added

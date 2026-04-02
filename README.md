@@ -20,7 +20,8 @@ Corvus treats fact-checking as a rigorous investigative process, moving through 
 8.  **🛠️ Temporal Override** - Algorithmic intervention that flags claims as "MISLEADING" if evidence is significantly outdated for current events.
 9.  **🕵️ Algorithmic Grounding** - A deterministic pass that verifies LLM quotes against raw source text, penalizing fabricated citations.
 10. **🔬 RAG Verification** - A final verification pass (Retrieval-Augmented Generation) ensuring every fact in the final explanation is grounded.
-11. **📊 Token Stewardship** - Granular usage tracking per provider to manage free-tier quotas and optimize costs.
+11. **⚖️ Holistic Verification Pass** - A "Senior Editor" AI pass that evaluates the compound claim as a whole, catching narrative shifts, cherry-picking, and deceptive context that individual sub-claims miss.
+12. **📊 Token Stewardship** - Granular usage tracking per provider to manage free-tier quotas and optimize costs.
 
 ---
 
@@ -30,6 +31,9 @@ Corvus treats fact-checking as a rigorous investigative process, moving through 
     - **Mistral-Saba** for Bahasa Malaysia and Southeast Asian context.
     - **Cohere Command-R** for citation-heavy scientific and quote verification.
     - **Gemini 2.0 / Groq** for high-speed general reasoning and large context synthesis.
+- **⚖️ Holistic Narrative Review** - Advanced AI pass for compound claims that detects **Narrative Shifts**, **Selective Truths**, and **Cherry-Picking** across multiple sub-claims.
+- **📊 Comparative Audit History** - Multi-select previous fact-checks to perform delta-checks, find contradictions over time, and visualize verification trends.
+- **⚠️ Risk & Harm Assessment** - Integrated detection of potential real-world harm (Health, Safety, Political) for every verified claim.
 - **⚖️ Multi-Source Credibility Fusion** - Aggregates data from **MBFC**, **AdFontes**, and **NewsGuard** with bespoke **Domain Heuristics** to provide a 0-100 composite credibility score and bias assessment for every source.
 - **📡 Real-Time Pipeline Transparency** - A stage-aware loading experience that tracks progress through the 11 verification stages in real-time, featuring educational **Tip Cards** to demystify complex analysis.
 - **🔖 Persistent Bookmarking System** - Save fact-check results for later reference, search through your audit history, and add custom **User Notes** for personal research tracking.

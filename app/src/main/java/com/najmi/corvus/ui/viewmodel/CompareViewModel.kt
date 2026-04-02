@@ -48,9 +48,13 @@ class CompareViewModel @Inject constructor(
     
     fun toggleSelection(summary: com.najmi.corvus.domain.model.HistorySummary) {
         viewModelScope.launch {
-            val fullResult = historyRepository.getResultById(summary.id)
-            if (fullResult != null) {
-                compareRepository.toggleSelection(fullResult)
+            try {
+                val fullResult = historyRepository.getResultById(summary.id)
+                if (fullResult != null) {
+                    compareRepository.toggleSelection(fullResult)
+                }
+            } catch (e: Exception) {
+                // Handle selection error gracefully
             }
         }
     }

@@ -344,7 +344,9 @@ fun HistoryScreen(
                                     }
                                 },
                                 onLongClick = {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    try {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    } catch (e: Exception) { /* ignore */ }
                                     compareViewModel.toggleSelection(item)
                                 },
                                 onDelete = {

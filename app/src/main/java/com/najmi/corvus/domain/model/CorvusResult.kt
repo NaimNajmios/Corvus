@@ -116,7 +116,12 @@ sealed class CorvusCheckResult {
         val noSourceReasons: List<NoSourceReason> = emptyList(),
         val reasoningScratchpad: String? = null,
         val correctionsLog: List<String>? = null,
-        val retrievalMetadata: RetrievalMetadata? = null
+        val retrievalMetadata: RetrievalMetadata? = null,
+        val holisticVerdict: Verdict? = null,
+        val holisticIssues: List<HolisticIssue> = emptyList(),
+        val holisticExplanation: String? = null,
+        val holisticConfidence: Float? = null,
+        val holisticCorrections: List<String> = emptyList()
     ) : CorvusCheckResult()
 
     @Serializable
