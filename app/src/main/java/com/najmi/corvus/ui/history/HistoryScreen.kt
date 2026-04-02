@@ -47,6 +47,7 @@ fun HistoryScreen(
     historyViewModel: HistoryViewModel = hiltViewModel(),
     compareViewModel: CompareViewModel = hiltViewModel(),
     onItemClick: (com.najmi.corvus.domain.model.HistorySummary) -> Unit,
+    onSwipeToEdit: (String) -> Unit = {},
     onCompare: () -> Unit = {}
 ) {
     val uiState by historyViewModel.uiState.collectAsState()
@@ -281,13 +282,19 @@ fun HistoryScreen(
                     var isRemoved by remember { mutableStateOf(false) }
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = { dismissValue ->
-                            if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                isRemoved = true
-                                historyViewModel.prepareDelete(item)
-                                true
-                            } else {
-                                false
+                            when (dismissValue) {
+                                SwipeToDismissBoxValue.EndToStart -> {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    isRemoved = true
+                                    historyViewModel.prepareDelete(item)
+                                    true
+                                }
+                                SwipeToDismissBoxValue.StartToEnd -> {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onSwipeToEdit(item.claim)
+                                    false
+                                }
+                                else -> false
                             }
                         }
                     )
@@ -306,30 +313,32 @@ fun HistoryScreen(
                         SwipeToDismissBox(
                             state = dismissState,
                             backgroundContent = {
+                                val isStart = dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd
                                 val scale by animateFloatAsState(
-                                    targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) 1f else 0.8f,
-                                    label = "deleteScale"
+                                    targetValue = if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) 1f else 0.8f,
+                                    label = "dismissScale"
                                 )
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .padding(horizontal = 16.dp)
                                         .background(
-                                            MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
+                                            if (isStart) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                            else MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
                                             CorvusShapes.medium
                                         )
                                         .padding(horizontal = 20.dp),
-                                    contentAlignment = Alignment.CenterEnd
+                                    contentAlignment = if (isStart) Alignment.CenterStart else Alignment.CenterEnd
                                 ) {
                                     Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = "Delete",
-                                        tint = MaterialTheme.colorScheme.error,
+                                        if (isStart) Icons.Default.Edit else Icons.Default.Delete,
+                                        contentDescription = if (isStart) "Edit" else "Delete",
+                                        tint = if (isStart) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                         modifier = Modifier.scale(scale)
                                     )
                                 }
                             },
-                            enableDismissFromStartToEnd = false,
+                            enableDismissFromStartToEnd = true,
                             enableDismissFromEndToStart = true
                         ) {
                             HistoryItem(

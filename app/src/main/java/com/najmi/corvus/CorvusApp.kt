@@ -292,6 +292,10 @@ fun CorvusApp(
                             viewModel.loadResultById(summary.id)
                             navController.navigate(Routes.RESULT)
                         },
+                        onSwipeToEdit = { claim ->
+                            viewModel.updateInputText(claim)
+                            navController.navigate(Routes.INPUT)
+                        },
                         onCompare = {
                             navController.navigate(Routes.COMPARE)
                         }
