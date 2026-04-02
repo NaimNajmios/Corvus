@@ -457,6 +457,59 @@ fun HistoryScreen(
                     }
                 )
             }
+
+            AnimatedVisibility(
+                visible = uiState.isDeleteMode && uiState.deleteSelection.isNotEmpty(),
+                enter = slideInVertically { it } + fadeIn(),
+                exit = slideOutVertically { it } + fadeOut()
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = CircleShape,
+                    tonalElevation = 8.dp,
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp)
+                        .height(56.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${uiState.deleteSelection.size} Selected",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        TextButton(
+                            onClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                historyViewModel.deselectAllForDeletion()
+                            },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        ) {
+                            Text("Clear")
+                        }
+                        
+                        IconButton(
+                            onClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                showBatchDeleteDialog = true
+                            },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete selected")
+                        }
+                    }
+                }
+            }
         }
 
         SnackbarHost(
@@ -612,7 +665,7 @@ fun HistoryItem(
                 }
             }
             
-            if (!isCompareMode) {
+            if (!isCompareMode && !isDeleteMode) {
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Default.Delete,
