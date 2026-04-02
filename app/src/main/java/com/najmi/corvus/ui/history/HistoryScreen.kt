@@ -60,6 +60,9 @@ fun HistoryScreen(
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showOptionsMenu by remember { mutableStateOf(false) }
+    var showBatchDeleteDialog by remember { mutableStateOf(false) }
+    var showDeleteRedundantDialog by remember { mutableStateOf(false) }
+    var redundantCount by remember { mutableStateOf(0) }
 
     LaunchedEffect(pendingDeleteItem) {
         pendingDeleteItem?.let { item ->
@@ -82,55 +85,55 @@ fun HistoryScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "History",
-                style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold, letterSpacing = (-1).sp),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = { 
+        AnimatedContent(
+            targetState = uiState.isDeleteMode,
+            transitionSpec = {
+                fadeIn() + slideInVertically() togetherWith fadeOut() + slideOutVertically()
+            },
+            label = "headerTransition"
+        ) { isDeleteMode ->
+            if (isDeleteMode) {
+                DeleteModeHeader(
+                    selectedCount = uiState.deleteSelection.size,
+                    totalCount = uiState.history.size,
+                    onClose = {
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        historyViewModel.toggleAnalytics() 
+                        historyViewModel.exitDeleteMode()
                     },
-                    modifier = Modifier.background(
-                        if (uiState.isAnalyticsVisible) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                        CircleShape
-                    )
-                ) {
-                    Icon(
-                        Icons.Default.BarChart,
-                        contentDescription = "Show Analytics",
-                        tint = if (uiState.isAnalyticsVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
-                    )
-                }
-
-                Box {
-                    IconButton(onClick = { showOptionsMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    onSelectAll = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        historyViewModel.selectAllForDeletion()
+                    },
+                    onDeselectAll = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        historyViewModel.deselectAllForDeletion()
+                    },
+                    onDelete = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        showBatchDeleteDialog = true
                     }
-                    DropdownMenu(
-                        expanded = showOptionsMenu,
-                        onDismissRequest = { showOptionsMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Clear All History") },
-                            onClick = {
-                                showOptionsMenu = false
-                                showClearAllDialog = true
-                            },
-                            leadingIcon = { Icon(Icons.Default.DeleteForever, contentDescription = null) }
-                        )
-                    }
-                }
+                )
+            } else {
+                NormalHeader(
+                    isAnalyticsVisible = uiState.isAnalyticsVisible,
+                    onToggleAnalytics = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        historyViewModel.toggleAnalytics()
+                    },
+                    onClearAll = { showClearAllDialog = true },
+                    onSelectToDelete = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        historyViewModel.enterDeleteMode()
+                    },
+                    onNavigateToRedundant = {
+                        redundantCount = historyViewModel.getRedundantCount()
+                        if (redundantCount > 0) {
+                            showDeleteRedundantDialog = true
+                        }
+                    },
+                    showOptionsMenu = showOptionsMenu,
+                    onShowOptionsMenuChange = { showOptionsMenu = it }
+                )
             }
         }
 
@@ -153,6 +156,56 @@ fun HistoryScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showClearAllDialog = false }) {
+                        Text("CANCEL")
+                    }
+                }
+            )
+        }
+
+        if (showBatchDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showBatchDeleteDialog = false },
+                title = { Text("Delete ${uiState.deleteSelection.size} items?") },
+                text = { Text("This action cannot be undone. The selected fact-checks will be permanently removed.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            historyViewModel.deleteSelectedItems()
+                            showBatchDeleteDialog = false
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("DELETE")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showBatchDeleteDialog = false }) {
+                        Text("CANCEL")
+                    }
+                }
+            )
+        }
+
+        if (showDeleteRedundantDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteRedundantDialog = false },
+                title = { Text("Delete Redundant Queries") },
+                text = { Text("This will delete $redundantCount redundant entries, keeping only the latest one from each group. This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            historyViewModel.deleteRedundantExceptLatest()
+                            showDeleteRedundantDialog = false
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("DELETE")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteRedundantDialog = false }) {
                         Text("CANCEL")
                     }
                 }
@@ -345,18 +398,24 @@ fun HistoryScreen(
                                 result = item,
                                 isSelected = compareViewModel.isSelected(item.id),
                                 isCompareMode = compareUiState.isCompareMode,
+                                isDeleteMode = uiState.isDeleteMode,
+                                isDeleteSelected = item.id in uiState.deleteSelection,
                                 onClick = {
-                                    if (compareUiState.isCompareMode) {
-                                        compareViewModel.toggleSelection(item)
-                                    } else {
-                                        onItemClick(item)
+                                    when {
+                                        compareUiState.isCompareMode -> compareViewModel.toggleSelection(item)
+                                        uiState.isDeleteMode -> historyViewModel.toggleDeleteSelection(item.id)
+                                        else -> onItemClick(item)
                                     }
                                 },
                                 onLongClick = {
                                     try {
                                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                     } catch (e: Exception) { /* ignore */ }
-                                    compareViewModel.toggleSelection(item)
+                                    if (uiState.isDeleteMode) {
+                                        historyViewModel.toggleDeleteSelection(item.id)
+                                    } else {
+                                        compareViewModel.toggleSelection(item)
+                                    }
                                 },
                                 onDelete = {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -422,10 +481,14 @@ fun HistoryItem(
     result: com.najmi.corvus.domain.model.HistorySummary,
     isSelected: Boolean = false,
     isCompareMode: Boolean = false,
+    isDeleteMode: Boolean = false,
+    isDeleteSelected: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val isItemSelected = isCompareMode && isSelected || isDeleteMode && isDeleteSelected
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -435,14 +498,14 @@ fun HistoryItem(
                 onLongClick = onLongClick
             )
             .then(
-                if (isSelected) {
+                if (isItemSelected) {
                     Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CorvusShapes.medium)
                 } else {
                     Modifier
                 }
             ),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) 
+            containerColor = if (isItemSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) 
                              else MaterialTheme.colorScheme.surface
         ),
         shape = CorvusShapes.medium,
@@ -454,23 +517,23 @@ fun HistoryItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AnimatedVisibility(visible = isCompareMode) {
+            AnimatedVisibility(visible = isCompareMode || isDeleteMode) {
                 Box(
                     modifier = Modifier
                         .padding(end = 12.dp)
                         .size(24.dp)
                         .background(
-                            if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            if (isItemSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                             CircleShape
                         )
                         .border(
                             width = 1.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            color = if (isItemSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                             shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isSelected) {
+                    if (isItemSelected) {
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Selected",
@@ -731,6 +794,159 @@ private fun formatDate(timestamp: Long): String {
 }
 
 private fun String.capitalize() = this.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+
+@Composable
+private fun DeleteModeHeader(
+    selectedCount: Int,
+    totalCount: Int,
+    onClose: () -> Unit,
+    onSelectAll: () -> Unit,
+    onDeselectAll: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                IconButton(onClick = onClose) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Cancel",
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+                
+                Column {
+                    Text(
+                        text = if (selectedCount > 0) "$selectedCount selected" else "Select items",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    if (selectedCount == 0) {
+                        Text(
+                            text = "Tap items to select",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
+            
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(
+                    onClick = if (selectedCount == totalCount) onDeselectAll else onSelectAll,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                ) {
+                    Text(
+                        text = if (selectedCount == totalCount) "Deselect All" else "Select All",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+                
+                if (selectedCount > 0) {
+                    FilledIconButton(
+                        onClick = onDelete,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
+                        )
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete selected")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NormalHeader(
+    isAnalyticsVisible: Boolean,
+    onToggleAnalytics: () -> Unit,
+    onClearAll: () -> Unit,
+    onSelectToDelete: () -> Unit,
+    onNavigateToRedundant: () -> Unit,
+    showOptionsMenu: Boolean,
+    onShowOptionsMenuChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "History",
+            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold, letterSpacing = (-1).sp),
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(
+                onClick = onToggleAnalytics,
+                modifier = Modifier.background(
+                    if (isAnalyticsVisible) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                    CircleShape
+                )
+            ) {
+                Icon(
+                    Icons.Default.BarChart,
+                    contentDescription = "Show Analytics",
+                    tint = if (isAnalyticsVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                )
+            }
+
+            Box {
+                IconButton(onClick = { onShowOptionsMenuChange(true) }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                }
+                DropdownMenu(
+                    expanded = showOptionsMenu,
+                    onDismissRequest = { onShowOptionsMenuChange(false) }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Select to Delete") },
+                        onClick = {
+                            onShowOptionsMenuChange(false)
+                            onSelectToDelete()
+                        },
+                        leadingIcon = { Icon(Icons.Default.Checklist, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Delete Redundant") },
+                        onClick = {
+                            onShowOptionsMenuChange(false)
+                            onNavigateToRedundant()
+                        },
+                        leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Clear All History") },
+                        onClick = {
+                            onShowOptionsMenuChange(false)
+                            onClearAll()
+                        },
+                        leadingIcon = { Icon(Icons.Default.DeleteForever, contentDescription = null) }
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun EmptyHistoryState() {

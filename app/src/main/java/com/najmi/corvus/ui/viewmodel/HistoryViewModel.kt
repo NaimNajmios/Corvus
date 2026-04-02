@@ -3,6 +3,7 @@ package com.najmi.corvus.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.data.repository.HistoryRepository
+import com.najmi.corvus.data.util.RedundantQueryDetector
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -21,6 +22,8 @@ data class HistoryUiState(
     val currentSort: HistorySort = HistorySort.NEWEST,
     val isAnalyticsVisible: Boolean = false,
     val verdictDistribution: Map<String, Float> = emptyMap(),
+    val isDeleteMode: Boolean = false,
+    val deleteSelection: Set<String> = emptySet(),
     val error: String? = null
 )
 
@@ -157,6 +160,65 @@ class HistoryViewModel @Inject constructor(
     fun clearAll() {
         viewModelScope.launch {
             historyRepository.clearAll()
+        }
+    }
+
+    fun selectAllForDeletion() {
+        _uiState.update { state ->
+            state.copy(deleteSelection = state.history.map { it.id }.toSet())
+        }
+    }
+
+    fun deselectAllForDeletion() {
+        _uiState.update { it.copy(deleteSelection = emptySet()) }
+    }
+
+    fun enterDeleteMode() {
+        _uiState.update { it.copy(isDeleteMode = true) }
+    }
+
+    fun exitDeleteMode() {
+        _uiState.update { it.copy(isDeleteMode = false, deleteSelection = emptySet()) }
+    }
+
+    fun deleteSelectedItems() {
+        viewModelScope.launch {
+            _uiState.value.deleteSelection.forEach { id ->
+                historyRepository.deleteResult(id)
+            }
+            _uiState.update { it.copy(isDeleteMode = false, deleteSelection = emptySet()) }
+        }
+    }
+
+    fun toggleDeleteSelection(itemId: String) {
+        _uiState.update { state ->
+            val newSelection = if (itemId in state.deleteSelection) {
+                state.deleteSelection - itemId
+            } else {
+                state.deleteSelection + itemId
+            }
+            state.copy(deleteSelection = newSelection)
+        }
+    }
+
+    fun getRedundantCount(): Int {
+        val items = _uiState.value.history
+        if (items.isEmpty()) return 0
+        val groups = RedundantQueryDetector.findRedundantQueries(items)
+        return RedundantQueryDetector.getTotalRedundantCount(groups)
+    }
+
+    fun deleteRedundantExceptLatest() {
+        viewModelScope.launch {
+            val items = _uiState.value.history
+            if (items.isEmpty()) return@launch
+            
+            val groups = RedundantQueryDetector.findRedundantQueries(items)
+            val idsToDelete = RedundantQueryDetector.getAllRedundantItems(groups).map { it.id }
+            
+            idsToDelete.forEach { id ->
+                historyRepository.deleteResult(id)
+            }
         }
     }
 }
