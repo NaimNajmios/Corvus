@@ -60,6 +60,12 @@ class HistoryRepository @Inject constructor(
         Log.d(TAG, "Deleted result with id: $id")
     }
 
+    suspend fun deleteResults(ids: List<String>) {
+        if (ids.isEmpty()) return
+        historyDao.deleteByIds(ids)
+        Log.d(TAG, "Deleted ${ids.size} results")
+    }
+
     suspend fun clearAll() {
         historyDao.clearAll()
         Log.d(TAG, "Cleared all history")

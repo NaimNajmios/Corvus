@@ -56,7 +56,6 @@ fun HistoryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    var pendingDeleteItem by remember { mutableStateOf<com.najmi.corvus.domain.model.HistorySummary?>(null) }
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showOptionsMenu by remember { mutableStateOf(false) }
@@ -64,19 +63,20 @@ fun HistoryScreen(
     var showDeleteRedundantDialog by remember { mutableStateOf(false) }
     var redundantCount by remember { mutableStateOf(0) }
 
-    LaunchedEffect(pendingDeleteItem) {
-        pendingDeleteItem?.let { item ->
+    LaunchedEffect(uiState.pendingDeleteIds) {
+        if (uiState.pendingDeleteIds.isNotEmpty()) {
+            val count = uiState.pendingDeleteIds.size
+            val message = if (count == 1) "Item deleted" else "$count items deleted"
             val result = snackbarHostState.showSnackbar(
-                message = "Item deleted",
+                message = message,
                 actionLabel = "Undo",
                 duration = SnackbarDuration.Short
             )
             if (result == SnackbarResult.ActionPerformed) {
                 historyViewModel.undoDelete()
             } else {
-                historyViewModel.confirmDelete()
+                historyViewModel.confirmPendingDeletes()
             }
-            pendingDeleteItem = null
         }
     }
 
@@ -332,13 +332,12 @@ fun HistoryScreen(
                     items = uiState.history,
                     key = { it.id }
                 ) { item ->
-                    var isRemoved by remember { mutableStateOf(false) }
+                    val isPendingDelete = item.id in uiState.pendingDeleteIds
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = { dismissValue ->
                             when (dismissValue) {
                                 SwipeToDismissBoxValue.EndToStart -> {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    isRemoved = true
                                     historyViewModel.prepareDelete(item)
                                     true
                                 }
@@ -352,14 +351,8 @@ fun HistoryScreen(
                         }
                     )
 
-                    LaunchedEffect(dismissState.currentValue) {
-                        if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-                            pendingDeleteItem = item
-                        }
-                    }
-
                     AnimatedVisibility(
-                        visible = !isRemoved,
+                        visible = !isPendingDelete,
                         enter = fadeIn() + slideInVertically(),
                         exit = fadeOut() + slideOutVertically { it }
                     ) {
@@ -420,7 +413,6 @@ fun HistoryScreen(
                                 onDelete = {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                     historyViewModel.prepareDelete(item)
-                                    pendingDeleteItem = item
                                 }
                             )
                         }

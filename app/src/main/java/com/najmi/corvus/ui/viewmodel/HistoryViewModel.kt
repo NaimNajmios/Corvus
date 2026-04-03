@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.data.repository.HistoryRepository
 import com.najmi.corvus.data.util.RedundantQueryDetector
+import com.najmi.corvus.domain.model.HarmLevel
+import com.najmi.corvus.domain.model.HistorySummary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -15,7 +17,7 @@ enum class HistorySort {
 }
 
 data class HistoryUiState(
-    val history: List<com.najmi.corvus.domain.model.HistorySummary> = emptyList(),
+    val history: List<HistorySummary> = emptyList(),
     val isLoading: Boolean = false,
     val searchQuery: String = "",
     val selectedVerdictFilter: String? = null,
@@ -24,6 +26,7 @@ data class HistoryUiState(
     val verdictDistribution: Map<String, Float> = emptyMap(),
     val isDeleteMode: Boolean = false,
     val deleteSelection: Set<String> = emptySet(),
+    val pendingDeleteIds: Set<String> = emptySet(),
     val error: String? = null
 )
 
@@ -40,7 +43,14 @@ class HistoryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HistoryUiState())
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 
-    private var pendingDeleteItem: com.najmi.corvus.domain.model.HistorySummary? = null
+    private val _pendingDeleteItems = MutableStateFlow<Map<String, HistorySummary>>(emptyMap())
+    val pendingDeleteItems: StateFlow<Map<String, HistorySummary>> = _pendingDeleteItems.asStateFlow()
+
+    private var undoJob: kotlinx.coroutines.Job? = null
+
+    companion object {
+        const val UNDO_TIMEOUT_MS = 5000L
+    }
 
     init {
         observeHistory()
@@ -58,26 +68,26 @@ class HistoryViewModel @Inject constructor(
                 HistoryParams(query, filter, sort, analyticsVisible)
             }.flatMapLatest { params ->
                 _uiState.update { it.copy(
-                    isLoading = true, 
-                    searchQuery = params.query, 
+                    isLoading = true,
+                    searchQuery = params.query,
                     selectedVerdictFilter = params.filter,
                     currentSort = params.sort,
                     isAnalyticsVisible = params.analyticsVisible
                 ) }
-                
+
                 val flow = when {
                     params.query.isNotBlank() -> historyRepository.searchHistorySummaries(params.query)
                     params.filter != null -> historyRepository.filterByVerdictSummaries(params.filter)
                     else -> historyRepository.getAllHistorySummaries()
                 }
-                
-                flow.map { items -> 
+
+                flow.map { items ->
                     val sortedItems = when (params.sort) {
                         HistorySort.NEWEST -> items.sortedByDescending { it.checkedAt }
                         HistorySort.OLDEST -> items.sortedBy { it.checkedAt }
                         HistorySort.HIGHEST_HARM -> items.sortedByDescending { it.harmScore() }
                     }
-                    sortedItems to calculateStats(items) 
+                    sortedItems to calculateStats(items)
                 }
             }.collect { (items, stats) ->
                 _uiState.update { it.copy(
@@ -96,10 +106,10 @@ class HistoryViewModel @Inject constructor(
         val analyticsVisible: Boolean
     )
 
-    private fun com.najmi.corvus.domain.model.HistorySummary.harmScore(): Int = 
-        com.najmi.corvus.domain.model.HarmLevel.valueOf(harmLevel).ordinal
+    private fun HistorySummary.harmScore(): Int =
+        HarmLevel.valueOf(harmLevel).ordinal
 
-    private fun calculateStats(items: List<com.najmi.corvus.domain.model.HistorySummary>): Map<String, Float> {
+    private fun calculateStats(items: List<HistorySummary>): Map<String, Float> {
         if (items.isEmpty()) return emptyMap()
         val total = items.size.toFloat()
         return items.groupBy { it.verdict }.mapValues { it.value.size / total }
@@ -121,35 +131,57 @@ class HistoryViewModel @Inject constructor(
         _currentSort.value = sort
     }
 
-    fun prepareDelete(item: com.najmi.corvus.domain.model.HistorySummary) {
-        pendingDeleteItem = item
+    fun prepareDelete(item: HistorySummary) {
+        deleteItems(listOf(item))
+    }
+
+    fun deleteItems(ids: List<String>) {
+        if (ids.isEmpty()) return
+
+        val currentHistory = _uiState.value.history
+        val itemsToDelete = currentHistory.filter { it.id in ids }.associateBy { it.id }
+
+        if (itemsToDelete.isEmpty()) return
+
+        _pendingDeleteItems.update { it + itemsToDelete }
+        _uiState.update { state ->
+            state.copy(
+                pendingDeleteIds = state.pendingDeleteIds + ids.toSet(),
+                isDeleteMode = false,
+                deleteSelection = emptySet()
+            )
+        }
+
+        undoJob?.cancel()
+        undoJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(UNDO_TIMEOUT_MS)
+            confirmPendingDeletes()
+        }
+
+        viewModelScope.launch {
+            historyRepository.deleteResults(ids)
+        }
     }
 
     fun undoDelete() {
-        pendingDeleteItem = null
+        undoJob?.cancel()
+        _pendingDeleteItems.update { it - _uiState.value.pendingDeleteIds }
+        _uiState.update { it.copy(pendingDeleteIds = emptySet()) }
     }
 
-    fun confirmDelete() {
-        pendingDeleteItem?.let { item ->
-            viewModelScope.launch {
-                historyRepository.deleteResult(item.id)
-            }
+    fun confirmPendingDeletes() {
+        _pendingDeleteItems.update { current ->
+            current - _uiState.value.pendingDeleteIds
         }
-        pendingDeleteItem = null
+        _uiState.update { it.copy(pendingDeleteIds = emptySet()) }
     }
 
     fun deleteItem(id: String) {
-        viewModelScope.launch {
-            historyRepository.deleteResult(id)
-        }
+        deleteItems(listOf(id))
     }
 
     fun deleteSelected(ids: List<String>) {
-        viewModelScope.launch {
-            ids.forEach { id ->
-                historyRepository.deleteResult(id)
-            }
-        }
+        deleteItems(ids)
     }
 
     fun refresh() {
@@ -158,6 +190,19 @@ class HistoryViewModel @Inject constructor(
     }
 
     fun clearAll() {
+        val allIds = _uiState.value.history.map { it.id }
+        if (allIds.isEmpty()) return
+
+        val allItems = _uiState.value.history.associateBy { it.id }
+        _pendingDeleteItems.update { it + allItems }
+        _uiState.update { it.copy(pendingDeleteIds = allIds.toSet()) }
+
+        undoJob?.cancel()
+        undoJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(UNDO_TIMEOUT_MS)
+            confirmPendingDeletes()
+        }
+
         viewModelScope.launch {
             historyRepository.clearAll()
         }
@@ -182,12 +227,8 @@ class HistoryViewModel @Inject constructor(
     }
 
     fun deleteSelectedItems() {
-        viewModelScope.launch {
-            _uiState.value.deleteSelection.forEach { id ->
-                historyRepository.deleteResult(id)
-            }
-            _uiState.update { it.copy(isDeleteMode = false, deleteSelection = emptySet()) }
-        }
+        val ids = _uiState.value.deleteSelection.toList()
+        deleteItems(ids)
     }
 
     fun toggleDeleteSelection(itemId: String) {
@@ -209,16 +250,17 @@ class HistoryViewModel @Inject constructor(
     }
 
     fun deleteRedundantExceptLatest() {
-        viewModelScope.launch {
-            val items = _uiState.value.history
-            if (items.isEmpty()) return@launch
-            
-            val groups = RedundantQueryDetector.findRedundantQueries(items)
-            val idsToDelete = RedundantQueryDetector.getAllRedundantItems(groups).map { it.id }
-            
-            idsToDelete.forEach { id ->
-                historyRepository.deleteResult(id)
-            }
-        }
+        val items = _uiState.value.history
+        if (items.isEmpty()) return
+
+        val groups = RedundantQueryDetector.findRedundantQueries(items)
+        val idsToDelete = RedundantQueryDetector.getAllRedundantItems(groups).map { it.id }
+
+        if (idsToDelete.isEmpty()) return
+        deleteItems(idsToDelete)
     }
+
+    fun hasPendingDeletes(): Boolean = _uiState.value.pendingDeleteIds.isNotEmpty()
+
+    fun getPendingDeleteCount(): Int = _uiState.value.pendingDeleteIds.size
 }

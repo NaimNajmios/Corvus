@@ -207,37 +207,7 @@ fun RedundantQueriesScreen(
                         TextButton(
                             onClick = {
                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                selectedForDeletion.forEach { id ->
-                                    historyViewModel.deleteItem(id)
-                                }
-                                selectedForDeletion = emptySet()
-                                showDeleteConfirmation = false
-                            },
-                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                        ) {
-                            Text("DELETE")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showDeleteConfirmation = false }) {
-                            Text("CANCEL")
-                        }
-                    }
-                )
-            }
-            
-            if (showDeleteConfirmation) {
-                AlertDialog(
-                    onDismissRequest = { showDeleteConfirmation = false },
-                    title = { Text("Delete ${selectedForDeletion.size} items?") },
-                    text = { Text("This action cannot be undone. These redundant fact-checks will be permanently removed.") },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                selectedForDeletion.forEach { id ->
-                                    historyViewModel.deleteItem(id)
-                                }
+                                historyViewModel.deleteItems(selectedForDeletion.toList())
                                 selectedForDeletion = emptySet()
                                 showDeleteConfirmation = false
                             },

@@ -42,6 +42,9 @@ interface HistoryDao {
     @Query("DELETE FROM corvus_history WHERE id = :id")
     suspend fun deleteById(id: String)
 
+    @Query("DELETE FROM corvus_history WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>)
+
     @Query("DELETE FROM corvus_history")
     suspend fun clearAll()
 
