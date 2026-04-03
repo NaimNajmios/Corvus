@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.R
-import com.najmi.corvus.domain.model.CorvusCheckResult
+import com.najmi.corvus.domain.model.HistorySummary
 import com.najmi.corvus.domain.model.QuoteVerdict
 import com.najmi.corvus.domain.model.Verdict
 import com.najmi.corvus.ui.history.components.HistoryAnalytics
@@ -46,15 +46,15 @@ import java.util.Locale
 fun HistoryScreen(
     historyViewModel: HistoryViewModel = hiltViewModel(),
     compareViewModel: CompareViewModel = hiltViewModel(),
-    onItemClick: (com.najmi.corvus.domain.model.HistorySummary) -> Unit,
+    onItemClick: (HistorySummary) -> Unit,
     onSwipeToEdit: (String) -> Unit = {},
     onCompare: () -> Unit = {}
 ) {
     val uiState by historyViewModel.uiState.collectAsState()
+    val pendingDeleteItems by historyViewModel.pendingDeleteItems.collectAsState()
     val compareUiState by compareViewModel.uiState.collectAsState()
     val hapticFeedback = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
@@ -63,19 +63,19 @@ fun HistoryScreen(
     var showDeleteRedundantDialog by remember { mutableStateOf(false) }
     var redundantCount by remember { mutableStateOf(0) }
 
-    LaunchedEffect(uiState.pendingDeleteIds) {
-        if (uiState.pendingDeleteIds.isNotEmpty()) {
-            val count = uiState.pendingDeleteIds.size
-            val message = if (count == 1) "Item deleted" else "$count items deleted"
+    val pendingDeleteCount = pendingDeleteItems.size
+
+    LaunchedEffect(pendingDeleteCount) {
+        if (pendingDeleteCount > 0) {
             val result = snackbarHostState.showSnackbar(
-                message = message,
+                message = if (pendingDeleteCount == 1) "Item deleted" else "$pendingDeleteCount items deleted",
                 actionLabel = "Undo",
                 duration = SnackbarDuration.Short
             )
             if (result == SnackbarResult.ActionPerformed) {
                 historyViewModel.undoDelete()
             } else {
-                historyViewModel.confirmPendingDeletes()
+                historyViewModel.confirmDelete()
             }
         }
     }
@@ -333,13 +333,16 @@ fun HistoryScreen(
                     key = { it.id }
                 ) { item ->
                     val isPendingDelete = item.id in uiState.pendingDeleteIds
+                    
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = { dismissValue ->
                             when (dismissValue) {
                                 SwipeToDismissBoxValue.EndToStart -> {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    historyViewModel.prepareDelete(item)
-                                    true
+                                    if (!isPendingDelete) {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        historyViewModel.prepareDelete(item)
+                                    }
+                                    false
                                 }
                                 SwipeToDismissBoxValue.StartToEnd -> {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -403,7 +406,7 @@ fun HistoryScreen(
                                 onLongClick = {
                                     try {
                                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    } catch (e: Exception) { /* ignore */ }
+                                    } catch (e: Exception) { }
                                     if (uiState.isDeleteMode) {
                                         historyViewModel.toggleDeleteSelection(item.id)
                                     } else {
@@ -523,7 +526,7 @@ fun HistoryScreen(
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun HistoryItem(
-    result: com.najmi.corvus.domain.model.HistorySummary,
+    result: HistorySummary,
     isSelected: Boolean = false,
     isCompareMode: Boolean = false,
     isDeleteMode: Boolean = false,
@@ -600,7 +603,6 @@ fun HistoryItem(
                     "VIRAL" -> VerdictBadgeLarge(verdict = Verdict.FALSE)
                 }
                 
-                // Harm Indicator Overlay
                 val harmLevel = try { com.najmi.corvus.domain.model.HarmLevel.valueOf(result.harmLevel) } catch (e: Exception) { com.najmi.corvus.domain.model.HarmLevel.NONE }
                 
                 if (harmLevel == com.najmi.corvus.domain.model.HarmLevel.HIGH) {
@@ -643,7 +645,6 @@ fun HistoryItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                     
-                    // Plausibility Indicator
                     val plausibility = result.plausibilityScore
                     
                     if (plausibility != null) {
@@ -795,7 +796,7 @@ private fun CompareSelectionBar(
             
             TextButton(
                 onClick = onClear,
-                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                colors = ButtonDefaults.textButtonColors(
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             ) {
@@ -811,10 +812,10 @@ private fun CompareSelectionBar(
                 Icon(Icons.Default.Delete, contentDescription = "Delete selected")
             }
             
-            androidx.compose.material3.Button(
+            Button(
                 onClick = onCompare,
                 enabled = selectedCount >= 2,
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
