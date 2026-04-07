@@ -59,6 +59,7 @@ import com.najmi.corvus.domain.model.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.najmi.corvus.ui.viewmodel.CorvusViewModel
 import com.najmi.corvus.ui.components.*
+import com.najmi.corvus.ui.result.components.EntityMediaPanel
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
@@ -468,7 +469,7 @@ fun ResultScreen(
                     if (entity != null) {
                         item(key = "entity_context") {
                             StaggeredReveal(index = 12, show = showContent) {
-                                EntityContextPanel(entity = entity, modifier = Modifier.fillMaxWidth())
+                                EntityMediaPanel(context = entity, modifier = Modifier.fillMaxWidth())
                             }
                         }
                     }

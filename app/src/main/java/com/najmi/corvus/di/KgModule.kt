@@ -7,6 +7,7 @@ import com.najmi.corvus.data.remote.GroqClient
 import com.najmi.corvus.data.remote.knowledgegraph.KnowledgeGraphClient
 import com.najmi.corvus.data.remote.knowledgegraph.KgEntityMapper
 import com.najmi.corvus.domain.usecase.EntityExtractorUseCase
+import com.najmi.corvus.domain.usecase.EntityMediaResolver
 import com.najmi.corvus.domain.usecase.KgEnricherUseCase
 import dagger.Module
 import dagger.Provides
@@ -48,8 +49,9 @@ object KgModule {
         extractor: EntityExtractorUseCase,
         client: KnowledgeGraphClient,
         kgCacheDao: KgCacheDao,
+        entityMediaResolver: EntityMediaResolver,
         json: Json
-    ): KgEnricherUseCase = KgEnricherUseCase(extractor, client, kgCacheDao, json)
+    ): KgEnricherUseCase = KgEnricherUseCase(extractor, client, kgCacheDao, entityMediaResolver, json)
 
     @Provides
     @Singleton

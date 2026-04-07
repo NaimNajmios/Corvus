@@ -7,6 +7,8 @@ import com.najmi.corvus.data.remote.knowledgegraph.KgEntityMapper
 import com.najmi.corvus.domain.model.ClaimType
 import com.najmi.corvus.domain.model.ClassifiedClaim
 import com.najmi.corvus.domain.model.EntityContext
+import com.najmi.corvus.domain.model.MediaEntityType
+import com.najmi.corvus.domain.util.EntityTypeDetector
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -16,6 +18,7 @@ class KgEnricherUseCase @Inject constructor(
     private val entityExtractor: EntityExtractorUseCase,
     private val kgClient: KnowledgeGraphClient,
     private val kgCacheDao: KgCacheDao,
+    private val entityMediaResolver: EntityMediaResolver,
     private val json: Json
 ) {
     private val SKIP_CLAIM_TYPES = setOf(
@@ -33,45 +36,64 @@ class KgEnricherUseCase @Inject constructor(
         val entity = entityExtractor.extract(claim, classified) ?: return null
         val cacheKey = entity.name.lowercase().trim()
 
-        // 1. Check cache first
         try {
             val cached = kgCacheDao.get(cacheKey)
             if (cached != null) {
                 val age = System.currentTimeMillis() - cached.cachedAt
                 if (age < 7.days.inWholeMilliseconds) {
-                    return json.decodeFromString<EntityContext>(cached.entityJson)
+                    val cachedContext = json.decodeFromString<EntityContext>(cached.entityJson)
+                    return cachedContext
                 }
             }
         } catch (e: Exception) {
             // Cache error shouldn't block
         }
 
-        // 2. Query Knowledge Graph
         val kgItem = if (classified.type == ClaimType.PERSON_FACT) {
             kgClient.searchEntityByName(entity.name, types = listOf("Person"))
         } else {
             kgClient.searchEntity(entity.name)
         } ?: return null
 
-        // 3. Map to domain model
         val requiresFreshnessWarning =
             entity.claimInvolveCurrentStatus &&
             kgItem.result.types.any { it == "Person" }
 
         val entityContext = KgEntityMapper.map(kgItem, requiresFreshnessWarning)
 
-        // 4. Persist to cache
+        val mediaEntityType = EntityTypeDetector.detect(entityContext.name, entityContext.entityTypes)
+        
+        val media = entityMediaResolver.resolve(
+            entityName  = entityContext.name,
+            entityTypes = entityContext.entityTypes,
+            claimType   = classified.type
+        )
+
+        val enrichedContext = entityContext.copy(
+            media = media,
+            mediaEntityType = mediaEntityType
+        )
+
         try {
+            val mediaTypeStr = when (enrichedContext.media) {
+                is com.najmi.corvus.domain.model.EntityMedia.Portrait -> "portrait"
+                is com.najmi.corvus.domain.model.EntityMedia.CountryFlag -> "flag"
+                is com.najmi.corvus.domain.model.EntityMedia.OrgLogo -> "logo"
+                is com.najmi.corvus.domain.model.EntityMedia.PlacePhoto -> "place"
+                else -> "none"
+            }
             kgCacheDao.insert(
                 KgCacheEntity(
                     queryKey   = cacheKey,
-                    entityJson = json.encodeToString(entityContext)
+                    entityJson = json.encodeToString(enrichedContext),
+                    mediaType  = if (mediaTypeStr == "none") null else mediaTypeStr,
+                    mediaJson  = if (mediaTypeStr == "none") null else json.encodeToString(enrichedContext.media)
                 )
             )
         } catch (e: Exception) {
             // Cache persistence failure shouldn't block
         }
 
-        return entityContext
+        return enrichedContext
     }
 }

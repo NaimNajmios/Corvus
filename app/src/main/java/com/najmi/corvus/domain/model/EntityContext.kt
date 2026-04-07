@@ -15,8 +15,19 @@ data class EntityContext(
     val foundingDate: String?,
     val foundingLocation: String?,
     val kgScore: Float,
-    val requiresFreshnessWarning: Boolean = false
+    val requiresFreshnessWarning: Boolean = false,
+    val media: EntityMedia = EntityMedia.Skipped,
+    val mediaEntityType: MediaEntityType = MediaEntityType.UNKNOWN
 )
+
+@Serializable
+enum class MediaEntityType {
+    PERSON,
+    COUNTRY,
+    ORGANISATION,
+    PLACE,
+    UNKNOWN
+}
 
 @Serializable
 enum class EntityType {
