@@ -26,6 +26,8 @@
 -dontwarn io.netty.**
 -dontwarn com.typesafe.**
 -dontwarn org.slf4j.**
+-dontwarn java.lang.management.**
+-dontwarn java.util.logging.**
 
 # Keep data classes
 -keep class com.najmi.corvus.data.remote.** { *; }

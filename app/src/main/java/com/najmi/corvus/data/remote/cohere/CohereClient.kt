@@ -1,6 +1,7 @@
 package com.najmi.corvus.data.remote.cohere
 
 import android.util.Log
+import com.najmi.corvus.data.local.DebugLogger
 import com.najmi.corvus.data.remote.LlmClient
 import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.model.LlmProvider
@@ -39,6 +40,8 @@ class CohereClient @Inject constructor(
     }
 
     suspend fun chat(prompt: String, model: String = CohereModels.COMMAND_R): LlmResponse {
+        val startTime = System.currentTimeMillis()
+        
         if (!quotaGuard.canCall(model)) {
             val callsToday = quotaGuard.callsToday()
             throw CohereQuotaExceededException(
@@ -91,6 +94,9 @@ class CohereClient @Inject constructor(
             provider = "COHERE",
             model = model
         )
+        
+        val latencyMs = System.currentTimeMillis() - startTime
+        DebugLogger.llm("Cohere", model, usage.totalTokens, latencyMs)
         
         return LlmResponse(cohereResponse.text, usage)
     }

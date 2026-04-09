@@ -1,6 +1,7 @@
 package com.najmi.corvus.domain.usecase
 
 import android.util.Log
+import com.najmi.corvus.data.local.DebugLogger
 import com.najmi.corvus.data.repository.GoogleFactCheckRepository
 import com.najmi.corvus.data.repository.TavilyRepository
 import com.najmi.corvus.domain.model.ClaimType
@@ -33,16 +34,30 @@ class CorvusFactCheckUseCase @Inject constructor(
     suspend fun check(
         claim: String,
         onStepChange: suspend (PipelineStep) -> Unit
-    ): CorvusCheckResult {
+    ): CorvusCheckResult = coroutineScope {
+        val overallStartTime = System.currentTimeMillis()
         Log.d(TAG, "Starting fact check for: $claim")
         
         onStepChange(PipelineStep.CHECKING_KNOWN_FACTS)
         delay(300)
+        DebugLogger.stage("Known Facts Check", 300)
 
         val classified = classifier.classify(claim)
         Log.d(TAG, "Claim classified as: ${classified.type}")
+        DebugLogger.d("Claim classified as: ${classified.type}")
 
-        return runMainPipeline(claim, classified, onStepChange)
+        val kgDeferred = async {
+            runCatching {
+                kgEnricher.enrich(claim, classified)
+            }.getOrNull()
+        }
+
+        val result = runMainPipeline(claim, classified, onStepChange)
+        
+        val totalTime = System.currentTimeMillis() - overallStartTime
+        DebugLogger.stage("Total Verification", totalTime)
+        
+        result.withEntityContext(kgDeferred.await())
     }
 
     private suspend fun runMainPipeline(
@@ -50,12 +65,15 @@ class CorvusFactCheckUseCase @Inject constructor(
         classified: com.najmi.corvus.domain.model.ClassifiedClaim,
         onStepChange: suspend (PipelineStep) -> Unit
     ): CorvusCheckResult {
+        val startTime = System.currentTimeMillis()
+        
         // For now, mapping old GoogleFactCheck return to GeneralResult
         try {
             val knownCheck = googleFactCheckRepository.search(claim)
             if (knownCheck != null) {
                 Log.d(TAG, "Found known fact check")
                 onStepChange(PipelineStep.DONE)
+                DebugLogger.stage("Google Fact Check", System.currentTimeMillis() - startTime)
                 return CorvusCheckResult.GeneralResult(
                     claim = claim,
                     verdict = knownCheck.verdict,
@@ -90,6 +108,7 @@ class CorvusFactCheckUseCase @Inject constructor(
 
         onStepChange(PipelineStep.RETRIEVING_SOURCES)
         delay(300)
+        DebugLogger.stage("Retrieving Sources", 300)
 
         if (classified.type == ClaimType.QUOTE) {
             return quotePipeline.verify(classified)

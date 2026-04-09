@@ -28,6 +28,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.najmi.corvus.domain.model.ClaimType
@@ -354,7 +357,8 @@ fun MethodologyCard(result: CorvusCheckResult?) {
                                 items.forEachIndexed { index, item ->
                                     ReasoningItem(
                                         index = index + 1,
-                                        content = item
+                                        content = item,
+                                        isSingleItem = items.size == 1
                                     )
                                 }
                             }
@@ -426,37 +430,65 @@ fun MethodologyCard(result: CorvusCheckResult?) {
 @Composable
 private fun ReasoningItem(
     index: Int,
-    content: String
+    content: String,
+    isSingleItem: Boolean = false
 ) {
-    val hasCitation = content.contains(Regex("\\[\\d+\\]"))
     val cleanContent = content.replace(Regex("^\\d+\\.\\s*"), "")
     
-    Column(
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val annotatedString = buildAnnotatedString {
+        var lastEnd = 0
+        val regex = Regex("\\[(\\d+)\\]")
+        regex.findAll(cleanContent).forEach { matchResult ->
+            val start = matchResult.range.first
+            val end = matchResult.range.last + 1
+            
+            append(cleanContent.substring(lastEnd, start))
+            withStyle(style = SpanStyle(
+                color = primaryColor,
+                fontWeight = FontWeight.Bold,
+            )) {
+                append(matchResult.value)
+            }
+            lastEnd = end
+        }
+        append(cleanContent.substring(lastEnd))
+    }
+    
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            if (hasCitation) {
-                Text(
-                    text = cleanContent,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        lineHeight = 20.sp
+        if (!isSingleItem) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 2.dp)
+                    .size(20.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = CircleShape
                     ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            } else {
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
-                    text = cleanContent,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        lineHeight = 20.sp
+                    text = index.toString(),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
                     ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
+        
+        Text(
+            text = annotatedString,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                lineHeight = 20.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

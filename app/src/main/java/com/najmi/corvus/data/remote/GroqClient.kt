@@ -1,6 +1,7 @@
 package com.najmi.corvus.data.remote
 
 import android.util.Log
+import com.najmi.corvus.data.local.DebugLogger
 import com.najmi.corvus.data.remote.LlmClient
 import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.model.TokenUsage
@@ -87,6 +88,8 @@ class GroqClient @Inject constructor(
     }
 
     override suspend fun chat(prompt: String): LlmResponse {
+        val startTime = System.currentTimeMillis()
+        
         if (!quotaGuard.canCall()) {
             val callsToday = quotaGuard.callsToday()
             throw GroqQuotaExceededException(
@@ -141,7 +144,10 @@ class GroqClient @Inject constructor(
             model = groqResponse.model
         )
 
+        val latencyMs = System.currentTimeMillis() - startTime
         Log.d(TAG, "Received response, tokens: ${usage.totalTokens}")
+        
+        DebugLogger.llm("Groq", groqResponse.model ?: "unknown", usage.totalTokens, latencyMs)
 
         quotaGuard.recordCall()
 

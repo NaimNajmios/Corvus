@@ -1,6 +1,7 @@
 package com.najmi.corvus.data.remote
 
 import android.util.Log
+import com.najmi.corvus.data.local.DebugLogger
 import com.najmi.corvus.data.remote.LlmClient
 import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.model.TokenUsage
@@ -82,6 +83,8 @@ class CerebrasClient @Inject constructor(
     }
 
     override suspend fun chat(prompt: String): LlmResponse = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        
         Log.d(TAG, "Sending request to Cerebras, prompt length: ${prompt.length}")
         
         val response = httpClient.post("https://api.cerebras.ai/v1/chat/completions") {
@@ -128,7 +131,11 @@ class CerebrasClient @Inject constructor(
             model = cerebrasResponse.model
         )
 
+        val latencyMs = System.currentTimeMillis() - startTime
         Log.d(TAG, "Received response, tokens: ${usage.totalTokens}")
+        
+        DebugLogger.llm("Cerebras", cerebrasResponse.model ?: "unknown", usage.totalTokens, latencyMs)
+        
         LlmResponse(text, usage)
     }
 }

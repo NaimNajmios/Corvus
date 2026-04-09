@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Language
@@ -76,6 +77,7 @@ import com.najmi.corvus.ui.viewmodel.SettingsViewModel
 
 import com.najmi.corvus.ui.viewmodel.TokenUsageViewModel
 import com.najmi.corvus.ui.components.TokenUsageDashboard
+import com.najmi.corvus.ui.components.DebugLogExport
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,6 +93,7 @@ fun SettingsScreen(
     var showLanguageMenu by remember { mutableStateOf(false) }
     var showDarkModeMenu by remember { mutableStateOf(false) }
     var showPaletteMenu by remember { mutableStateOf(false) }
+    var showDebugLogs by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -343,6 +346,23 @@ fun SettingsScreen(
                     checked = uiState.preferences.showAnimations,
                     onCheckedChange = { viewModel.setShowAnimations(it) }
                 )
+
+                SettingsToggleItem(
+                    icon = Icons.Default.BugReport,
+                    title = "Debug Mode",
+                    subtitle = "Enable diagnostic logging",
+                    checked = uiState.preferences.isDebugMode,
+                    onCheckedChange = { viewModel.setDebugMode(it) }
+                )
+
+                if (uiState.preferences.isDebugMode) {
+                    SettingsItem(
+                        icon = Icons.Default.BugReport,
+                        title = "View Debug Logs",
+                        subtitle = "Export diagnostic logs",
+                        onClick = { showDebugLogs = true }
+                    )
+                }
             }
 
             SettingsSection(title = "Data") {
@@ -386,6 +406,10 @@ fun SettingsScreen(
                 }
             }
         )
+    }
+
+    if (showDebugLogs) {
+        DebugLogExport(onDismiss = { showDebugLogs = false })
     }
 }
 

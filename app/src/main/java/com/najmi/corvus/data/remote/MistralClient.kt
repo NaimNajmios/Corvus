@@ -1,6 +1,7 @@
 package com.najmi.corvus.data.remote
 
 import android.util.Log
+import com.najmi.corvus.data.local.DebugLogger
 import com.najmi.corvus.data.remote.LlmClient
 import com.najmi.corvus.data.remote.LlmResponse
 import com.najmi.corvus.domain.model.TokenUsage
@@ -99,6 +100,8 @@ class MistralClient @Inject constructor(
     override suspend fun chat(prompt: String): LlmResponse = chat(prompt, MistralModels.SMALL)
  
     suspend fun chat(prompt: String, model: String = MistralModels.SMALL): LlmResponse {
+        val startTime = System.currentTimeMillis()
+        
         if (!quotaGuard.canCall()) {
             val callsToday = quotaGuard.callsToday()
             throw MistralQuotaExceededException(
@@ -154,7 +157,10 @@ class MistralClient @Inject constructor(
             model = model
         )
 
+        val latencyMs = System.currentTimeMillis() - startTime
         Log.d(TAG, "Received response, tokens: ${usage.totalTokens}")
+
+        DebugLogger.llm("Mistral", model, usage.totalTokens, latencyMs)
 
         quotaGuard.recordCall()
 

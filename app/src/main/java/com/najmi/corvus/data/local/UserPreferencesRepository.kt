@@ -1,6 +1,7 @@
 package com.najmi.corvus.data.local
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -23,7 +24,8 @@ data class UserPreferences(
     val prioritizeLocalSources: Boolean = false,
     val darkMode: Boolean? = null,
     val showAnimations: Boolean = true,
-    val colorPalette: ColorPalette = ColorPalette.MONOCHROME
+    val colorPalette: ColorPalette = ColorPalette.MONOCHROME,
+    val isDebugMode: Boolean = false
 )
 
 @Singleton
@@ -37,6 +39,7 @@ class UserPreferencesRepository @Inject constructor(
         private val DARK_MODE = stringPreferencesKey("dark_mode")
         private val SHOW_ANIMATIONS = booleanPreferencesKey("show_animations")
         private val COLOR_PALETTE = stringPreferencesKey("color_palette")
+        private val DEBUG_MODE = booleanPreferencesKey("debug_mode")
     }
 
     val preferences: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
@@ -56,7 +59,8 @@ class UserPreferencesRepository @Inject constructor(
             showAnimations = prefs[SHOW_ANIMATIONS] ?: true,
             colorPalette = prefs[COLOR_PALETTE]?.let {
                 try { ColorPalette.valueOf(it) } catch (e: Exception) { ColorPalette.MONOCHROME }
-            } ?: ColorPalette.MONOCHROME
+            } ?: ColorPalette.MONOCHROME,
+            isDebugMode = prefs[DEBUG_MODE] ?: false
         )
     }
 
@@ -94,5 +98,12 @@ class UserPreferencesRepository @Inject constructor(
         context.dataStore.edit { prefs ->
             prefs[COLOR_PALETTE] = palette.name
         }
+    }
+
+    suspend fun setDebugMode(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[DEBUG_MODE] = enabled
+        }
+        DebugLogger.setEnabled(enabled)
     }
 }

@@ -1,6 +1,7 @@
 package com.najmi.corvus.domain.usecase
 
 import android.util.Log
+import com.najmi.corvus.data.local.DebugLogger
 import com.najmi.corvus.data.remote.WikidataSparqlClient
 import com.najmi.corvus.data.remote.WikipediaClient
 import com.najmi.corvus.data.repository.GoogleFactCheckRepository
@@ -45,6 +46,7 @@ class GeneralFactCheckPipeline @Inject constructor(
         classified: ClassifiedClaim,
         onStepChange: suspend (PipelineStep) -> Unit = {}
     ): CorvusCheckResult.GeneralResult {
+        val startTime = System.currentTimeMillis()
         Log.d(TAG, "Starting general verification for type: ${classified.type}")
         tokenCollector.clear()
         
@@ -52,11 +54,15 @@ class GeneralFactCheckPipeline @Inject constructor(
         val steps = mutableListOf<PipelineStepResult>()
         
         // Phase 1: Query Rewriting (NEW)
+        val rewriteStart = System.currentTimeMillis()
         val rewrittenQuery = queryRewriter.rewrite(classified)
+        DebugLogger.stage("Query Rewriting", System.currentTimeMillis() - rewriteStart)
         steps.add(PipelineStepResult(PipelineStep.RETRIEVING_SOURCES, "Query rewritten to ${rewrittenQuery.searchQueries.size} search queries"))
         
         // Phase 2: Multi-Query Retrieval (NEW)
+        val retrieveStart = System.currentTimeMillis()
         val sourceSet = multiQueryRetriever.retrieve(rewrittenQuery, classified)
+        DebugLogger.stage("Multi-Query Retrieval", System.currentTimeMillis() - retrieveStart)
         sources.addAll(sourceSet.sources)
         steps.add(PipelineStepResult(PipelineStep.RETRIEVING_SOURCES, "Retrieved ${sourceSet.totalRawResults} raw sources, ${sourceSet.deduplicatedCount} after dedup"))
         
@@ -131,6 +137,8 @@ class GeneralFactCheckPipeline @Inject constructor(
         // LLM Synthesis with Temporal Context
         onStepChange(PipelineStep.ANALYZING)
         
+        val llmStart = System.currentTimeMillis()
+        
         val temporalContext = TemporalPromptInjector.buildTemporalContext(
             profile = temporalProfile,
             mismatchReport = temporalMismatch,
@@ -144,6 +152,8 @@ class GeneralFactCheckPipeline @Inject constructor(
             temporalContext = temporalContext,
             onStepChange = onStepChange
         )
+        
+        DebugLogger.stage("LLM Analysis", System.currentTimeMillis() - llmStart)
         
         val providerUsed = initialResult.generalResult.criticProvider?.name ?: "Unknown"
         val routingRationale = initialResult.routingRationale

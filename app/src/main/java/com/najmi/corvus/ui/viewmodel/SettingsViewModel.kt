@@ -3,6 +3,7 @@ package com.najmi.corvus.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.najmi.corvus.BuildConfig
+import com.najmi.corvus.data.local.DebugLogger
 import com.najmi.corvus.data.local.UserPreferences
 import com.najmi.corvus.data.local.UserPreferencesRepository
 import com.najmi.corvus.ui.theme.ColorPalette
@@ -73,6 +74,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             userPreferencesRepository.preferences.collect { prefs ->
                 _uiState.update { it.copy(preferences = prefs) }
+                DebugLogger.setEnabled(prefs.isDebugMode)
             }
         }
     }
@@ -233,6 +235,12 @@ class SettingsViewModel @Inject constructor(
     fun setColorPalette(palette: ColorPalette) {
         viewModelScope.launch {
             userPreferencesRepository.setColorPalette(palette)
+        }
+    }
+
+    fun setDebugMode(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setDebugMode(enabled)
         }
     }
 
