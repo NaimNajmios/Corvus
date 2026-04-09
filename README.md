@@ -32,7 +32,9 @@ Corvus treats fact-checking as a rigorous investigative process, moving through 
     - **Cohere Command-R** for citation-heavy scientific and quote verification.
     - **Gemini 2.0 / Groq** for high-speed general reasoning and large context synthesis.
 - **⚖️ Holistic Narrative Review** - Advanced AI pass for compound claims that detects **Narrative Shifts**, **Selective Truths**, and **Cherry-Picking** across multiple sub-claims.
-- **📊 Comparative Audit History** - Multi-select previous fact-checks to perform delta-checks, find contradictions over time, and visualize verification trends.
+- **💡 Enriched Entity Context Display** - Surfaces relevant contextual data around detected entities to provide immediate background knowledge during verification.
+- **🖼️ Entity Media Resolution** - Integrates Wikipedia Images, Clearbit logos, and RestCountries flag metrics to provide rich visual grounding for recognized entities.
+- **📊 Comparative Audit History & Analytics** - Multi-select previous fact-checks to perform delta-checks, find contradictions over time, search your history, batch-delete old records, and visualize verification trends via belief distribution analytics.
 - **⚠️ Risk & Harm Assessment** - Integrated detection of potential real-world harm (Health, Safety, Political) for every verified claim.
 - **⚖️ Multi-Source Credibility Fusion** - Aggregates data from **MBFC**, **AdFontes**, and **NewsGuard** with bespoke **Domain Heuristics** to provide a 0-100 composite credibility score and bias assessment for every source.
 - **📡 Real-Time Pipeline Transparency** - A stage-aware loading experience that tracks progress through the 11 verification stages in real-time, featuring educational **Tip Cards** to demystify complex analysis.
